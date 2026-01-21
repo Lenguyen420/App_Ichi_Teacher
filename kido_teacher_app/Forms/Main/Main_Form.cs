@@ -1,5 +1,4 @@
 ﻿using kido_teacher_app.Forms.Main.Page;
-//using kido_teacher_app.Forms.Main.Page.QuanLyTaiKhoan;
 using kido_teacher_app.Services;
 using System;
 using System.Drawing;
@@ -17,9 +16,8 @@ namespace kido_teacher_app
             InitializeComponent();
             this.WindowState = FormWindowState.Maximized;
 
-            RegisterMenuEvents();   //Gán sự kiện menu click
+            RegisterMenuEvents();
 
-            // Load mặc định
             SelectMenu(menuGioiThieu);
             ShowControl(new UC_GioiThieu());
         }
@@ -28,17 +26,13 @@ namespace kido_teacher_app
         {
             menuGioiThieu.Click += menu_Click;
             menuTaiKhoan.Click += menu_Click;
-            //menuThemMoi.Click += menu_Click;
             menuGiaoAn.Click += menu_Click;
-            //menuQLTaiKhoan.Click += menu_Click;
-            //menuQLBaiGiang.Click += menu_Click;
         }
 
         private async void menu_Click(object sender, EventArgs e)
         {
             Panel clickedMenu = sender as Panel;
 
-            // Nếu click vào Label hoặc PictureBox → lấy panel cha
             if (clickedMenu == null)
                 clickedMenu = (sender as Control).Parent as Panel;
 
@@ -49,41 +43,17 @@ namespace kido_teacher_app
             }
             else if (clickedMenu == menuTaiKhoan)
             {
-                //SelectMenu(menuTaiKhoan);
-                //ShowControl(new UC_TaiKhoan());
                 SelectMenu(menuTaiKhoan);
                 await LoadTaiKhoanAsync();
             }
-            //else if (clickedMenu == menuThemMoi)
-            //{
-            //    SelectMenu(menuThemMoi);
-            //    ShowControl(new UC_ThemMoiBaiGiang());
-            //}
             else if (clickedMenu == menuGiaoAn)
             {
-                //SelectMenu(menuGiaoAn);
-                //ShowControl(new UC_GiaoAn());
                 SelectMenu(menuGiaoAn);
 
                 var courseId = await GetFirstCourseIdAsync();
 
                 ShowControl(new UC_GiaoAn(courseId));
             }
-            //else if (clickedMenu == menuQLTaiKhoan)
-            //{
-            //    SelectMenu(menuQLTaiKhoan);
-            //    ShowControl(new UC_QuanLyTaiKhoan_Main());
-            //}
-            //else if (clickedMenu == menuQLBaiGiang)
-            //{
-            //    SelectMenu(menuQLBaiGiang);
-            //    ShowControl(new UC_TaiKhoan_QLBG());
-            //}
-            //else if (clickedMenu == menuThongBao)
-            //{
-            //    SelectMenu(menuThongBao);
-            //    ShowControl(new UC_ThongBao());
-            //}
         }
 
         private async Task<string> GetFirstCourseIdAsync()

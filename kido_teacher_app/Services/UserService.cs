@@ -17,9 +17,6 @@ namespace kido_teacher_app.Services
             BaseAddress = new Uri(AppConfig.ApiBaseUrl)
         };
 
-        // =====================================================
-        // GET ALL USERS
-        // =====================================================
         public static async Task<List<UserDto>> GetAllAsync()
         {
             EnsureAuthorized();
@@ -35,9 +32,6 @@ namespace kido_teacher_app.Services
             return result?.data?.items ?? new List<UserDto>();
         }
 
-        // =====================================================
-        // GET USER BY ID
-        // =====================================================
         public static async Task<UserDto?> GetByIdAsync(string userId)
         {
             EnsureAuthorized();
@@ -55,9 +49,6 @@ namespace kido_teacher_app.Services
             return result?.data;
         }
 
-        // =====================================================
-        // CREATE USER
-        // =====================================================
         public static async Task<bool> CreateUserAsync(CreateUserRequest request)
         {
             EnsureAuthorized();
@@ -74,9 +65,6 @@ namespace kido_teacher_app.Services
             return true;
         }
 
-        // =====================================================
-        // UPDATE USER (FULL BODY – BAO GỒM groupIds)
-        // =====================================================
         public static async Task<bool> UpdateUserAsync(
             string userId,
             UpdateUserRequest request
@@ -96,9 +84,6 @@ namespace kido_teacher_app.Services
             return true;
         }
 
-        // =====================================================
-        // UPDATE USER GROUPS ONLY (DÙNG CHO FORM NHÓM)
-        // =====================================================
         public static async Task<bool> UpdateUserGroupsAsync(
             string userId,
             List<string> groupIds
@@ -123,9 +108,6 @@ namespace kido_teacher_app.Services
             return true;
         }
 
-        // =====================================================
-        // GET GROUP IDS OF USER
-        // =====================================================
         public static async Task<List<string>> GetUserGroupIdsAsync(string userId)
         {
             EnsureAuthorized();
@@ -143,9 +125,6 @@ namespace kido_teacher_app.Services
             return result?.data?.groupIds ?? new List<string>();
         }
 
-        // =====================================================
-        // DELETE USER
-        // =====================================================
         public static async Task<bool> DeleteAsync(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
@@ -157,9 +136,6 @@ namespace kido_teacher_app.Services
             return response.IsSuccessStatusCode;
         }
 
-        // =====================================================
-        // COMMON AUTH CHECK
-        // =====================================================
         private static void EnsureAuthorized()
         {
             if (string.IsNullOrEmpty(AuthSession.AccessToken))
@@ -170,20 +146,17 @@ namespace kido_teacher_app.Services
         }
 
 
-        //  LỌC USER THEO NHÓM 
         public static async Task<List<UserDto>> GetByGroupAsync(string groupId)
         {
             client.DefaultRequestHeaders.Clear();
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
 
-            // ===== ALL =====
             if (string.IsNullOrWhiteSpace(groupId))
             {
-                return await GetAllAsync(); // lấy toàn bộ user
+                return await GetAllAsync();
             }
 
-            // ===== LỌC THEO NHÓM =====
             var url =
                 $"{AppConfig.ApiBaseUrl}{ApiRoutes.USERS}?page=1&limit=1000&groupId={Uri.EscapeDataString(groupId)}";
 
@@ -203,21 +176,20 @@ namespace kido_teacher_app.Services
             return result?.data?.items ?? new List<UserDto>();
         }
 
-        // tìm kiếm tài khoản theo id, tên, email,..
         public static async Task<List<UserDto>> SearchAsync(
-    string keyword,
-    string? groupId = null
-)
+            string keyword,
+            string? groupId = null
+        )
         {
             client.DefaultRequestHeaders.Clear();
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
 
             var query = new List<string>
-    {
-        "page=1",
-        "limit=1000"
-    };
+            {
+                "page=1",
+                "limit=1000"
+            };
 
             if (!string.IsNullOrWhiteSpace(keyword))
                 query.Add($"search={Uri.EscapeDataString(keyword)}");

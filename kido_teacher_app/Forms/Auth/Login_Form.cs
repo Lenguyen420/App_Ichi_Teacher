@@ -1,6 +1,4 @@
-﻿//using kido_teacher_app.Config;
-using kido_teacher_app.Model;
-using kido_teacher_app.Services;
+﻿using kido_teacher_app.Services;
 using System;
 using System.Windows.Forms;
 
@@ -33,9 +31,6 @@ namespace kido_teacher_app
             {
                 loginButton.Enabled = false;
 
-                // ==================================================
-                // LOGIN GIÁO VIÊN QUA API
-                // ==================================================
                 string deviceId = Environment.MachineName;
 
                 await AuthService.LoginTeacherAsync(
@@ -44,10 +39,6 @@ namespace kido_teacher_app
                     deviceId
                 );
 
-                // AuthService đã set:
-                // AuthSession.AccessToken
-                // AuthSession.UserId
-                // AuthSession.Role = TEACHER
 
                 DialogResult = DialogResult.OK;
                 Close();
