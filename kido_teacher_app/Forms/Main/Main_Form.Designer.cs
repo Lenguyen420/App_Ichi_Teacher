@@ -72,6 +72,12 @@
             this.Controls.Add(this.panelLeft);
 
             this.Text = "Giáo viên";
+            
+            // Set application icon from logo4
+            using (var bmp = new Bitmap(Properties.Resources.logo4))
+            {
+                this.Icon = Icon.FromHandle(bmp.GetHicon());
+            }
 
             this.ResumeLayout(false);
         }

@@ -9,6 +9,7 @@
     <UseWPF>True</UseWPF>
     <AssemblyName>Kido Teacher</AssemblyName>
     <UseAppHost>true</UseAppHost>
+    <ApplicationIcon>Resources\logo4.ico</ApplicationIcon>
 
   </PropertyGroup>
 
