@@ -157,7 +157,7 @@ namespace kido_teacher_app.Forms.Main.Page
                     {
                         Width = 213,
                         Height = 213,
-                        Margin = new Padding(20),
+                        Margin = new Padding(15),
                         BackColor = Color.Transparent
                     };
 

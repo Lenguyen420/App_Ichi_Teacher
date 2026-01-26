@@ -10,10 +10,6 @@
         public Panel menuGioiThieu;
         public Panel menuTaiKhoan;
         public Panel menuGiaoAn;
-        public Panel menuThemMoi;
-        public Panel menuQLTaiKhoan;
-        public Panel menuQLBaiGiang;
-        public Panel menuThongBao;
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -63,10 +59,6 @@
             menuGioiThieu = CreateMenu("Giới Thiệu", Properties.Resources.icon_info, ref y);
             menuTaiKhoan = CreateMenu("Tài Khoản", Properties.Resources.icon_user, ref y);
             menuGiaoAn = CreateMenu("Giáo Án", Properties.Resources.icon_book, ref y);
-            //menuThemMoi = CreateMenu("Thêm Mới Bài Giảng", Properties.Resources.icon_add, ref y);
-            //menuQLTaiKhoan = CreateMenu("Quản Lý Tài Khoản", Properties.Resources.icon_settings, ref y);
-            //menuQLBaiGiang = CreateMenu("Quản Lý Bài Giảng", Properties.Resources.icon_list, ref y);
-            //menuThongBao = CreateMenu("Thông Báo", Properties.Resources.icon_thongbao2, ref y);
             // ------------------------- PANEL MAIN -------------------------
             this.panelMain.Dock = DockStyle.Fill;
             this.panelMain.BackColor = Color.White;

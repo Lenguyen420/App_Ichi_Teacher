@@ -47,6 +47,17 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             lblInfo.Text = $"Giáo Án / {className} / Tháng {month}";
             this.Load += async (s, e) => await LoadLecturesAsync();
             
+            // Xử lý resize để card tự động co giãn
+            flowList.Resize += (s, e) =>
+            {
+                foreach (Control ctrl in flowList.Controls)
+                {
+                    if (ctrl is Panel card)
+                    {
+                        card.Width = flowList.ClientSize.Width - 40;
+                    }
+                }
+            };
         }
 
 
@@ -263,9 +274,10 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             Panel card = new Panel
             {
                 Height = 190,
-                Width = flowList.ClientSize.Width - 500,
+                Width = flowList.ClientSize.Width - 40,
                 BorderStyle = BorderStyle.FixedSingle,
-                Margin = new Padding(5)
+                Margin = new Padding(5),
+                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
             };
 
             // TABLE CHÍNH
@@ -280,10 +292,10 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             table.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 170)); // Ảnh
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 380)); // Info
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));         // Online
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));        // Offline
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));       // Xóa
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));   // Info
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));   // Online
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));   // Offline
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));   // Xóa
 
             // =======================
             // CỘT 1: ẢNH

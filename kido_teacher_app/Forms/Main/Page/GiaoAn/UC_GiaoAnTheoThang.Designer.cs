@@ -55,7 +55,8 @@ namespace kido_teacher_app.Forms.Main.Page
             flowMonths.Dock = DockStyle.Fill;
             flowMonths.AutoScroll = true;
             flowMonths.WrapContents = true;
-            flowMonths.Padding = new Padding(40, 20, 40, 20);
+            flowMonths.FlowDirection = FlowDirection.LeftToRight;
+            flowMonths.Padding = new Padding(20, 20, 20, 20);
 
             //// ===== TẠO 12 THÁNG =====
             //for (int i = 1; i <= 12; i++)
