@@ -20,6 +20,8 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             LoadData();
         }
 
+
+        
         // ================= LOAD DATA =================
         private void LoadData()
         {
@@ -73,9 +75,34 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
 
             card.Controls.AddRange(new Control[] { pic, lblTitle, lblCount });
 
-            // 👉 CLICK → CHI TIẾT
             card.Click += (s, e) =>
             {
+                // ⭐ GÁN ĐỀ THI MẪU TRƯỚC KHI MỞ CHI TIẾT
+                currentClass.exams = new List<ExamDto>
+    {
+        new ExamDto
+        {
+            title = "Đề số 1 - Alphabet",
+            subject = "Tiếng Anh",
+            level = "Dễ",
+            time = 30
+        },
+        new ExamDto
+        {
+            title = "Đề số 2 - Numbers",
+            subject = "Tiếng Anh",
+            level = "Trung bình",
+            time = 40
+        },
+        new ExamDto
+        {
+            title = "Đề số 3 - Colors",
+            subject = "Tiếng Anh",
+            level = "Khó",
+            time = 45
+        }
+    };
+
                 parentContainer.Controls.Clear();
 
                 var ct = new UC_LopChiTiet(parentContainer, currentClass)
@@ -85,7 +112,6 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
 
                 parentContainer.Controls.Add(ct);
             };
-
             return card;
         }
 

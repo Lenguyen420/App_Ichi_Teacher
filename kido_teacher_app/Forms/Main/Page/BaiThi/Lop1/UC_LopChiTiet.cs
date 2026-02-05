@@ -24,7 +24,36 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             parentContainer = parent;
             currentClass = cls;
 
+           
+
+            currentClass.exams ??= new List<ExamDto>
+            {
+                new ExamDto
+                {
+                    title = "Đề kiểm tra KNS số 1",
+                    subject = "Kỹ năng sống",
+                    level = "Dễ",
+                    time = 30
+                },
+                new ExamDto
+                {
+                    title = "Đề kiểm tra STEM số 1",
+                    subject = "STEM",
+                    level = "Trung bình",
+                    time = 45
+                },
+                new ExamDto
+                {
+                    title = "Đề tổng hợp KNS + STEM",
+                    subject = "KNS + STEM",
+                    level = "Khó",
+                    time = 60
+                }
+            };
+
             LoadFromClass();
+
+
         }
 
         // sự kiện back 
@@ -40,6 +69,8 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             uc.Dock = DockStyle.Fill;
 
             parent.Controls.Add(uc);
+
+            
         }
 
 
@@ -64,40 +95,131 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             currentPage = page;
             flowExamList.Controls.Clear();
 
+            // ⭐⭐ ĐẶT Ở ĐÂY ⭐⭐
+            if (examData.Count == 0)
+            {
+                flowExamList.Controls.Add(new Label
+                {
+                    Text = "Chưa có đề thi nào",
+                    Font = new Font("Segoe UI", 11, FontStyle.Italic),
+                    ForeColor = Color.Gray,
+                    AutoSize = true,
+                    Margin = new Padding(20)
+                });
+
+                lblPage.Text = "0 / 0";
+                return;
+            }
+            // ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
+
             var pageData = examData
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize);
 
             foreach (var e in pageData)
-                flowExamList.Controls.Add(CreateExamRow(e.title, e.subject, e.level, e.time));
+                flowExamList.Controls.Add(
+                    CreateExamRow(e.title, e.subject, e.level, e.time)
+                );
 
             lblPage.Text = $"{currentPage}/{totalPages}";
         }
+
+        //private Panel CreateExamRow(string title, string subject, string level, string time)
+        //{
+        //    var card = new Panel
+        //    {
+        //        Height = 110,
+        //        Width = flowExamList.ClientSize.Width - SystemInformation.VerticalScrollBarWidth,
+        //        BackColor = Color.White,
+        //        BorderStyle = BorderStyle.FixedSingle,
+        //        Margin = new Padding(0, 0, 0, 15)
+        //    };
+
+        //    var lblTitle = new Label { Text = title, Font = new Font("Segoe UI", 11, FontStyle.Bold), Location = new Point(15, 15) };
+        //    var lblSub = new Label { Text = subject, Location = new Point(15, 45), ForeColor = Color.Gray };
+        //    var lblLevel = new Label { Text = $"Độ khó: {level}", Location = new Point(15, 70) };
+
+        //    var btn = new Button
+        //    {
+        //        Text = "Thi thử",
+        //        Size = new Size(80, 35),
+        //        Location = new Point(card.Width - 100, 35)
+        //    };
+
+        //    card.Controls.AddRange(new Control[] { lblTitle, lblSub, lblLevel, btn });
+        //    return card;
+        //}
 
         private Panel CreateExamRow(string title, string subject, string level, string time)
         {
             var card = new Panel
             {
                 Height = 110,
-                Width = flowExamList.ClientSize.Width - SystemInformation.VerticalScrollBarWidth,
+               // Width = flowExamList.ClientSize.Width - SystemInformation.VerticalScrollBarWidth,
                 BackColor = Color.White,
+                Dock = DockStyle.Top,
                 BorderStyle = BorderStyle.FixedSingle,
                 Margin = new Padding(0, 0, 0, 15)
             };
 
-            var lblTitle = new Label { Text = title, Font = new Font("Segoe UI", 11, FontStyle.Bold), Location = new Point(15, 15) };
-            var lblSub = new Label { Text = subject, Location = new Point(15, 45), ForeColor = Color.Gray };
-            var lblLevel = new Label { Text = $"Độ khó: {level}", Location = new Point(15, 70) };
+            var lblTitle = new Label
+            {
+                Text = title,
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                Location = new Point(15, 15)
+            };
+
+            var lblSub = new Label
+            {
+                Text = subject,
+                Location = new Point(15, 45),
+                ForeColor = Color.Gray
+            };
+
+            var lblLevel = new Label
+            {
+                Text = $"Độ khó: {level}",
+                Location = new Point(15, 70)
+            };
 
             var btn = new Button
             {
                 Text = "Thi thử",
                 Size = new Size(80, 35),
-                Location = new Point(card.Width - 100, 35)
+                Location = new Point(card.Width - 100, 35),
+                Cursor = Cursors.Hand
             };
 
-            card.Controls.AddRange(new Control[] { lblTitle, lblSub, lblLevel, btn });
+            flowExamList.SizeChanged += (s, e) =>
+            {
+                foreach (Panel p in flowExamList.Controls.OfType<Panel>())
+                {
+                    p.Width = flowExamList.ClientSize.Width
+                              - SystemInformation.VerticalScrollBarWidth;
+                }
+            };
+
+            // ⭐ CLICK THI THỬ
+            btn.Click += (s, e) =>
+            {
+                parentContainer.Controls.Clear();
+
+                var ucTest = new UC_Lop1_Test
+                {
+                    Dock = DockStyle.Fill
+                };
+
+                parentContainer.Controls.Add(ucTest);
+            };
+
+            card.Controls.AddRange(new Control[]
+            {
+        lblTitle, lblSub, lblLevel, btn
+            });
+
             return card;
         }
+
+
     }
 }
