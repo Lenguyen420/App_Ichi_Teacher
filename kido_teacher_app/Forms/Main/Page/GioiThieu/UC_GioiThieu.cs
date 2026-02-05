@@ -5,6 +5,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Windows.Forms;
 
 namespace kido_teacher_app.Forms.Main.Page
@@ -12,6 +13,10 @@ namespace kido_teacher_app.Forms.Main.Page
     public partial class UC_GioiThieu : UserControl
     {
         // ===== SLIDESHOW =====
+        private static readonly object SlideCacheLock = new object();
+        private static Image[]? slideCache;
+        private static Size slideCacheSize = Size.Empty;
+
         private System.Windows.Forms.Timer slideTimer;
         private Image[] slideImages;
         private int currentSlideIndex = 0;
@@ -23,17 +28,8 @@ namespace kido_teacher_app.Forms.Main.Page
         }
         private void InitSlideShow()
         {
-            // Giảm RAM: tạo bản ảnh đã thu nhỏ theo kích thước hiển thị,
-            // tránh giữ nhiều bitmap full-size cho slideshow.
             var targetSize = GetSlideTargetSize();
-
-            slideImages = new Image[]
-            {
-                ResizeForSlide(Properties.Resources.slide10, targetSize.Width, targetSize.Height),
-                ResizeForSlide(Properties.Resources.slide9, targetSize.Width, targetSize.Height),
-                ResizeForSlide(Properties.Resources.slide11, targetSize.Width, targetSize.Height),
-                ResizeForSlide(Properties.Resources.slide8, targetSize.Width, targetSize.Height)
-            };
+            slideImages = GetOrCreateSlideCache(targetSize);
 
             currentSlideIndex = 0;
             banner.Image = slideImages[currentSlideIndex];
@@ -81,15 +77,6 @@ namespace kido_teacher_app.Forms.Main.Page
                 slideTimer = null;
             }
 
-            // Chỉ dispose ảnh đã resize do control này tự tạo.
-            if (slideImages != null)
-            {
-                foreach (var img in slideImages)
-                {
-                    img?.Dispose();
-                }
-            }
-
             if (banner != null)
                 banner.Image = null;
 
@@ -99,9 +86,47 @@ namespace kido_teacher_app.Forms.Main.Page
         private Size GetSlideTargetSize()
         {
             var screenWidth = Screen.PrimaryScreen?.WorkingArea.Width ?? 1920;
-            var width = Math.Max(1280, screenWidth);
+            var width = Math.Clamp(screenWidth, 1280, 1920);
             var height = (int)(width * 9.0 / 16.0);
             return new Size(width, height);
+        }
+
+        private static Image[] GetOrCreateSlideCache(Size targetSize)
+        {
+            lock (SlideCacheLock)
+            {
+                if (slideCache != null && slideCacheSize == targetSize)
+                    return slideCache;
+
+                if (slideCache != null)
+                {
+                    foreach (var img in slideCache)
+                        img?.Dispose();
+                }
+
+                slideCache = new Image[]
+                {
+                    LoadAndResizeSlide("slide10.png", targetSize.Width, targetSize.Height, Properties.Resources.slide10),
+                    LoadAndResizeSlide("slide9.png", targetSize.Width, targetSize.Height, Properties.Resources.slide9),
+                    LoadAndResizeSlide("slide11.png", targetSize.Width, targetSize.Height, Properties.Resources.slide11),
+                    LoadAndResizeSlide("slide8.jpg", targetSize.Width, targetSize.Height, Properties.Resources.slide8)
+                };
+
+                slideCacheSize = targetSize;
+                return slideCache;
+            }
+        }
+
+        private static Image LoadAndResizeSlide(string fileName, int maxWidth, int maxHeight, Image fallback)
+        {
+            var fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", fileName);
+            if (File.Exists(fullPath))
+            {
+                using var source = Image.FromFile(fullPath);
+                return ResizeForSlide(source, maxWidth, maxHeight);
+            }
+
+            return ResizeForSlide(fallback, maxWidth, maxHeight);
         }
 
         private static Image ResizeForSlide(Image source, int maxWidth, int maxHeight)
