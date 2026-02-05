@@ -23,6 +23,17 @@ namespace kido_teacher_app.Model
         public string imageUrl { get; set; }
 
         public string note { get; set; }
+        public List<ExamDto> exams { get; set; }
     }
+
+
+    public class ExamDto
+    {
+        public string title { get; set; }
+        public string subject { get; set; }
+        public string level { get; set; }
+        public int time { get; set; } // phút
+    }
+
 
 }

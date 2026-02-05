@@ -1,4 +1,6 @@
 ﻿using kido_teacher_app.Forms.Main.Page;
+using kido_teacher_app.Forms.Main.Page.BaiThi;
+
 //using kido_teacher_app.Forms.Main.Page.QuanLyTaiKhoan;
 using kido_teacher_app.Services;
 using System;
@@ -29,7 +31,8 @@ namespace kido_teacher_app
             menuGioiThieu.Click += menu_Click;
             menuTaiKhoan.Click += menu_Click;
             //menuThemMoi.Click += menu_Click;
-            menuGiaoAn.Click += menu_Click;
+            //menuGiaoAn.Click += menu_Click;
+            menuBaiThi.Click += menu_Click;
             //menuQLTaiKhoan.Click += menu_Click;
             //menuQLBaiGiang.Click += menu_Click;
         }
@@ -69,6 +72,13 @@ namespace kido_teacher_app
 
                 ShowControl(new UC_GiaoAn(courseId));
             }
+
+            else if (clickedMenu == menuBaiThi)
+            {
+                SelectMenu(menuBaiThi);
+                ShowControl(new UC_BaiThi_Main());
+            }
+
             //else if (clickedMenu == menuQLTaiKhoan)
             //{
             //    SelectMenu(menuQLTaiKhoan);

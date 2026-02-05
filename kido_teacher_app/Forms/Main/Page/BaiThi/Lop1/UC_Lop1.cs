@@ -1,0 +1,110 @@
+﻿using kido_teacher_app.Model;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
+{
+    public partial class UC_Lop1 : UserControl
+    {
+        private readonly Panel parentContainer;
+        private readonly ClassDto currentClass;
+
+        public UC_Lop1(Panel parent, ClassDto cls)
+        {
+            InitializeComponent();
+            parentContainer = parent;
+            currentClass = cls;
+
+            LoadData();
+        }
+
+        // ================= LOAD DATA =================
+        private void LoadData()
+        {
+            flowContent.Controls.Clear();
+
+            foreach (var item in GetSampleData())
+            {
+                flowContent.Controls.Add(CreateCard(item));
+            }
+        }
+
+        // ================= CARD =================
+        private Panel CreateCard(BaiThiItem item)
+        {
+            var card = new Panel
+            {
+                Width = 650,
+                Height = 150,
+                BackColor = Color.White,
+                Margin = new Padding(12),
+                BorderStyle = BorderStyle.FixedSingle,
+                Cursor = Cursors.Hand
+            };
+
+            var pic = new PictureBox
+            {
+                Image = item.Image,
+                Size = new Size(120, 120),
+                Location = new Point(12, 15),
+                SizeMode = PictureBoxSizeMode.Zoom
+            };
+
+            var lblTitle = new Label
+            {
+                Text = item.Title,
+                Font = new Font("Segoe UI", 12),
+                Location = new Point(150, 20),
+                Size = new Size(450, 60),
+                AutoEllipsis = true
+            };
+
+            var lblCount = new Label
+            {
+                Text = $"{item.Count} đề",
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                Size = new Size(70, 30),
+                Location = new Point(150, 95),
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.FromArgb(245, 245, 245)
+            };
+
+            card.Controls.AddRange(new Control[] { pic, lblTitle, lblCount });
+
+            // 👉 CLICK → CHI TIẾT
+            card.Click += (s, e) =>
+            {
+                parentContainer.Controls.Clear();
+
+                var ct = new UC_LopChiTiet(parentContainer, currentClass)
+                {
+                    Dock = DockStyle.Fill
+                };
+
+                parentContainer.Controls.Add(ct);
+            };
+
+            return card;
+        }
+
+        // ================= DATA MẪU =================
+        private List<BaiThiItem> GetSampleData()
+        {
+            return new()
+            {
+                new() { Title = "Đề Tiếng Anh lớp 1", Count = 23, Image = Properties.Resources.classdefault },
+                new() { Title = "Đề Tiếng Việt lớp 1", Count = 18, Image = Properties.Resources.classdefault },
+                new() { Title = "Đề Toán lớp 1", Count = 15, Image = Properties.Resources.classdefault }
+            };
+        }
+    }
+
+    class BaiThiItem
+    {
+        public string Title { get; set; }
+        public int Count { get; set; }
+        public Image Image { get; set; }
+    }
+}

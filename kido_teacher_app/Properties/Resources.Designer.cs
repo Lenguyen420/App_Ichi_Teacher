@@ -163,6 +163,16 @@ namespace kido_teacher_app.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap icon_baithi {
+            get {
+                object obj = ResourceManager.GetObject("icon_baithi", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap icon_book {
             get {
                 object obj = ResourceManager.GetObject("icon_book", resourceCulture);
@@ -283,6 +293,16 @@ namespace kido_teacher_app.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap icon_phai {
+            get {
+                object obj = ResourceManager.GetObject("icon_phai", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap icon_phone {
             get {
                 object obj = ResourceManager.GetObject("icon_phone", resourceCulture);
@@ -346,6 +366,16 @@ namespace kido_teacher_app.Properties {
         internal static System.Drawing.Bitmap icon_thongbao2 {
             get {
                 object obj = ResourceManager.GetObject("icon_thongbao2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap icon_trai {
+            get {
+                object obj = ResourceManager.GetObject("icon_trai", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

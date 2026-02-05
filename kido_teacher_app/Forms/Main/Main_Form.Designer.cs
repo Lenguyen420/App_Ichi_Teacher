@@ -10,6 +10,7 @@
         public Panel menuGioiThieu;
         public Panel menuTaiKhoan;
         public Panel menuGiaoAn;
+        public Panel menuBaiThi;
         public Panel menuThemMoi;
         public Panel menuQLTaiKhoan;
         public Panel menuQLBaiGiang;
@@ -62,7 +63,8 @@
 
             menuGioiThieu = CreateMenu("Giới Thiệu", Properties.Resources.icon_info, ref y);
             menuTaiKhoan = CreateMenu("Tài Khoản", Properties.Resources.icon_user, ref y);
-            menuGiaoAn = CreateMenu("Giáo Án", Properties.Resources.icon_book, ref y);
+            //menuGiaoAn = CreateMenu("Giáo Án", Properties.Resources.icon_book, ref y);
+            menuBaiThi = CreateMenu("Bài Thi", Properties.Resources.icon_baithi, ref y);
             //menuThemMoi = CreateMenu("Thêm Mới Bài Giảng", Properties.Resources.icon_add, ref y);
             //menuQLTaiKhoan = CreateMenu("Quản Lý Tài Khoản", Properties.Resources.icon_settings, ref y);
             //menuQLBaiGiang = CreateMenu("Quản Lý Bài Giảng", Properties.Resources.icon_list, ref y);
@@ -79,7 +81,7 @@
             this.Controls.Add(this.panelMain);
             this.Controls.Add(this.panelLeft);
 
-            this.Text = "Giáo viên";
+            this.Text = "Học Sinh";
 
             this.ResumeLayout(false);
         }
