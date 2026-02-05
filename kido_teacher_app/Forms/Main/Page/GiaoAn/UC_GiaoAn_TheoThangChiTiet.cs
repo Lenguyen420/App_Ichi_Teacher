@@ -9,6 +9,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
@@ -23,6 +24,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private readonly string _className;
 
         private readonly string _courseName;
+        private int _loadVersion;
 
         //private LessonDto _lesson;
 
@@ -59,12 +61,21 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         // =========================
         private async Task LoadLecturesAsync()
         {
+            int loadVersion = Interlocked.Increment(ref _loadVersion);
+            System.Diagnostics.Debug.WriteLine(
+                $"[UC_GiaoAn_TheoThangChiTiet] LoadLecturesAsync start v={loadVersion}, class={_classId}, course={_courseId}"
+            );
+
             try
             {
                 flowList.Controls.Clear();
 
-                var lectures =
+                var lecturesRaw =
                     await LectureService.GetByClassCourseAsync(_classId, _courseId);
+                var lectures = LectureService.NormalizeLectures(lecturesRaw);
+
+                if (loadVersion != _loadVersion)
+                    return;
 
                 if (lectures == null || lectures.Count == 0)
                 {
@@ -74,6 +85,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
                 foreach (var lec in lectures)
                 {
+                    if (loadVersion != _loadVersion)
+                        return;
+
                     var detail = lec;
                     bool needFetchDetail =
                         detail.resources == null ||
@@ -84,6 +98,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                     if (needFetchDetail)
                     {
                         var fetched = await LectureService.GetByIdAsync(lec.id);
+                        if (loadVersion != _loadVersion)
+                            return;
+
                         if (fetched != null)
                             detail = fetched;
                     }

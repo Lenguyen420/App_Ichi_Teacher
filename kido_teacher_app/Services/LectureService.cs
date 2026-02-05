@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -12,12 +13,22 @@ using System.Threading.Tasks;
 
 namespace kido_teacher_app.Services
 {
+
     public static class LectureService
     {
         private static readonly HttpClient client = new HttpClient
         {
             BaseAddress = new Uri(AppConfig.ApiBaseUrl)
         };
+
+        private static void EnsureAuthorized()
+        {
+            if (string.IsNullOrEmpty(AuthSession.AccessToken))
+                throw new UnauthorizedAccessException("Token không tồn tại");
+
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
+        }
 
         // =====================================================
         // CREATE LECTURE
@@ -41,10 +52,20 @@ namespace kido_teacher_app.Services
         // =====================================================
         // GET ALL LECTURES
         // =====================================================
+        public static List<LectureDto> NormalizeLectures(IEnumerable<LectureDto>? lectures)
+        {
+            return (lectures ?? Enumerable.Empty<LectureDto>())
+                .Where(x => x != null && !string.IsNullOrWhiteSpace(x.id))
+                .GroupBy(x => x.id)
+                .Select(g => g.First())
+                .OrderBy(x => x.orderColumn)
+                .ThenBy(x => x.code)
+                .ToList();
+        }
+
         public static async Task<List<LectureDto>> GetAllAsync()
         {
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
+            EnsureAuthorized();
 
             var url = $"{AppConfig.ApiBaseUrl}{ApiRoutes.LECTURES}?page=1&size=1000";
 
@@ -68,8 +89,7 @@ namespace kido_teacher_app.Services
             string? groupId = null, 
             string? search = null)
         {
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
+            EnsureAuthorized();
 
             var queryParams = new List<string> { "page=1", "size=1000" };
 
@@ -110,6 +130,8 @@ namespace kido_teacher_app.Services
         // lấy chi tiết bài học 
         public static async Task<LessonDto?> GetLectureByIdAsync(string id)
         {
+            EnsureAuthorized();
+
             var res = await client.GetAsync($"/lecture/{id}");
             res.EnsureSuccessStatusCode();
 
@@ -142,47 +164,23 @@ namespace kido_teacher_app.Services
             var res = await client.DeleteAsync($"/lecture/{id}");
             return res.IsSuccessStatusCode;
         }
-        // =====================================================
-        // AUTH CHECK (GIỐNG UserService)
-        // =====================================================
-        private static void EnsureAuthorized()
-        {
-            if (string.IsNullOrEmpty(AuthSession.AccessToken))
-                throw new UnauthorizedAccessException("Token không tồn tại");
-
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
-        }
-
         // lấy bài học theo mã lớp học và mã khóa học 
         public static async Task<List<LectureDto>> GetByClassCourseAsync(
-    string classId, string courseId)
+            string classId, 
+            string courseId)
         {
-            //MessageBox.Show("ĐÃ VÀO HÀM GetByClassCourseAsync");
-
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
-
+            EnsureAuthorized();
             var url = $"{AppConfig.ApiBaseUrl}/lecture?page=1&size=1000" +
                       $"&courseId={courseId}&classId={classId}";
-
             var res = await client.GetAsync(url);
-
-            //MessageBox.Show("STATUS: " + res.StatusCode);
-
             if (!res.IsSuccessStatusCode)
                 return new();
-
             var json = await res.Content.ReadAsStringAsync();
-
             var api = JsonConvert.DeserializeObject<
                 ApiResponse<PagedResult<LectureDto>>
             >(json);
-
             return api?.data?.data ?? new();
         }
-
-
         // giải nén file zip bài học 
         // =====================================================
         // 🔥 DOWNLOAD & EXTRACT ZIP (SỬ DỤNG PATH TỪ API)
@@ -193,10 +191,8 @@ namespace kido_teacher_app.Services
             IProgress<int>? progress = null)
         {
             EnsureAuthorized();
-
             // Lấy tên file từ path (trước khi encode URL)
             var zipFilename = Path.GetFileName(resourcePath);
-
             // Xác định URL: nếu đã là full URL thì dùng luôn, nếu là path thì gắn ApiBaseUrl
             string url;
             if (resourcePath.StartsWith("http://") || resourcePath.StartsWith("https://"))
@@ -208,64 +204,46 @@ namespace kido_teacher_app.Services
             {
                 // Là relative path - cần gắn ApiBaseUrl
                 var baseUrl = AppConfig.ApiBaseUrl.TrimEnd('/');
-                
                 // Đảm bảo có dấu / ở đầu path
                 if (!resourcePath.StartsWith("/"))
                     resourcePath = "/" + resourcePath;
-                
                 // Encode các ký tự đặc biệt trong path (nhưng giữ nguyên dấu /)
                 var segments = resourcePath.Split('/');
                 var encodedSegments = segments.Select(s => 
                     string.IsNullOrEmpty(s) ? s : Uri.EscapeDataString(s)
                 );
                 var encodedPath = string.Join("/", encodedSegments);
-                
                 url = $"{baseUrl}{encodedPath}";
             }
-
-            // Debug log
-            System.Diagnostics.Debug.WriteLine($"[LectureService] Download URL: {url}");
-
             // Đảm bảo thư mục Downloads tồn tại
             if (!Directory.Exists(AppConfig.DownloadFolder))
                 Directory.CreateDirectory(AppConfig.DownloadFolder);
-
             // Lưu file ZIP vào thư mục Downloads
             var tempZip = Path.Combine(AppConfig.DownloadFolder, zipFilename);
-            System.Diagnostics.Debug.WriteLine($"[LectureService] Download to: {tempZip}");
-
             // ⭐ Giải nén vào thư mục Lectures/{lectureId}
             var extractRoot = Path.Combine(
                 AppConfig.LectureExtractFolder,
                 lectureId
             );
-            System.Diagnostics.Debug.WriteLine($"[LectureService] Extract to: {extractRoot}");
-
             if (Directory.Exists(extractRoot))
                 Directory.Delete(extractRoot, true);
-
             Directory.CreateDirectory(extractRoot);
-
             // ======================
             // 1️⃣ DOWNLOAD (0–50%)
             // ======================
             using (var res = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {
                 res.EnsureSuccessStatusCode();
-
                 var total = res.Content.Headers.ContentLength ?? 0;
                 var buffer = new byte[81920];
                 long read = 0;
-
                 await using var input = await res.Content.ReadAsStreamAsync();
                 await using var output = new FileStream(tempZip, FileMode.Create, FileAccess.Write);
-
                 int len;
                 while ((len = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
                     await output.WriteAsync(buffer, 0, len);
                     read += len;
-
                     if (total > 0)
                     {
                         int percent = (int)(read * 50 / total);
@@ -273,7 +251,6 @@ namespace kido_teacher_app.Services
                     }
                 }
             }
-
             // ======================
             // 2️⃣ EXTRACT (50–100%) - BỎ QUA THỨ MỤC GỐC
             // ======================
@@ -281,7 +258,6 @@ namespace kido_teacher_app.Services
             {
                 int total = zip.Entries.Count;
                 int current = 0;
-
                 // Tìm thư mục gốc chung (nếu có)
                 string? commonRoot = null;
                 var firstEntry = zip.Entries.FirstOrDefault(e => !string.IsNullOrEmpty(e.Name));
@@ -295,56 +271,42 @@ namespace kido_teacher_app.Services
                         bool allHaveCommonRoot = zip.Entries
                             .Where(e => !string.IsNullOrEmpty(e.Name))
                             .All(e => e.FullName.StartsWith(commonRoot));
-                        
                         if (!allHaveCommonRoot)
                             commonRoot = null;
                     }
                 }
-
-                System.Diagnostics.Debug.WriteLine($"[LectureService] Common root folder: {commonRoot ?? "(none)"}");
-
                 foreach (var entry in zip.Entries)
                 {
                     // bỏ thư mục rỗng
                     if (string.IsNullOrEmpty(entry.Name))
                         continue;
-
                     // Bỏ qua thư mục gốc nếu tìm thấy
                     var relativePath = entry.FullName;
                     if (!string.IsNullOrEmpty(commonRoot) && relativePath.StartsWith(commonRoot))
                     {
                         relativePath = relativePath.Substring(commonRoot.Length);
                     }
-
                     // Bỏ qua nếu path rỗng sau khi remove root
                     if (string.IsNullOrWhiteSpace(relativePath))
                         continue;
-
                     var destinationPath = Path.GetFullPath(
                         Path.Combine(extractRoot, relativePath)
                     );
-
                     // 🔐 bảo vệ path traversal
                     if (!destinationPath.StartsWith(extractRoot, StringComparison.OrdinalIgnoreCase))
                         continue;
-
                     var dir = Path.GetDirectoryName(destinationPath);
                     if (!Directory.Exists(dir))
                         Directory.CreateDirectory(dir!);
-
                     entry.ExtractToFile(destinationPath, true);
-
                     current++;
                     int percent = 50 + (int)(current * 50.0 / total);
                     progress?.Report(percent);
-
                     await Task.Yield();
                 }
             }
 
             progress?.Report(100);
-            System.Diagnostics.Debug.WriteLine($"[LectureService] Extract completed: {extractRoot}");
-
             // ======================
             // 3️⃣ XÓA FILE ZIP SAU KHI GIẢI NÉN XONG
             // ======================
@@ -353,40 +315,26 @@ namespace kido_teacher_app.Services
                 if (File.Exists(tempZip))
                 {
                     File.Delete(tempZip);
-                    System.Diagnostics.Debug.WriteLine($"[LectureService] Deleted ZIP: {tempZip}");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[LectureService] Failed to delete ZIP: {ex.Message}");
             }
-
             return extractRoot;
         }
-
-        
-
         public static async Task<LectureDto?> GetByIdAsync(string lectureId)
         {
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
-
+            EnsureAuthorized();
             var url = $"{AppConfig.ApiBaseUrl}{ApiRoutes.LectureById(lectureId)}";
-
             var res = await client.GetAsync(url);
-
             if (!res.IsSuccessStatusCode)
                 return null;
-
             var json = await res.Content.ReadAsStringAsync();
-
             var api = JsonConvert.DeserializeObject<
                 ApiResponse<LectureDto>
             >(json);
-
             return api?.data;
         }
-
         // =====================================================
         // BULK ASSIGN LECTURES TO USERS
         // =====================================================
@@ -399,7 +347,6 @@ namespace kido_teacher_app.Services
             try
             {
                 EnsureAuthorized();
-
                 var payload = new
                 {
                     userIds = userIds,
@@ -407,19 +354,15 @@ namespace kido_teacher_app.Services
                     startDate = startDate.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
                     endDate = endDate.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
                 };
-
                 var json = JsonConvert.SerializeObject(payload);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
-
                 var response = await client.PostAsync(ApiRoutes.LECTURE_BULK_ASSIGN_USERS, content);
                 var responseText = await response.Content.ReadAsStringAsync();
-
                 if (!response.IsSuccessStatusCode)
                 {
                     System.Diagnostics.Debug.WriteLine($"[LectureService] BulkAssign failed: HTTP {(int)response.StatusCode}: {responseText}");
                     return false;
                 }
-
                 return true;
             }
             catch (Exception ex)
@@ -428,7 +371,6 @@ namespace kido_teacher_app.Services
                 throw;
             }
         }
-
         // =====================================================
         // BULK ASSIGN LECTURES TO GROUPS
         // =====================================================
@@ -469,6 +411,16 @@ namespace kido_teacher_app.Services
                 System.Diagnostics.Debug.WriteLine($"[LectureService] BulkAssignToGroups exception: {ex.Message}");
                 throw;
             }
+        }
+
+        // =====================================================
+        // GET MAX CODE
+        // =====================================================
+        public static async Task<string> GetMaxCodeAsync()
+        {
+            EnsureAuthorized();
+            // ⭐ Dùng Service chung
+            return await Shared.Common.GetMaxCodeService.GetMaxCodeAsync(client, ApiRoutes.LECTURES_MAX_CODE);
         }
     }
 }

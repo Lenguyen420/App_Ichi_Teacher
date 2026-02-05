@@ -30,6 +30,7 @@ namespace kido_teacher_app.Config
         // LECTURES
         // =====================================================
         public const string LECTURES = "/lecture";
+        public const string LECTURES_MAX_CODE = "/lecture/max-code";
         public static string LectureById(string id) => $"/lecture/{id}";
         public const string LECTURE_BULK_ASSIGN_USERS = "/lecture/user/bulk";
         public const string LECTURE_BULK_ASSIGN_GROUPS = "/lecture/group/bulk";
