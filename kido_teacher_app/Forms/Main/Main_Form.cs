@@ -103,20 +103,12 @@ namespace kido_teacher_app
 
         public void ShowControl(UserControl uc)
         {
-            panelMain.SuspendLayout();
-
-            panelMain.Controls.Clear();
-            uc.Dock = DockStyle.Fill;
-            panelMain.Controls.Add(uc);
-
-            panelMain.ResumeLayout();
+            ReplaceMainControl(uc);
         }
 
         public void LoadUserControl(UserControl uc)
         {
-            panelMain.Controls.Clear();
-            uc.Dock = DockStyle.Fill;
-            panelMain.Controls.Add(uc);
+            ReplaceMainControl(uc);
         }
 
         private async Task LoadTaiKhoanAsync()
@@ -126,8 +118,25 @@ namespace kido_teacher_app
             var uc = new UC_TaiKhoan();
             uc.LoadUser(user);
 
+            ReplaceMainControl(uc);
+        }
+
+        private void ReplaceMainControl(UserControl uc)
+        {
+            panelMain.SuspendLayout();
+
+            // ControlCollection.Clear() không đảm bảo giải phóng object cũ.
+            // Dispose explicit để tránh giữ timer/image trong RAM.
+            for (int i = panelMain.Controls.Count - 1; i >= 0; i--)
+            {
+                panelMain.Controls[i].Dispose();
+            }
+
             panelMain.Controls.Clear();
+            uc.Dock = DockStyle.Fill;
             panelMain.Controls.Add(uc);
+
+            panelMain.ResumeLayout();
         }
 
     }
