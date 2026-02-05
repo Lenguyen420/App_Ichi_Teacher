@@ -1,4 +1,4 @@
-﻿using kido_teacher_app.Config;
+using kido_teacher_app.Config;
 using kido_teacher_app.Model;
 using Newtonsoft.Json;
 using System.Net.Http;
@@ -38,6 +38,21 @@ namespace kido_teacher_app.Services
             >(json);
 
             return api?.data;
+        }
+
+        public static async Task<List<CourseDto>> GetByClassIdAsync(string classId)
+        {
+            EnsureAuth();
+
+            var res = await client.GetAsync($"{AppConfig.ApiBaseUrl}/courses?classId={classId}");
+            if (!res.IsSuccessStatusCode) return new();
+
+            var json = await res.Content.ReadAsStringAsync();
+
+            var api = JsonConvert.DeserializeObject<
+                ApiResponse<CoursePagedResult>>(json);
+
+            return api?.data?.data ?? new();
         }
 
 
@@ -92,7 +107,7 @@ namespace kido_teacher_app.Services
 
             var res = await client.SendAsync(req);
 
-            // ❌ API TRẢ LỖI
+            // ? API TR? L?I
             if (!res.IsSuccessStatusCode)
             {
                 var errBody = await res.Content.ReadAsStringAsync();
@@ -114,11 +129,20 @@ namespace kido_teacher_app.Services
             return res.IsSuccessStatusCode;
         }
 
+        // ======================================
+        // GET /courses/max-code � L?y m� kh�a h?c l?n nh?t
+        // ======================================
+        public static async Task<string> GetMaxCodeAsync()
+        {
+            EnsureAuth();
+            // ? D�ng Service chung
+            return await kido_teacher_app.Shared.Common.GetMaxCodeService.GetMaxCodeAsync(client, ApiRoutes.COURSES_MAX_CODE);
+        }
 
-        // lấy bài học theo mã lớp và mã khóa
+        // l?y b�i h?c theo m� l?p v� m� kh�a
         public static async Task<List<LectureDto>> GetByClassCourseAsync(
-    string classId,
-    string courseId)
+            string classId,
+            string courseId)
         {
             var url =
                 $"{AppConfig.ApiBaseUrl}/lecture?page=1&size=1000" +
@@ -138,3 +162,4 @@ namespace kido_teacher_app.Services
 
     }
 }
+

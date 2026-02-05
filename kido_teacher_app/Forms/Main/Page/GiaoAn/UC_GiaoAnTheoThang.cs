@@ -21,6 +21,7 @@ namespace kido_teacher_app.Forms.Main.Page
         {
             public int Month { get; set; }
             public string CourseId { get; set; }
+            public string CourseName { get; set; }
         }
         public UC_GiaoAnTheoThang(string className, string classId, string courseId)
         {
@@ -66,7 +67,8 @@ namespace kido_teacher_app.Forms.Main.Page
                     tag.Month,
                     _className,
                     _classId,
-                    tag.CourseId
+                    tag.CourseId,
+                    tag.CourseName
                 )
             );
         }
@@ -96,10 +98,10 @@ namespace kido_teacher_app.Forms.Main.Page
             {
                 System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] START LOADING");
                 
-                var courses = await CourseService.GetAllAsync();
+                var courses = await CourseService.GetByClassIdAsync(_classId);
 
                 System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] Total courses: {courses?.Count ?? 0}");
-                System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] ClassId filter: {_classId}");
+                System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] ClassId: {_classId}");
 
                 if (courses == null || courses.Count == 0)
                 {
@@ -108,14 +110,13 @@ namespace kido_teacher_app.Forms.Main.Page
                     return;
                 }
 
-                // ⭐ DEBUG: In ra tất cả courses và ClassId của chúng
+                // ⭐ DEBUG: In ra tất cả courses nhận từ API theo classId
                 foreach (var c in courses)
                 {
                     System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] Course: id={c.id}, code={c.code}, name={c.name}, ClassId={c.ClassId}");
                 }
 
                 var data = courses
-                    .Where(x => x.ClassId == _classId)          // ⭐ LỌC THEO LỚP
                     .Where(x => !string.IsNullOrEmpty(x.code))
                     .Select(x => new
                     {
@@ -170,7 +171,8 @@ namespace kido_teacher_app.Forms.Main.Page
                         Tag = new MonthTag
                         {
                             Month = c.Month,
-                            CourseId = c.CourseId
+                            CourseId = c.CourseId,
+                            CourseName = c.Name
                         },
                         Image = Properties.Resources.coursedefault  // ⭐ Ảnh mặc định ngay
                     };

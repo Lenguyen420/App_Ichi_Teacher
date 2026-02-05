@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace kido_teacher_app.Shared.Caching
 {
     /// <summary>
-    /// Service dùng chung ?? cache ?nh cho Class, Course, Lecture, etc.
+    /// Service dï¿½ng chung ?? cache ?nh cho Class, Course, Lecture, etc.
     /// </summary>
     public static class ImageCacheService
     {
@@ -33,7 +33,7 @@ namespace kido_teacher_app.Shared.Caching
                 return cachedImage;
             }
 
-            // ===== 2?? KHÔNG CÓ CACHE ? DOWNLOAD =====
+            // ===== 2?? KHï¿½NG Cï¿½ CACHE ? DOWNLOAD =====
             if (string.IsNullOrWhiteSpace(imageFilename))
             {
                 System.Diagnostics.Debug.WriteLine($"[ImageCache] Filename is null/empty");
@@ -87,7 +87,7 @@ namespace kido_teacher_app.Shared.Caching
             {
                 string url;
 
-                // ? N?U PATH B?T ??U B?NG / HO?C HTTP ? DÙNG TR?C TI?P
+                // ? N?U PATH B?T ??U B?NG / HO?C HTTP ? Dï¿½NG TR?C TI?P
                 if (filename.StartsWith("http"))
                 {
                     // Full URL
@@ -96,14 +96,14 @@ namespace kido_teacher_app.Shared.Caching
                 else if (filename.StartsWith("/") || filename.StartsWith("uploads/"))
                 {
                     // Path tuy?t ??i t? API (VD: /uploads/xxx.jpg ho?c uploads/xxx.jpg)
-                    // Thêm / n?u ch?a có
+                    // Thï¿½m / n?u ch?a cï¿½
                     url = filename.StartsWith("/") 
                         ? $"{AppConfig.ApiBaseUrl}{filename}"
                         : $"{AppConfig.ApiBaseUrl}/{filename}";
                 }
                 else
                 {
-                    // Ch? có filename ? dùng route chu?n
+                    // Ch? cï¿½ filename ? dï¿½ng route chu?n
                     url = $"{AppConfig.ApiBaseUrl}/upload/downloads/{filename}/image";
                 }
 

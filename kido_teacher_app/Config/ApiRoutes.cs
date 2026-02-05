@@ -1,4 +1,4 @@
-﻿namespace kido_teacher_app.Config
+namespace kido_teacher_app.Config
 {
     /// <summary>
     /// Centralized API endpoint constants
@@ -23,6 +23,7 @@
         // COURSES
         // =====================================================
         public const string COURSES = "/courses";
+        public const string COURSES_MAX_CODE = "/courses/max-code";
         public static string CourseById(string id) => $"/courses/{id}";
 
         // =====================================================
@@ -63,3 +64,4 @@
         public static string FileDownload(string filename) => $"/file/download/{filename}";
     }
 }
+

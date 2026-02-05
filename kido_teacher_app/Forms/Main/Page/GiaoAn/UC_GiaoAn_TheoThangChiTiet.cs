@@ -22,6 +22,8 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private readonly int _month;
         private readonly string _className;
 
+        private readonly string _courseName;
+
         //private LessonDto _lesson;
 
         private readonly LectureResourceService _resourceService = new LectureResourceService();
@@ -29,37 +31,25 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             int month,
             string className,
             string classId,
-            string courseId
+            string courseId,
+            string courseName
             )
         {
             InitializeComponent();
             //this.BackColor = Color.Red;
 
-            _month = month;
             _classId = classId;
             _courseId = courseId;
             _className = className;
+            _courseName = courseName;
 
            
             //LoadLessons();
 
 
-            lblInfo.Text = $"Giáo Án / {className} / Tháng {month}";
+            lblInfo.Text = $"Giáo Án / {className} / {courseName}";
             this.Load += async (s, e) => await LoadLecturesAsync();
             
-            // Xử lý resize để card tự động co giãn
-            this.Resize += (s, e) =>
-            {
-                flowList.SuspendLayout();
-                foreach (Control ctrl in flowList.Controls)
-                {
-                    if (ctrl is Panel card)
-                    {
-                        card.Width = flowList.ClientSize.Width - 40;
-                    }
-                }
-                flowList.ResumeLayout();
-            };
         }
 
 
@@ -84,8 +74,19 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
                 foreach (var lec in lectures)
                 {
-                    var detail = await LectureService.GetByIdAsync(lec.id);
-                    if (detail == null) continue;
+                    var detail = lec;
+                    bool needFetchDetail =
+                        detail.resources == null ||
+                        detail.resources.Count == 0 ||
+                        string.IsNullOrWhiteSpace(detail.title) ||
+                        string.IsNullOrWhiteSpace(detail.code);
+
+                    if (needFetchDetail)
+                    {
+                        var fetched = await LectureService.GetByIdAsync(lec.id);
+                        if (fetched != null)
+                            detail = fetched;
+                    }
 
                     // ⭐ BẮT BUỘC
                     if (detail.resources == null)
@@ -276,7 +277,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             Panel card = new Panel
             {
                 Height = 190,
-                Width = flowList.ClientSize.Width - 40,
+                Width = flowList.ClientSize.Width - 500,
                 BorderStyle = BorderStyle.FixedSingle,
                 Margin = new Padding(5)
             };
@@ -293,13 +294,13 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             table.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 170)); // Ảnh
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));  // Info (auto resize)
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200)); // Online
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200)); // Offline
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150)); // Xóa
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 380)); // Info
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));         // Online
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));        // Offline
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));       // Xóa
 
             // =======================
-            // CỘT 0: ẢNH
+            // CỘT 1: ẢNH
             // =======================
             PictureBox pic = new PictureBox
             {
@@ -340,9 +341,8 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             info.Controls.Add(lblTitle); // Fill
             info.Controls.Add(lblCode);  // Bottom
             table.Controls.Add(info, 1, 0);
-            
             // =======================
-            // CỘT 2: XEM ONLINE
+            // CỘT 3: XEM ONLINE
             // =======================
             Panel online = new Panel { Dock = DockStyle.Fill };
 
@@ -372,7 +372,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             table.Controls.Add(online, 2, 0);
 
             // =======================
-            // CỘT 3: XEM OFFLINE
+            // CỘT 4: XEM OFFLINE
             // =======================
             Panel offline = new Panel { Dock = DockStyle.Fill };
 
@@ -406,7 +406,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             table.Controls.Add(offline, 3, 0);
 
             // =======================
-            // CỘT 4: XÓA + CHƯA TẢI
+            // CỘT 5: XÓA + CHƯA TẢI
             // =======================
             Panel deleteCol = new Panel { Dock = DockStyle.Fill };
 

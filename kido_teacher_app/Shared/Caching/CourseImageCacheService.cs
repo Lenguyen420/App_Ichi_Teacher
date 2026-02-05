@@ -32,7 +32,7 @@ namespace kido_teacher_app.Shared.Caching
         }
 
         /// <summary>
-        /// Xóa toàn b? cache c?a m?t class
+        /// Xï¿½a toï¿½n b? cache c?a m?t class
         /// </summary>
         public static void DeleteClassCache(string classId)
         {
