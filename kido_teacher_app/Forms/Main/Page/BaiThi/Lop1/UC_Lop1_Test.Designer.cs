@@ -24,6 +24,9 @@
         private Panel panelTime;
         private Panel panelSubmit;
         private Panel panelIndex;
+        // lưu button index theo số câu
+       // private Dictionary<int, Button> questionIndexButtons = new Dictionary<int, Button>();
+
 
         protected override void Dispose(bool disposing)
         {
@@ -50,23 +53,40 @@
             this.flowQuestionIndex = new System.Windows.Forms.FlowLayoutPanel();
 
             // ================= HEADER =================
-            this.panelHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panelHeader.Dock = DockStyle.Top;
             this.panelHeader.Height = 60;
-            this.panelHeader.BackColor = System.Drawing.Color.WhiteSmoke;
+            this.panelHeader.BackColor = Color.WhiteSmoke;
 
+            // ===== TABLE HEADER =====
+            var headerLayout = new TableLayoutPanel();
+            headerLayout.Dock = DockStyle.Fill;
+            headerLayout.ColumnCount = 3;
+            headerLayout.RowCount = 1;
+            headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F)); // trống
+            headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F)); // title
+            headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F)); // button
+
+            // ===== TITLE =====
             this.lblTitle.Text = "Tên Bài Thi";
-            lblTitle.Dock = DockStyle.Fill;
-            lblTitle.TextAlign = ContentAlignment.MiddleCenter;
-            lblTitle.Font = new Font("Segoe UI", 15F, FontStyle.Bold);
+            this.lblTitle.Dock = DockStyle.Fill;
+            this.lblTitle.TextAlign = ContentAlignment.MiddleCenter;
+            this.lblTitle.Font = new Font("Segoe UI", 15F, FontStyle.Bold);
 
+            // ===== BUTTON THOÁT =====
             this.btnThoat.Text = "Thoát";
             this.btnThoat.Width = 80;
-            this.btnThoat.Height = 30;
-            this.btnThoat.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            this.btnThoat.Location = new System.Drawing.Point(900, 15);
+            this.btnThoat.Height = 32;
+            this.btnThoat.Anchor = AnchorStyles.Right;
+            this.btnThoat.Margin = new Padding(0, 14, 15, 14);
+            btnThoat.Click += BtnThoat_Click;
+            // ===== ADD =====
+            headerLayout.Controls.Add(new Label(), 0, 0); // cột trống
+            headerLayout.Controls.Add(lblTitle, 1, 0);
+            headerLayout.Controls.Add(btnThoat, 2, 0);
 
-            this.panelHeader.Controls.Add(this.lblTitle);
-            this.panelHeader.Controls.Add(this.btnThoat);
+            this.panelHeader.Controls.Clear();
+            this.panelHeader.Controls.Add(headerLayout);
+
 
             // ================= BODY =================
             this.panelBody.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -143,15 +163,24 @@
             flowQuestionIndex.AutoSize = true;
             flowQuestionIndex.WrapContents = true;
 
-            for (int i = 101; i <= 110; i++)
+            for (int i = 1; i <= 10; i++)
             {
                 var btn = new Button();
                 btn.Text = i.ToString();
                 btn.Width = 45;
                 btn.Height = 35;
                 btn.Margin = new Padding(5);
+
+                btn.BackColor = Color.White;
+                btn.FlatStyle = FlatStyle.Flat;
+                btn.FlatAppearance.BorderColor = Color.Gray;
+                btn.UseVisualStyleBackColor = false;
                 flowQuestionIndex.Controls.Add(btn);
+
+                // ⭐ GỌI LOGIC – KHÔNG LƯU Ở DESIGNER
+                RegisterQuestionIndexButton(i, btn);
             }
+
 
             panelIndex.Controls.Add(flowQuestionIndex);
 
@@ -220,7 +249,11 @@
                 rb.Dock = DockStyle.Fill;
                 rb.Padding = new Padding(5);
                 rb.AutoSize = true;
-
+                rb.CheckedChanged += (s, e) =>
+                {
+                    if (rb.Checked)
+                        OnAnswerSelected(index);
+                };
                 table.Controls.Add(rb, i % 2, i / 2);
             }
 

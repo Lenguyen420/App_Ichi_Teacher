@@ -29,10 +29,11 @@ namespace kido_teacher_app.Model
 
     public class ExamDto
     {
-        public string title { get; set; }
-        public string subject { get; set; }
-        public string level { get; set; }
-        public int time { get; set; } // phút
+        public string title { get; set; }        // Tên đề
+        public string subject { get; set; }      // Ví dụ: Tiếng Anh 1 / Sách Family and Friends
+        public string level { get; set; }        // Dễ / Khó
+        public string type { get; set; }         // Phiếu bài tập
+        public int time { get; set; }             // phút
     }
 
 

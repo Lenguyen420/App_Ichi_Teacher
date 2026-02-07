@@ -24,35 +24,115 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             parentContainer = parent;
             currentClass = cls;
 
-           
 
-            currentClass.exams ??= new List<ExamDto>
-            {
-                new ExamDto
-                {
-                    title = "Đề kiểm tra KNS số 1",
-                    subject = "Kỹ năng sống",
-                    level = "Dễ",
-                    time = 30
-                },
-                new ExamDto
-                {
-                    title = "Đề kiểm tra STEM số 1",
-                    subject = "STEM",
-                    level = "Trung bình",
-                    time = 45
-                },
-                new ExamDto
-                {
-                    title = "Đề tổng hợp KNS + STEM",
-                    subject = "KNS + STEM",
-                    level = "Khó",
-                    time = 60
-                }
-            };
+
+            currentClass.exams = new List<ExamDto>
+{
+    new ExamDto
+    {
+        title = "Phiếu bài tập - Fluency Time! 2 - Đề số 01",
+        subject = "Tiếng Anh 1 / Sách Family and Friends",
+        level = "Dễ",
+        type = "Phiếu bài tập",
+        time = 15
+    },
+    new ExamDto
+    {
+        title = "Phiếu bài tập - Unit 6: Lunch time! - Đề số 01",
+        subject = "Tiếng Anh 1 / Sách Family and Friends",
+        level = "Khó",
+        type = "Phiếu bài tập",
+        time = 15
+    },
+    new ExamDto
+    {
+        title = "Phiếu bài tập - Unit 6: Lunch time! - Đề số 02",
+        subject = "Tiếng Anh 1 / Sách Family and Friends",
+        level = "Dễ",
+        type = "Phiếu bài tập",
+        time = 15
+    },
+    new ExamDto
+    {
+        title = "Phiếu bài tập - Unit 5: This is... - Đề số 01",
+        subject = "Tiếng Anh 1 / Sách Family and Friends",
+        level = "Dễ",
+        type = "Phiếu bài tập",
+        time = 15
+    },
+    new ExamDto
+    {
+        title = "Phiếu bài tập - Unit 4: They're bears! - Đề số 01",
+        subject = "Tiếng Anh 1 / Sách Family and Friends",
+        level = "Khó",
+        type = "Phiếu bài tập",
+        time = 15
+    },
+    new ExamDto
+    {
+        title = "Phiếu bài tập - Unit 4: They're bears! - Đề số 02",
+        subject = "Tiếng Anh 1 / Sách Family and Friends",
+        level = "Dễ",
+        type = "Phiếu bài tập",
+        time = 15
+    },
+    new ExamDto
+    {
+        title = "Phiếu bài tập - Unit 3: My family - Đề số 01",
+        subject = "Tiếng Anh 1 / Sách Family and Friends",
+        level = "Dễ",
+        type = "Phiếu bài tập",
+        time = 15
+    },
+    new ExamDto
+    {
+        title = "Phiếu bài tập - Unit 2: My body - Đề số 01",
+        subject = "Tiếng Anh 1 / Sách Family and Friends",
+        level = "Khó",
+        type = "Phiếu bài tập",
+        time = 15
+    },
+    new ExamDto
+    {
+        title = "Phiếu bài tập - Unit 1: Hello! - Đề số 01",
+        subject = "Tiếng Anh 1 / Sách Family and Friends",
+        level = "Dễ",
+        type = "Phiếu bài tập",
+        time = 15
+    },
+    new ExamDto
+    {
+        title = "Phiếu bài tập - Review 1 - Đề số 01",
+        subject = "Tiếng Anh 1 / Sách Family and Friends",
+        level = "Khó",
+        type = "Phiếu bài tập",
+        time = 15
+    },
+    new ExamDto
+    {
+        title = "Phiếu bài tập - Review 1 - Đề số 01",
+        subject = "Tiếng Anh 1 / Sách Family and Friends",
+        level = "Khó",
+        type = "Phiếu bài tập",
+        time = 15
+    }
+};
+
 
             LoadFromClass();
 
+
+            picPrev.Click += (s, e) =>
+            {
+                if (currentPage > 1)
+                    LoadPage(currentPage - 1);
+            };
+
+            picNext.Click += (s, e) =>
+            {
+                if (currentPage < totalPages)
+                    LoadPage(currentPage + 1);
+            };
 
         }
 
@@ -79,10 +159,14 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             lblPackageName.Text = currentClass.name;
             lblDescription.Text = currentClass.note;
 
-            examData = currentClass.exams?
-                .Select(e => (e.title, e.subject, e.level, $"{e.time} phút"))
-                .ToList()
-                ?? new();
+            examData = currentClass.exams
+            .Select(e => (
+                e.title,
+                $"{e.subject} | Độ khó: {e.level} | Dạng đề: {e.type}",
+                e.level,
+                $"{e.time} phút"
+            ))
+            .ToList();
 
             totalPages = (int)Math.Ceiling(examData.Count / (double)pageSize);
             LoadPage(1);
@@ -155,9 +239,9 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             var card = new Panel
             {
                 Height = 110,
-               // Width = flowExamList.ClientSize.Width - SystemInformation.VerticalScrollBarWidth,
+                Width = flowExamList.ClientSize.Width
+             - SystemInformation.VerticalScrollBarWidth,
                 BackColor = Color.White,
-                Dock = DockStyle.Top,
                 BorderStyle = BorderStyle.FixedSingle,
                 Margin = new Padding(0, 0, 0, 15)
             };
@@ -190,6 +274,14 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
                 Cursor = Cursors.Hand
             };
 
+            btn.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+            btn.Location = new Point(card.Width - btn.Width - 15, 35);
+
+            card.SizeChanged += (s, e) =>
+            {
+                btn.Left = card.Width - btn.Width - 15;
+            };
+
             flowExamList.SizeChanged += (s, e) =>
             {
                 foreach (Panel p in flowExamList.Controls.OfType<Panel>())
@@ -204,7 +296,7 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             {
                 parentContainer.Controls.Clear();
 
-                var ucTest = new UC_Lop1_Test
+                var ucTest = new UC_Lop1_Test(parentContainer, currentClass)
                 {
                     Dock = DockStyle.Fill
                 };
