@@ -294,7 +294,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             Panel card = new Panel
             {
                 Height = 190,
-                Width = flowList.ClientSize.Width - 500,
+                Width = flowList.ClientSize.Width - 200,
                 BorderStyle = BorderStyle.FixedSingle,
                 Margin = new Padding(5)
             };
@@ -311,7 +311,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             table.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 170)); // Ảnh
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 380)); // Info
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 380)); // Info
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));         // Online
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));        // Offline
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));       // Xóa
