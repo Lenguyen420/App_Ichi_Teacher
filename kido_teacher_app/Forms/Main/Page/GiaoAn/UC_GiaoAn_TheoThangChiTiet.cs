@@ -361,25 +361,33 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // =======================
             // CỘT 3: XEM ONLINE
             // =======================
-            Panel online = new Panel { Dock = DockStyle.Fill };
+            FlowLayoutPanel online = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                Padding = new Padding(0),
+                AutoScroll = false
+            };
 
             online.Controls.Add(new Label
             {
                 Text = "Xem Online",
                 ForeColor = Color.Green,
-                Dock = DockStyle.Top,
                 Height = 24,
+                Width = 170,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                Margin = new Padding(0, 0, 0, 6)
             });
 
             Button btnPdfOn = CreateSimpleButton("Giáo án PDF", Color.Green);
             Button btnVideoOn = CreateSimpleButton("Video dạy mẫu", Color.Green);
             Button btnLessonOn = CreateSimpleButton("Bài giảng E-Learning", Color.Green);
 
-            btnPdfOn.Top = 30;
-            btnVideoOn.Top = 65;
-            btnLessonOn.Top = 100;
+            btnPdfOn.Margin = new Padding(20, 0, 0, 6);
+            btnVideoOn.Margin = new Padding(20, 0, 0, 6);
+            btnLessonOn.Margin = new Padding(20, 0, 0, 0);
 
             btnPdfOn.Click += (s, e) => OpenOnline(pdfOnline, title);
             btnVideoOn.Click += (s, e) => OpenOnline(videoOnline, title);
@@ -391,16 +399,24 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // =======================
             // CỘT 4: XEM OFFLINE
             // =======================
-            Panel offline = new Panel { Dock = DockStyle.Fill };
+            FlowLayoutPanel offline = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                Padding = new Padding(0),
+                AutoScroll = false
+            };
 
             offline.Controls.Add(new Label
             {
                 Text = "Xem Offline",
                 ForeColor = Color.Blue,
-                Dock = DockStyle.Top,
                 Height = 24,
+                Width = 170,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                Margin = new Padding(0, 0, 0, 6)
             });
 
                       
@@ -414,9 +430,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             btnVideoOff.Enabled = false;
             btnLessonOff.Enabled = false;
 
-            btnPdfOff.Top = 30;
-            btnVideoOff.Top = 65;
-            btnLessonOff.Top = 100;
+            btnPdfOff.Margin = new Padding(20, 0, 0, 6);
+            btnVideoOff.Margin = new Padding(20, 0, 0, 6);
+            btnLessonOff.Margin = new Padding(20, 0, 0, 0);
 
             offline.Controls.AddRange(new Control[] { btnPdfOff, btnVideoOff, btnLessonOff });
 
@@ -425,7 +441,14 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // =======================
             // CỘT 5: XÓA + CHƯA TẢI
             // =======================
-            Panel deleteCol = new Panel { Dock = DockStyle.Fill };
+            FlowLayoutPanel deleteCol = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                Padding = new Padding(0),
+                AutoScroll = false
+            };
 
             Button btnDelete = new Button
             {
@@ -434,17 +457,20 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 Height = 28,
                 ForeColor = Color.Red,
                 FlatStyle = FlatStyle.Flat,
-                Top = 0,
-                Left = 20
+                Margin = new Padding(20, 0, 0, 6)
             };
 
             
             btnDelete.Click -= BtnDeleteOffline_Click;
             btnDelete.Click += BtnDeleteOffline_Click;
 
-            Button btnDown1 = CreateSimpleGrayButton("Chưa tải", 35);
-            Button btnDown2 = CreateSimpleGrayButton("Chưa tải", 70);
-            Button btnDown3 = CreateSimpleGrayButton("Chưa tải", 105);
+            Button btnDown1 = CreateSimpleGrayButton("Chưa tải");
+            Button btnDown2 = CreateSimpleGrayButton("Chưa tải");
+            Button btnDown3 = CreateSimpleGrayButton("Chưa tải");
+
+            btnDown1.Margin = new Padding(20, 0, 0, 6);
+            btnDown2.Margin = new Padding(20, 0, 0, 6);
+            btnDown3.Margin = new Padding(20, 0, 0, 0);
 
 
             var offlineState = new OfflineLectureState();
@@ -655,12 +681,11 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 Width = 170,
                 Height = 30,
                 ForeColor = color,
-                FlatStyle = FlatStyle.Flat,
-                Left = 20
+                FlatStyle = FlatStyle.Flat
             };
         }
 
-        private Button CreateSimpleGrayButton(string text, int top)
+        private Button CreateSimpleGrayButton(string text)
         {
             return new Button
             {
@@ -668,14 +693,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 Width = 120,
                 Height = 28,
                 ForeColor = Color.Gray,
-                FlatStyle = FlatStyle.Flat,
-                Top = top,
-                Left = 20
+                FlatStyle = FlatStyle.Flat
             };
         }
-
-
-
 
         // sự kiện xóa
         private async void BtnDeleteOffline_Click(object? sender, EventArgs e)
