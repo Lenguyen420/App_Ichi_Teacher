@@ -62,6 +62,7 @@
 //    }
 //}
 using kido_teacher_app.Config;
+using kido_teacher_app.Services;
 using System;
 using System.IO;
 using System.Windows.Forms;
@@ -88,6 +89,12 @@ namespace kido_teacher_app
 
             //  CHỈ GỌI 1 LẦN – TRƯỚC MỌI FORM
             ApplicationConfiguration.Initialize();
+
+            var ok = VersionCheckService.CheckAsync().GetAwaiter().GetResult();
+            if (!ok)
+            {
+                return;
+            }
 
             // ===== INIT DATA FOLDER =====
             string basePath = Path.Combine(

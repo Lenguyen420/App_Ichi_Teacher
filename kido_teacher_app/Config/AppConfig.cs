@@ -22,6 +22,17 @@ namespace kido_teacher_app.Config
         public static string ApiBaseUrl =>
             ConfigurationManager.AppSettings["ApiBaseUrl"];
 
+        public static string VersionJsonUrl =>
+            ConfigurationManager.AppSettings["VersionJsonUrl"]
+            ?? $"{ApiBaseUrl}/uploads/ichiteacher/version.json";
+
+        public static string UpdateVersionApiUrl =>
+            ConfigurationManager.AppSettings["UpdateVersionApiUrl"]
+            ?? $"{ApiBaseUrl}/updateversion";
+
+        public static string UpdateVersionApiToken =>
+            ConfigurationManager.AppSettings["UpdateVersionApiToken"];
+
         // ROOT APPDATA (LocalApplicationData)
         public static string AppDataRoot =
             Path.Combine(

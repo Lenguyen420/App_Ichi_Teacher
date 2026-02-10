@@ -1,0 +1,22 @@
+{
+  "Project": "kido_teacher_app/kido_teacher_app.csproj",
+  "Configuration": "Release",
+  "PublishDir": "kido_teacher_app/bin/Publish/ClickOnce",
+  "PublishProfile": "ClickOnce",
+  "VersionFile": "version.json",
+  "PackagePrefix": "ichiteacher",
+  "DownloadBaseUrl": "http://160.250.132.143:3001/uploads/ichiteacher",
+  "ApiBaseUrl": "http://160.250.132.143:3001",
+  "UpdateVersionEndpoint": "/updateversion",
+  "UpdateVersionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhMTExMTExMS0xMTExLTExMTEtMTExMS0xMTExMTExMTExMTEiLCJ1c2VyVHlwZSI6IkFETUlOIiwiZGV2aWNlSWQiOiJkZXZpY2UtMTIzNDUiLCJpYXQiOjE3NzA3NDkyMDUsImV4cCI6MTgwMjI4NTIwNX0.2CTaCQf96D_ISQI6z7kDlc43heg8TSNDnnqxFHoLIKI",
+  "UseUpdateVersionApi": true,
+  "Server": {
+    "Host": "160.250.132.143",
+    "Port": 22,
+    "User": "root",
+    "RemoteDir": "/var/www/uploads/ichiteacher",
+    "KeyPath": ""
+  },
+  "SshBatchMode": false,
+  "ScpExe": "scp"
+}
