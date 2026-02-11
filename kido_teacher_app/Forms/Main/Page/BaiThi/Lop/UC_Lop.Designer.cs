@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
 {
-    partial class UC_Lop1
+    partial class UC_Lop
     {
         private FlowLayoutPanel flowContent;
 

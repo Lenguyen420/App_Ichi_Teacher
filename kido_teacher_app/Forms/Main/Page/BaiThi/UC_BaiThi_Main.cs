@@ -45,7 +45,7 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi
 
             panelContent.Controls.Clear();
 
-            var uc = new UC_Lop1(panelContent, cls)
+            var uc = new UC_Lop(panelContent, cls)
             {
                 Dock = DockStyle.Fill
             };

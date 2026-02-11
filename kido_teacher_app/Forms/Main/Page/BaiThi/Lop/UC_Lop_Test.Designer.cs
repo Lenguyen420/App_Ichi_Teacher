@@ -1,6 +1,6 @@
 ﻿namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
 {
-    partial class UC_Lop1_Test
+    partial class UC_Lop_Test
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -25,8 +25,9 @@
         private Panel panelSubmit;
         private Panel panelIndex;
         // lưu button index theo số câu
-       // private Dictionary<int, Button> questionIndexButtons = new Dictionary<int, Button>();
+        // private Dictionary<int, Button> questionIndexButtons = new Dictionary<int, Button>();
 
+      
 
         protected override void Dispose(bool disposing)
         {
@@ -134,6 +135,9 @@
             btnSubmit.Text = "NỘP BÀI";
             btnSubmit.Dock = DockStyle.Fill;
             btnSubmit.Height = 40;
+            btnSubmit.Click += BtnSubmit_Click;
+
+
 
             btnSubmit.FlatStyle = FlatStyle.Flat;
             btnSubmit.FlatAppearance.BorderColor = Color.DodgerBlue;
@@ -213,25 +217,26 @@
         #endregion
 
         // ================= QUESTION =================
-        private System.Windows.Forms.GroupBox CreateQuestion(int index)
+        private Panel CreateQuestion(int index)
         {
-            var gb = new System.Windows.Forms.GroupBox();
-            gb.Text = $"{index}. Nội dung câu hỏi mẫu";
-            gb.Width = 780;
-            gb.Height = 180;
-            gb.Font = new Font("Segoe UI", 11F);
-            gb.Padding = new Padding(10);
+            var card = new Panel();
+            card.Width = 780;
+            card.Height = 200;
+            card.BackColor = Color.White;
+            card.Margin = new Padding(10);
+            card.Padding = new Padding(15);
+            //card.BorderStyle = BorderStyle.FixedSingle;
 
-            // ===== TABLE LAYOUT =====
-            var table = new TableLayoutPanel();
-            table.Dock = DockStyle.Fill;
-            table.ColumnCount = 2;
-            table.RowCount = 2;
+            // ===== LABEL CÂU HỎI =====
+            var lblQuestion = new Label();
+            lblQuestion.Text = $"Câu {index}: Nội dung câu hỏi mẫu";
+            lblQuestion.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            lblQuestion.AutoSize = false;
+            lblQuestion.Width = 740;
+            lblQuestion.Height = 35;
+            lblQuestion.Location = new Point(10, 10);
 
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            table.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            table.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            card.Controls.Add(lblQuestion);
 
             string[] answers =
             {
@@ -241,36 +246,38 @@
         "D. Đáp án D"
     };
 
-            for (int i = 0; i < 4; i++)
+            int correctIndex = 1; // ví dụ đáp án đúng là B
+            int top = 55;
+
+            for (int i = 0; i < answers.Length; i++)
             {
+                int answerIndex = i;
+
                 var rb = new RadioButton();
                 rb.Text = answers[i];
+                rb.Width = 730;
+                rb.Height = 30;
+                rb.Location = new Point(20, top);
                 rb.Font = new Font("Segoe UI", 10.5F);
-                rb.Dock = DockStyle.Fill;
-                rb.Padding = new Padding(5);
-                rb.AutoSize = true;
+                rb.Tag = answerIndex; // lưu index
+                rb.BackColor = Color.White;
+
                 rb.CheckedChanged += (s, e) =>
                 {
                     if (rb.Checked)
-                        OnAnswerSelected(index);
+                    {
+                        OnAnswerSelected(index, answerIndex);
+                    }
                 };
-                table.Controls.Add(rb, i % 2, i / 2);
+
+                card.Controls.Add(rb);
+                top += 35;
             }
 
-            gb.Controls.Add(table);
-            return gb;
-        }
-        private void ExamTimer_Tick(object sender, EventArgs e)
-        {
-            if (remainingTime.TotalSeconds <= 0)
-            {
-                examTimer.Stop();
-                MessageBox.Show("Hết giờ làm bài!");
-                return;
-            }
+            // Lưu đáp án đúng vào Tag của card
+            card.Tag = correctIndex;
 
-            remainingTime = remainingTime.Subtract(TimeSpan.FromSeconds(1));
-            lblTime.Text = $"Thời gian làm bài:\n{remainingTime:mm\\:ss}";
+            return card;
         }
 
     }

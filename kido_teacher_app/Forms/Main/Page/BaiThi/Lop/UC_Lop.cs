@@ -6,12 +6,12 @@ using System.Windows.Forms;
 
 namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
 {
-    public partial class UC_Lop1 : UserControl
+    public partial class UC_Lop : UserControl
     {
         private readonly Panel parentContainer;
         private readonly ClassDto currentClass;
 
-        public UC_Lop1(Panel parent, ClassDto cls)
+        public UC_Lop(Panel parent, ClassDto cls)
         {
             InitializeComponent();
             parentContainer = parent;
@@ -51,7 +51,8 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
                 Image = item.Image,
                 Size = new Size(120, 120),
                 Location = new Point(12, 15),
-                SizeMode = PictureBoxSizeMode.Zoom
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Cursor = Cursors.Hand
             };
 
             var lblTitle = new Label
@@ -60,7 +61,8 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
                 Font = new Font("Segoe UI", 12),
                 Location = new Point(150, 20),
                 Size = new Size(450, 60),
-                AutoEllipsis = true
+                AutoEllipsis = true,
+                Cursor = Cursors.Hand
             };
 
             var lblCount = new Label
@@ -70,38 +72,20 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
                 Size = new Size(70, 30),
                 Location = new Point(150, 95),
                 TextAlign = ContentAlignment.MiddleCenter,
-                BackColor = Color.FromArgb(245, 245, 245)
+                BackColor = Color.FromArgb(245, 245, 245),
+                Cursor = Cursors.Hand
             };
 
-            card.Controls.AddRange(new Control[] { pic, lblTitle, lblCount });
-
-            card.Click += (s, e) =>
+            // ⭐ HÀNH ĐỘNG KHI CLICK CARD
+            void OpenChiTiet(object sender, EventArgs e)
             {
-                // ⭐ GÁN ĐỀ THI MẪU TRƯỚC KHI MỞ CHI TIẾT
+                // GÁN ĐỀ THI MẪU
                 currentClass.exams = new List<ExamDto>
-    {
-        new ExamDto
         {
-            title = "Đề số 1 - Alphabet",
-            subject = "Tiếng Anh",
-            level = "Dễ",
-            time = 30
-        },
-        new ExamDto
-        {
-            title = "Đề số 2 - Numbers",
-            subject = "Tiếng Anh",
-            level = "Trung bình",
-            time = 40
-        },
-        new ExamDto
-        {
-            title = "Đề số 3 - Colors",
-            subject = "Tiếng Anh",
-            level = "Khó",
-            time = 45
-        }
-    };
+            new ExamDto { title = "Đề số 1 - Alphabet", subject = "Tiếng Anh", level = "Dễ", time = 30 },
+            new ExamDto { title = "Đề số 2 - Numbers",  subject = "Tiếng Anh", level = "Trung bình", time = 40 },
+            new ExamDto { title = "Đề số 3 - Colors",   subject = "Tiếng Anh", level = "Khó", time = 45 }
+        };
 
                 parentContainer.Controls.Clear();
 
@@ -111,7 +95,16 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
                 };
 
                 parentContainer.Controls.Add(ct);
-            };
+            }
+
+            // ⭐ GÁN CLICK CHO TẤT CẢ
+            card.Click += OpenChiTiet;
+            pic.Click += OpenChiTiet;
+            lblTitle.Click += OpenChiTiet;
+            lblCount.Click += OpenChiTiet;
+
+            card.Controls.AddRange(new Control[] { pic, lblTitle, lblCount });
+
             return card;
         }
 

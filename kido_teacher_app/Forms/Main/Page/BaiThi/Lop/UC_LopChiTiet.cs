@@ -145,7 +145,7 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             parent.Controls.Clear();
 
              
-            UC_Lop1 uc = new UC_Lop1((Panel)parent, currentClass);
+            UC_Lop uc = new UC_Lop((Panel)parent, currentClass);
             uc.Dock = DockStyle.Fill;
 
             parent.Controls.Add(uc);
@@ -296,7 +296,7 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             {
                 parentContainer.Controls.Clear();
 
-                var ucTest = new UC_Lop1_Test(parentContainer, currentClass)
+                var ucTest = new UC_Lop_Test(parentContainer, currentClass)
                 {
                     Dock = DockStyle.Fill
                 };
