@@ -90,9 +90,10 @@ namespace kido_teacher_app
             //  CHỈ GỌI 1 LẦN – TRƯỚC MỌI FORM
             ApplicationConfiguration.Initialize();
 
-            var ok = VersionCheckService.CheckAsync().GetAwaiter().GetResult();
-            if (!ok)
+            var autoLoggedIn = AuthService.TryLoginWithSavedTokenAsync().GetAwaiter().GetResult();
+            if (autoLoggedIn)
             {
+                Application.Run(new Main_Form());
                 return;
             }
 

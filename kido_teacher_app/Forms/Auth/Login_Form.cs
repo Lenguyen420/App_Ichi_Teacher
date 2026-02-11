@@ -44,6 +44,15 @@ namespace kido_teacher_app
                     deviceId
                 );
 
+                if (rememberCheck.Checked)
+                {
+                    AuthService.SaveRememberToken(AuthSession.AccessToken);
+                }
+                else
+                {
+                    AuthService.ClearRememberToken();
+                }
+
                 // AuthService đã set:
                 // AuthSession.AccessToken
                 // AuthSession.UserId

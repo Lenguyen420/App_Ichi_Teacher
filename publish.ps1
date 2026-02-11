@@ -72,16 +72,24 @@ else {
 }
 $newVersionDisplay = "{0}.{1}.{2}" -f $newVersion.Major, $newVersion.Minor, $newVersion.Build
 $assemblyVersion = "$newVersionDisplay.0"
+$publishVersion = $assemblyVersion
 
 $packagePrefix = if ($config.PackagePrefix) { $config.PackagePrefix } else { "ichiteacher" }
 $zipName = "$packagePrefix-$newVersionDisplay.zip"
 $downloadBase = if ($config.DownloadBaseUrl) { $config.DownloadBaseUrl.TrimEnd("/") } else { "" }
+$clickOnceAppFile = if ($config.ClickOnceApplicationFile) { $config.ClickOnceApplicationFile } else { "" }
+$clickOnceAppFileEncoded = if ($clickOnceAppFile) { [System.Uri]::EscapeDataString($clickOnceAppFile) } else { "" }
 
 if (-not $NoBump) {
     $versionJson.latestVersion = $newVersionDisplay
 }
 if ($downloadBase) {
-    $versionJson.downloadUrl = "$downloadBase/$zipName"
+    if ($clickOnceAppFileEncoded) {
+        $versionJson.downloadUrl = "$downloadBase/$clickOnceAppFileEncoded"
+    }
+    else {
+        $versionJson.downloadUrl = "$downloadBase/$zipName"
+    }
 }
 
 if (-not $NoBump) {
@@ -97,16 +105,24 @@ if ($publishProfile) {
     dotnet publish $projectPath -c $configuration `
         /p:PublishProfile=$publishProfile `
         /p:ApplicationVersion=$assemblyVersion `
+        /p:PublishVersion=$publishVersion `
         /p:Version=$assemblyVersion `
         /p:AssemblyVersion=$assemblyVersion `
         /p:FileVersion=$assemblyVersion
 }
 else {
     dotnet publish $projectPath -c $configuration -o $publishDir `
+        /p:PublishVersion=$publishVersion `
         /p:Version=$assemblyVersion `
         /p:AssemblyVersion=$assemblyVersion `
         /p:FileVersion=$assemblyVersion
 }
+
+$publishVersionPath = Join-Path $publishDir (Split-Path $versionFile -Leaf)
+Copy-Item -Path $versionFile -Destination $publishVersionPath -Force
+
+$versionTxtPath = Join-Path $publishDir "version.txt"
+Set-Content -Path $versionTxtPath -Value $newVersionDisplay -Encoding UTF8
 
 $zipPath = Join-Path $publishDir $zipName
 if (Test-Path $zipPath) {

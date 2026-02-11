@@ -20,7 +20,7 @@ namespace kido_teacher_app.Services
         {
             try
             {
-                var json = await LoadLocalVersionJsonAsync();
+                var json = await LoadServerVersionJsonAsync();
                 if (string.IsNullOrWhiteSpace(json))
                 {
                     return true;
@@ -32,7 +32,8 @@ namespace kido_teacher_app.Services
                     return true;
                 }
 
-                var currentVersion = GetCurrentVersion();
+                EnsureLocalVersionFile(server.LatestVersion);
+                var currentVersion = GetLocalVersion();
                 if (currentVersion == null)
                 {
                     return true;
@@ -74,21 +75,24 @@ namespace kido_teacher_app.Services
             return true;
         }
 
-        private static Task<string?> LoadLocalVersionJsonAsync()
+        private static async Task<string?> LoadServerVersionJsonAsync()
         {
             try
             {
-                var path = Path.Combine(Application.StartupPath, "version.json");
-                if (!File.Exists(path))
+                var url = AppConfig.UpdateVersionApiUrl;
+                if (string.IsNullOrWhiteSpace(url))
                 {
-                    return Task.FromResult<string?>(null);
+                    return null;
                 }
 
-                return Task.FromResult<string?>(File.ReadAllText(path));
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                var response = await http.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync();
             }
             catch
             {
-                return Task.FromResult<string?>(null);
+                return null;
             }
         }
 
@@ -150,6 +154,72 @@ namespace kido_teacher_app.Services
             var build = v.Build < 0 ? 0 : v.Build;
             var rev = v.Revision < 0 ? 0 : v.Revision;
             return new Version(major, minor, build, rev);
+        }
+
+        private static string GetLocalVersionPath()
+        {
+            return Path.Combine(AppConfig.AppDataRoaming, "version.txt");
+        }
+
+        private static void EnsureLocalVersionFile(string? initialVersion)
+        {
+            try
+            {
+                Directory.CreateDirectory(AppConfig.AppDataRoaming);
+                var path = GetLocalVersionPath();
+                if (File.Exists(path))
+                {
+                    return;
+                }
+
+                var versionText = !string.IsNullOrWhiteSpace(initialVersion)
+                    ? initialVersion
+                    : GetCurrentVersionText();
+                if (string.IsNullOrWhiteSpace(versionText))
+                {
+                    return;
+                }
+
+                File.WriteAllText(path, versionText);
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        private static Version? GetLocalVersion()
+        {
+            try
+            {
+                var path = GetLocalVersionPath();
+                if (File.Exists(path))
+                {
+                    var text = File.ReadAllText(path).Trim();
+                    if (Version.TryParse(text, out var v))
+                    {
+                        return v;
+                    }
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+
+            return GetCurrentVersion();
+        }
+
+        private static string? GetCurrentVersionText()
+        {
+            var v = GetCurrentVersion();
+            if (v == null)
+            {
+                return null;
+            }
+
+            var normalized = NormalizeVersion(v);
+            return $"{normalized.Major}.{normalized.Minor}.{normalized.Build}";
         }
     }
 }

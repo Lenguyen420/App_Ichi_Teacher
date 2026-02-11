@@ -5,6 +5,7 @@
   "PublishProfile": "ClickOnce",
   "VersionFile": "version.json",
   "PackagePrefix": "ichiteacher",
+  "ClickOnceApplicationFile": "Kido Teacher.application",
   "DownloadBaseUrl": "http://160.250.132.143:3001/uploads/ichiteacher",
   "ApiBaseUrl": "http://160.250.132.143:3001",
   "UpdateVersionEndpoint": "/updateversion",
