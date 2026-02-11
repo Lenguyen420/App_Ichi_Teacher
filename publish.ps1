@@ -75,7 +75,6 @@ $assemblyVersion = "$newVersionDisplay.0"
 $publishVersion = $assemblyVersion
 
 $packagePrefix = if ($config.PackagePrefix) { $config.PackagePrefix } else { "ichiteacher" }
-$zipName = "$packagePrefix-$newVersionDisplay.zip"
 $downloadBase = if ($config.DownloadBaseUrl) { $config.DownloadBaseUrl.TrimEnd("/") } else { "" }
 $clickOnceAppFile = if ($config.ClickOnceApplicationFile) { $config.ClickOnceApplicationFile } else { "" }
 $clickOnceAppFileEncoded = if ($clickOnceAppFile) { [System.Uri]::EscapeDataString($clickOnceAppFile) } else { "" }
@@ -124,18 +123,6 @@ Copy-Item -Path $versionFile -Destination $publishVersionPath -Force
 $versionTxtPath = Join-Path $publishDir "version.txt"
 Set-Content -Path $versionTxtPath -Value $newVersionDisplay -Encoding UTF8
 
-$zipPath = Join-Path $publishDir $zipName
-if (Test-Path $zipPath) {
-    Remove-Item $zipPath -Force
-}
-
-$items = Get-ChildItem -Path $publishDir -Force | Where-Object { $_.FullName -ne $zipPath }
-if ($items.Count -eq 0) {
-    throw "Publish directory is empty: $publishDir"
-}
-
-Compress-Archive -Path $items.FullName -DestinationPath $zipPath -Force
-
 if ($config.UseUpdateVersionApi) {
     $apiBase = if ($config.ApiBaseUrl) { $config.ApiBaseUrl.TrimEnd("/") } else { "" }
     $endpoint = if ($config.UpdateVersionEndpoint) { $config.UpdateVersionEndpoint } else { "/updateversion" }
@@ -175,6 +162,8 @@ if (-not $server -or -not $server.Host -or -not $server.User -or -not $server.Re
 }
 
 $scpExe = if ($config.ScpExe) { $config.ScpExe } else { "scp" }
+$sshExe = if ($config.SshExe) { $config.SshExe } else { "ssh" }
+$uploadPublishDir = if ($null -ne $config.UploadPublishDir) { [bool]$config.UploadPublishDir } else { $false }
 $scpArgs = @()
 if ($server.Port) {
     $scpArgs += "-P"
@@ -198,8 +187,42 @@ if ($server.KeyPath) {
 
 $remote = "$($server.User)@$($server.Host):$($server.RemoteDir)"
 
-Write-Host "Uploading package..."
-& $scpExe @scpArgs $zipPath $remote
+if ($uploadPublishDir) {
+    $sshArgs = @()
+    if ($server.Port) {
+        $sshArgs += "-p"
+        $sshArgs += "$($server.Port)"
+    }
+    if ($sshBatchMode) {
+        $sshArgs += "-o"
+        $sshArgs += "BatchMode=yes"
+    }
+    $sshArgs += "-o"
+    $sshArgs += "ConnectTimeout=15"
+    if ($server.KeyPath) {
+        $keyPath = Resolve-FromRoot $server.KeyPath
+        $sshArgs += "-i"
+        $sshArgs += $keyPath
+    }
+
+    $sshTarget = "$($server.User)@$($server.Host)"
+    $remoteDirEscaped = $server.RemoteDir.Replace("'", "''")
+    & $sshExe @sshArgs $sshTarget "mkdir -p '$remoteDirEscaped'"
+
+    Write-Host "Uploading ClickOnce publish directory..."
+    $itemsToUpload = Get-ChildItem -Path $publishDir -Force
+    foreach ($item in $itemsToUpload) {
+        if ($item.PSIsContainer) {
+            & $scpExe @scpArgs -r $item.FullName $remote
+        }
+        else {
+            & $scpExe @scpArgs $item.FullName $remote
+        }
+    }
+}
+else {
+    Write-Host "UploadPublishDir=false. Skipping publish dir upload."
+}
 
 Write-Host "Uploading version.json..."
 & $scpExe @scpArgs $versionFile $remote

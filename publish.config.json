@@ -7,6 +7,7 @@
   "PackagePrefix": "ichiteacher",
   "ClickOnceApplicationFile": "Kido Teacher.application",
   "DownloadBaseUrl": "http://160.250.132.143:3001/uploads/ichiteacher",
+  "UploadPublishDir": true,
   "ApiBaseUrl": "http://160.250.132.143:3001",
   "UpdateVersionEndpoint": "/updateversion",
   "UpdateVersionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhMTExMTExMS0xMTExLTExMTEtMTExMS0xMTExMTExMTExMTEiLCJ1c2VyVHlwZSI6IkFETUlOIiwiZGV2aWNlSWQiOiJkZXZpY2UtMTIzNDUiLCJpYXQiOjE3NzA3NDkyMDUsImV4cCI6MTgwMjI4NTIwNX0.2CTaCQf96D_ISQI6z7kDlc43heg8TSNDnnqxFHoLIKI",
