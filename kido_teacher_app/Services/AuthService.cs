@@ -13,10 +13,10 @@ namespace kido_teacher_app.Services
 
         //admin
         public static async Task<LoginResponseDto?> LoginAdminAsync(
-    string username,
-    string password,
-    string deviceId
-)
+            string username,
+            string password,
+            string deviceId
+        )
         {
             using var client = new HttpClient();
             client.Timeout = TimeSpan.FromSeconds(20);
