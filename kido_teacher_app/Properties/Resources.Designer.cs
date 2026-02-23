@@ -173,6 +173,16 @@ namespace kido_teacher_app.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap icon_baithi1 {
+            get {
+                object obj = ResourceManager.GetObject("icon_baithi1", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap icon_book {
             get {
                 object obj = ResourceManager.GetObject("icon_book", resourceCulture);
@@ -246,6 +256,16 @@ namespace kido_teacher_app.Properties {
         internal static System.Drawing.Bitmap icon_info {
             get {
                 object obj = ResourceManager.GetObject("icon_info", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap icon_LichSuBaiThi {
+            get {
+                object obj = ResourceManager.GetObject("icon_LichSuBaiThi", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

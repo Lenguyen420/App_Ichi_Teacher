@@ -249,6 +249,7 @@
             int correctIndex = 1; // ví dụ đáp án đúng là B
             int top = 55;
 
+
             for (int i = 0; i < answers.Length; i++)
             {
                 int answerIndex = i;
