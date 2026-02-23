@@ -17,6 +17,15 @@ function Resolve-FromRoot {
     return Join-Path $root $Path
 }
 
+function Get-ConfigValue {
+    param([object]$Config, [string]$Name)
+    if ($null -eq $Config) { return $null }
+    if ($Config.PSObject.Properties.Name -contains $Name) {
+        return $Config.$Name
+    }
+    return $null
+}
+
 function Normalize-Version {
     param([Version]$Version)
     $major = $Version.Major
@@ -44,11 +53,13 @@ if (-not (Test-Path $configFullPath)) {
 
 $config = Get-Content $configFullPath -Raw | ConvertFrom-Json
 
-$projectPath = Resolve-FromRoot $config.Project
-$publishDir = Resolve-FromRoot $config.PublishDir
-$versionFile = Resolve-FromRoot $config.VersionFile
-$configuration = if ($config.Configuration) { $config.Configuration } else { "Release" }
-$publishProfile = if ($config.PublishProfile) { $config.PublishProfile } else { "" }
+$projectPath = Resolve-FromRoot (Get-ConfigValue $config "Project")
+$publishDir = Resolve-FromRoot (Get-ConfigValue $config "PublishDir")
+$versionFile = Resolve-FromRoot (Get-ConfigValue $config "VersionFile")
+$configuration = (Get-ConfigValue $config "Configuration")
+if (-not $configuration) { $configuration = "Release" }
+$publishProfile = (Get-ConfigValue $config "PublishProfile")
+if (-not $publishProfile) { $publishProfile = "" }
 
 if (-not (Test-Path $projectPath)) {
     throw "Project not found: $projectPath"
@@ -74,9 +85,11 @@ $newVersionDisplay = "{0}.{1}.{2}" -f $newVersion.Major, $newVersion.Minor, $new
 $assemblyVersion = "$newVersionDisplay.0"
 $publishVersion = $assemblyVersion
 
-$packagePrefix = if ($config.PackagePrefix) { $config.PackagePrefix } else { "ichiteacher" }
+$packagePrefix = (Get-ConfigValue $config "PackagePrefix")
+if (-not $packagePrefix) { $packagePrefix = "ichiteacher" }
 $downloadBase = if ($config.DownloadBaseUrl) { $config.DownloadBaseUrl.TrimEnd("/") } else { "" }
-$clickOnceAppFile = if ($config.ClickOnceApplicationFile) { $config.ClickOnceApplicationFile } else { "" }
+$clickOnceAppFile = (Get-ConfigValue $config "ClickOnceApplicationFile")
+if (-not $clickOnceAppFile) { $clickOnceAppFile = "" }
 $clickOnceAppFileEncoded = if ($clickOnceAppFile) { [System.Uri]::EscapeDataString($clickOnceAppFile) } else { "" }
 
 if (-not $NoBump) {
@@ -124,9 +137,12 @@ $versionTxtPath = Join-Path $publishDir "version.txt"
 Set-Content -Path $versionTxtPath -Value $newVersionDisplay -Encoding UTF8
 
 if ($config.UseUpdateVersionApi) {
-    $apiBase = if ($config.ApiBaseUrl) { $config.ApiBaseUrl.TrimEnd("/") } else { "" }
-    $endpoint = if ($config.UpdateVersionEndpoint) { $config.UpdateVersionEndpoint } else { "/updateversion" }
-    $token = if ($config.UpdateVersionToken) { $config.UpdateVersionToken } else { "" }
+    $apiBase = (Get-ConfigValue $config "ApiBaseUrl")
+    if ($apiBase) { $apiBase = $apiBase.TrimEnd("/") }
+    $endpoint = (Get-ConfigValue $config "UpdateVersionEndpoint")
+    if (-not $endpoint) { $endpoint = "/updateversion" }
+    $token = (Get-ConfigValue $config "UpdateVersionToken")
+    if (-not $token) { $token = "" }
 
     if (-not $apiBase) {
         throw "ApiBaseUrl is required when UseUpdateVersionApi=true"
@@ -161,17 +177,21 @@ if (-not $server -or -not $server.Host -or -not $server.User -or -not $server.Re
     exit 0
 }
 
-$scpExe = if ($config.ScpExe) { $config.ScpExe } else { "scp" }
-$sshExe = if ($config.SshExe) { $config.SshExe } else { "ssh" }
-$uploadPublishDir = if ($null -ne $config.UploadPublishDir) { [bool]$config.UploadPublishDir } else { $false }
+$scpExe = (Get-ConfigValue $config "ScpExe")
+if (-not $scpExe) { $scpExe = "scp" }
+$sshExe = (Get-ConfigValue $config "SshExe")
+if (-not $sshExe) { $sshExe = "ssh" }
+$uploadPublishDirValue = Get-ConfigValue $config "UploadPublishDir"
+$uploadPublishDir = if ($null -ne $uploadPublishDirValue) { [bool]$uploadPublishDirValue } else { $false }
 $scpArgs = @()
 if ($server.Port) {
     $scpArgs += "-P"
     $scpArgs += "$($server.Port)"
 }
 $sshBatchMode = $true
-if ($null -ne $config.SshBatchMode) {
-    $sshBatchMode = [bool]$config.SshBatchMode
+$sshBatchModeValue = Get-ConfigValue $config "SshBatchMode"
+if ($null -ne $sshBatchModeValue) {
+    $sshBatchMode = [bool]$sshBatchModeValue
 }
 if ($sshBatchMode) {
     $scpArgs += "-o"
