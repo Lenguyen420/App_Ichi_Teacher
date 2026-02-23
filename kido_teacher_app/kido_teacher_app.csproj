@@ -7,7 +7,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>True</UseWPF>
-    <AssemblyName>Kido Teacher</AssemblyName>
+    <AssemblyName>Kido Student</AssemblyName>
     <UseAppHost>true</UseAppHost>
 
   </PropertyGroup>
