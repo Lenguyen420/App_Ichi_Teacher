@@ -12,11 +12,15 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
         private readonly Panel parentContainer;
         private   List<QuestionAnswerDto> results;
         private readonly ClassDto currentClass;
+        private int _examId;
 
+        private readonly KetQuaSource source;
         public UC_Lop_KetQua(
     Panel parentContainer,
     List<QuestionAnswerDto> results,
+    int examId,
     ClassDto currentClass)
+
         {
             InitializeComponent();
              flowKetQua.FlowDirection = FlowDirection.TopDown;
@@ -26,6 +30,8 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             this.parentContainer = parentContainer;
             this.results = results ?? new List<QuestionAnswerDto>();
             this.currentClass = currentClass;
+            this._examId = examId;
+            this.source = KetQuaSource.FromClass;
 
             flowKetQua.SizeChanged += (s, e) => ResizeCards();
 
@@ -35,9 +41,42 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             LoadKetQua();         // 👈 CHỈ GỌI 1 HÀM
             LoadThongKe();
             LoadDeThiMau();
+
+            InitUI();
         }
-       
-       
+
+        public UC_Lop_KetQua(
+    Panel parentContainer,
+    List<QuestionAnswerDto> results,
+    int examId)
+        {
+            InitializeComponent();
+
+            this.parentContainer = parentContainer;
+            this.results = results ?? new List<QuestionAnswerDto>();
+            this._examId = examId;
+            this.currentClass = null;
+            this.source = KetQuaSource.FromHistory;
+
+            InitUI();
+        }
+
+
+        private void InitUI()
+        {
+            flowKetQua.FlowDirection = FlowDirection.TopDown;
+            flowKetQua.WrapContents = false;
+            flowKetQua.AutoScroll = true;
+
+            flowKetQua.SizeChanged += (s, e) => ResizeCards();
+
+            if (results.Count == 0)
+                LoadFakeData();
+
+            LoadKetQua();
+            LoadThongKe();
+            LoadDeThiMau();
+        }
         private void LoadDeThiMau()
         {
             panelDeThi.Controls.Clear();
@@ -204,24 +243,51 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
         }
 
         // ================= LEFT =================
-        
+
 
         // ================= EVENTS =================
+        public enum KetQuaSource
+        {
+            FromClass,
+            FromHistory
+        }
+
         private void btnDong_Click(object sender, EventArgs e)
         {
             parentContainer.Controls.Clear();
-            parentContainer.Controls.Add(new UC_LopChiTiet(parentContainer, currentClass)
-            {
-                Dock = DockStyle.Fill
-            });
-        }
 
+            if (source == KetQuaSource.FromClass)
+            {
+                parentContainer.Controls.Add(
+                    new UC_LopChiTiet(parentContainer, currentClass)
+                    {
+                        Dock = DockStyle.Fill
+                    });
+            }
+            else if (source == KetQuaSource.FromHistory)
+            {
+                parentContainer.Controls.Add(
+                    new UC_LichSuBaiThi(parentContainer, currentClass)
+                    {
+                        Dock = DockStyle.Fill
+                    });
+            }
+        }
         private void btnLamLai_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Làm lại đề thi");
-        }
+            parentContainer.Controls.Clear();
 
-         
+            var test = new UC_Lop_Test(
+                parentContainer,
+                currentClass,
+                _examId
+            )
+            {
+                Dock = DockStyle.Fill
+            };
+
+            parentContainer.Controls.Add(test);
+        }
 
         private void LoadFakeData()
         {

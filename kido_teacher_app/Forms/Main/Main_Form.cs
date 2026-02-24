@@ -7,13 +7,14 @@ using kido_teacher_app.Services;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using kido_teacher_app.Model;
 
 namespace kido_teacher_app
 {
     public partial class Main_Form : Form
     {
         private Panel selectedMenu = null;
-
+        private ClassDto currentClass;
 
         public Main_Form()
         {
@@ -83,7 +84,8 @@ namespace kido_teacher_app
             else if (clickedMenu == menuLichSuBaiThi)
             {
                 SelectMenu(menuLichSuBaiThi);
-                ShowControl(new UC_LichSuBaiThi());
+                //ShowControl(new UC_LichSuBaiThi( ));
+                ShowControl(new UC_LichSuBaiThi(panelMain, currentClass));
             }
             //else if (clickedMenu == menuQLTaiKhoan)
             //{
@@ -145,6 +147,8 @@ namespace kido_teacher_app
             panelMain.Controls.Clear();
             panelMain.Controls.Add(uc);
         }
+
+        
 
     }
 }

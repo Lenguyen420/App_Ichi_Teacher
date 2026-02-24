@@ -1,17 +1,20 @@
-﻿using System;
+﻿using kido_teacher_app.Forms.Main.Page.BaiThi.Lop1;
+using kido_teacher_app.Model;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
-using System.Drawing.Drawing2D;
 
 namespace kido_teacher_app.Forms.Main.Page
 {
     public partial class UC_LichSuBaiThi : UserControl
     {
         private List<HistoryItem> historyData = new();
-
-        public UC_LichSuBaiThi()
+        private readonly ClassDto currentClass;
+        private readonly Panel parentContainer;
+        public UC_LichSuBaiThi(Panel parentContainer, ClassDto currentClass)
         {
             InitializeComponent();
             LoadFakeData();
@@ -28,6 +31,8 @@ namespace kido_teacher_app.Forms.Main.Page
             {
                 ApplyRoundedCorner(panelTableWrapper, 15);
             };
+            this.currentClass = currentClass;
+            this.parentContainer = parentContainer;
         }
 
         private void ApplyRoundedCorner(Panel panel, int radius)
@@ -55,13 +60,13 @@ namespace kido_teacher_app.Forms.Main.Page
         private void LoadFakeData()
         {
             historyData = new()
-            {
-                new("Bài 1 - Alphabet",1,DateTime.Now.AddDays(-5),8,"5 phút 20 giây"),
-                new("Bài 1 - Alphabet",2,DateTime.Now.AddDays(-4),6,"4 phút 12 giây"),
-                new("Bài 2 - Numbers",1,DateTime.Now.AddDays(-3),9,"3 phút 40 giây"),
-                new("Bài 3 - Colors",1,DateTime.Now.AddDays(-2),4,"6 phút 10 giây"),
-                new("Bài 3 - Colors",2,DateTime.Now.AddDays(-1),7,"4 phút 55 giây"),
-            };
+    {
+        new(1,"Bài 1 - Alphabet",1,DateTime.Now.AddDays(-5),8,"5 phút 20 giây"),
+        new(1,"Bài 1 - Alphabet",2,DateTime.Now.AddDays(-4),6,"4 phút 12 giây"),
+        new(2,"Bài 2 - Numbers",1,DateTime.Now.AddDays(-3),9,"3 phút 40 giây"),
+        new(3,"Bài 3 - Colors",1,DateTime.Now.AddDays(-2),4,"6 phút 10 giây"),
+        new(3,"Bài 3 - Colors",2,DateTime.Now.AddDays(-1),7,"4 phút 55 giây"),
+    };
         }
 
         private void LoadHistory()
@@ -129,6 +134,11 @@ namespace kido_teacher_app.Forms.Main.Page
                 FlatStyle = FlatStyle.Flat
             };
 
+            btnXem.Click += (s, e) =>
+            {
+                OpenKetQua(item);
+            };
+
             Button btnLamLai = new Button
             {
                 Text = "LÀM LẠI",
@@ -139,6 +149,10 @@ namespace kido_teacher_app.Forms.Main.Page
                 FlatStyle = FlatStyle.Flat
             };
             btnLamLai.FlatAppearance.BorderSize = 0;
+            btnLamLai.Click += (s, e) =>
+            {
+                OpenLamLai(item);
+            };
 
             actionPanel.Controls.Add(btnXem);
             actionPanel.Controls.Add(btnLamLai);
@@ -151,6 +165,52 @@ namespace kido_teacher_app.Forms.Main.Page
             row.Controls.Add(CreateCell(item.Title, 250, false));
 
             return row;
+        }
+
+        private void OpenLamLai(HistoryItem item)
+        {
+            parentContainer.Controls.Clear();
+
+            var test = new UC_Lop_Test(
+                parentContainer,
+                item.ExamId
+            )
+            {
+                Dock = DockStyle.Fill
+            };
+
+            parentContainer.Controls.Add(test);
+        }
+
+        private List<QuestionAnswerDto> GetResultByExamId(int examId)
+        {
+            return new List<QuestionAnswerDto>
+    {
+        new QuestionAnswerDto
+        {
+            QuestionText = "A là chữ gì?",
+            SelectedAnswer = "A",
+            CorrectAnswer = "A"
+        },
+        new QuestionAnswerDto
+        {
+            QuestionText = "B là chữ gì?",
+            SelectedAnswer = "C",
+            CorrectAnswer = "B"
+        }
+    };
+        }
+        private void OpenKetQua(HistoryItem item)
+        {
+            var ketQua = new UC_Lop_KetQua(
+                parentContainer,
+                GetResultByExamId(item.ExamId),
+                item.ExamId
+            );
+
+            parentContainer.Controls.Clear();
+            parentContainer.Controls.Add(ketQua);
+            ketQua.Dock = DockStyle.Fill;
         }
         private Label CreateCell(string text, int width, bool isHeader, int score = 0)
         {
@@ -178,14 +238,16 @@ namespace kido_teacher_app.Forms.Main.Page
 
     public class HistoryItem
     {
+        public int ExamId { get; set; }   // thêm cái này
         public string Title { get; set; }
         public int Attempt { get; set; }
         public DateTime Date { get; set; }
         public int Score { get; set; }
         public string Duration { get; set; }
 
-        public HistoryItem(string t, int a, DateTime d, int s, string du)
+        public HistoryItem(int id, string t, int a, DateTime d, int s, string du)
         {
+            ExamId = id;
             Title = t;
             Attempt = a;
             Date = d;

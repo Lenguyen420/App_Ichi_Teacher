@@ -18,19 +18,39 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             = new Dictionary<int, QuestionAnswerDto>();
 
         private Panel parentContainer;
-        private ClassDto currentClass;
+        private ClassDto? currentClass;
+        private int examId = 1;
 
+        private LopTestSource source;
+         
         public UC_Lop_Test()
         {
             InitializeComponent();
         }
 
-        public UC_Lop_Test(Panel parentContainer, ClassDto currentClass)
+        public UC_Lop_Test(Panel parentContainer, ClassDto? currentClass)
         {
             InitializeComponent();
 
             this.parentContainer = parentContainer;
             this.currentClass = currentClass;
+
+        }
+
+        public UC_Lop_Test(Panel parentContainer, int examId)
+        {
+            InitializeComponent();
+            this.parentContainer = parentContainer;
+            this.examId = examId;
+            this.source = LopTestSource.FromHistory;
+        }
+        public UC_Lop_Test(Panel parentContainer, ClassDto? currentClass, int examId)
+        {
+            InitializeComponent();
+            this.parentContainer = parentContainer;
+            this.currentClass = currentClass;
+            this.examId = examId;
+            this.source = LopTestSource.FromClass;
         }
 
         // =====================================================
@@ -112,6 +132,12 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
             SubmitExam();
         }
 
+        public enum LopTestSource
+        {
+            FromClass,
+            FromHistory
+        }
+
         private void SubmitExam()
         {
             examTimer.Stop();
@@ -135,7 +161,12 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
 
             parentContainer.Controls.Clear();
             parentContainer.Controls.Add(
-                new UC_Lop_KetQua(parentContainer, resultList, currentClass)
+                new UC_Lop_KetQua(
+                    parentContainer,
+                    resultList,
+                    examId,
+                    currentClass
+                )
                 {
                     Dock = DockStyle.Fill
                 }
@@ -155,17 +186,27 @@ namespace kido_teacher_app.Forms.Main.Page.BaiThi.Lop1
                 MessageBoxIcon.Question
             );
 
-            if (result == DialogResult.Yes)
-            {
-                examTimer.Stop();
+            if (result != DialogResult.Yes)
+                return;
 
-                parentContainer.Controls.Clear();
+            examTimer.Stop();
+            parentContainer.Controls.Clear();
+
+            if (source == LopTestSource.FromClass)
+            {
                 parentContainer.Controls.Add(
                     new UC_LopChiTiet(parentContainer, currentClass)
                     {
                         Dock = DockStyle.Fill
-                    }
-                );
+                    });
+            }
+            else if (source == LopTestSource.FromHistory)
+            {
+                parentContainer.Controls.Add(
+                    new UC_LichSuBaiThi(parentContainer, currentClass)
+                    {
+                        Dock = DockStyle.Fill
+                    });
             }
         }
     }
