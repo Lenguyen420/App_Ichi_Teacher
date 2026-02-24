@@ -1,5 +1,6 @@
 ﻿using kido_teacher_app.Config;
 using kido_teacher_app.Model;
+using kido_teacher_app.Shared.Network;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -14,6 +15,7 @@ namespace kido_teacher_app.Services
     public class AuthService
     {
         private const string TokenCheckPath = "/auth/token/check";
+        private const string TokenFileVersion = "v1";
         private static string TokenFilePath =>
             Path.Combine(AppConfig.AppDataRoaming, "token.txt");
 
@@ -132,7 +134,14 @@ namespace kido_teacher_app.Services
             }
 
             Directory.CreateDirectory(AppConfig.AppDataRoaming);
-            File.WriteAllText(TokenFilePath, token);
+            var exp = GetJwtExpiryUnixSeconds(token);
+            var payload = new RememberTokenFile
+            {
+                version = TokenFileVersion,
+                token = token,
+                exp = exp
+            };
+            File.WriteAllText(TokenFilePath, JsonConvert.SerializeObject(payload));
         }
 
         public static void ClearRememberToken()
@@ -152,25 +161,51 @@ namespace kido_teacher_app.Services
 
         public static async Task<bool> TryLoginWithSavedTokenAsync()
         {
-            var token = LoadRememberToken();
-            if (string.IsNullOrWhiteSpace(token))
+            var saved = LoadRememberToken();
+            if (saved == null || string.IsNullOrWhiteSpace(saved.token))
             {
                 return false;
             }
 
-            var alive = await CheckTokenAliveAsync(token);
+            var nowUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (saved.exp.HasValue && saved.exp.Value <= nowUnix)
+            {
+                ClearRememberToken();
+                return false;
+            }
+
+            if (OfflineState.IsOffline())
+            {
+                if (!saved.exp.HasValue)
+                {
+                    return false;
+                }
+
+                AuthSession.AccessToken = saved.token;
+                SetSessionFromToken(saved.token);
+                return true;
+            }
+
+            if (saved.exp.HasValue)
+            {
+                AuthSession.AccessToken = saved.token;
+                SetSessionFromToken(saved.token);
+                return true;
+            }
+
+            var alive = await CheckTokenAliveAsync(saved.token);
             if (!alive)
             {
                 ClearRememberToken();
                 return false;
             }
 
-            AuthSession.AccessToken = token;
-            SetSessionFromToken(token);
+            AuthSession.AccessToken = saved.token;
+            SetSessionFromToken(saved.token);
             return true;
         }
 
-        private static string? LoadRememberToken()
+        private static RememberTokenFile? LoadRememberToken()
         {
             try
             {
@@ -179,7 +214,35 @@ namespace kido_teacher_app.Services
                     return null;
                 }
 
-                return File.ReadAllText(TokenFilePath).Trim();
+                var raw = File.ReadAllText(TokenFilePath).Trim();
+                if (string.IsNullOrWhiteSpace(raw))
+                    return null;
+
+                if (raw.StartsWith("{"))
+                {
+                    var parsed = JsonConvert.DeserializeObject<RememberTokenFile>(raw);
+                    if (parsed == null || string.IsNullOrWhiteSpace(parsed.token))
+                        return null;
+                    return parsed;
+                }
+
+                var token = raw;
+                var exp = GetJwtExpiryUnixSeconds(token);
+                var legacy = new RememberTokenFile
+                {
+                    version = TokenFileVersion,
+                    token = token,
+                    exp = exp
+                };
+                try
+                {
+                    File.WriteAllText(TokenFilePath, JsonConvert.SerializeObject(legacy));
+                }
+                catch
+                {
+                    // ignore
+                }
+                return legacy;
             }
             catch
             {
@@ -322,5 +385,30 @@ namespace kido_teacher_app.Services
             return Encoding.UTF8.GetString(bytes);
         }
 
+        private static long? GetJwtExpiryUnixSeconds(string token)
+        {
+            try
+            {
+                var exp = GetJwtClaim(token, "exp");
+                if (string.IsNullOrWhiteSpace(exp))
+                    return null;
+                if (long.TryParse(exp, out var seconds))
+                    return seconds;
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private class RememberTokenFile
+        {
+            public string? version { get; set; }
+            public string? token { get; set; }
+            public long? exp { get; set; }
+        }
+
     }
 }
+
