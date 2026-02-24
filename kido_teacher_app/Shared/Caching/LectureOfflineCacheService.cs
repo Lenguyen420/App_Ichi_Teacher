@@ -1,9 +1,9 @@
 ﻿using kido_teacher_app.Config;
 using kido_teacher_app.Models;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 
 namespace kido_teacher_app.Shared.Caching
@@ -12,41 +12,89 @@ namespace kido_teacher_app.Shared.Caching
     {
         private static readonly string ResourceMapPath =
             Path.Combine(AppConfig.CacheFolder, "resource-map.json");
+        private static readonly object InitLock = new object();
+        private static bool _initialized;
+        private static bool _migrated;
 
-        // =========================
-        // LOAD TOÀN BỘ MAP
-        // =========================
-        private static Dictionary<string, LectureOfflineCache> LoadMap()
+        private static void EnsureInitialized()
         {
+            if (_initialized) return;
+
+            lock (InitLock)
+            {
+                if (_initialized) return;
+
+                Directory.CreateDirectory(AppConfig.DbFolder);
+
+                using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
+                conn.Open();
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText =
+                    @"CREATE TABLE IF NOT EXISTS offline_lecture_cache (
+                        lecture_id TEXT PRIMARY KEY,
+                        pdf_path TEXT,
+                        video_path TEXT,
+                        elearning_path TEXT,
+                        updated_at TEXT NOT NULL
+                      );";
+                cmd.ExecuteNonQuery();
+
+                _initialized = true;
+            }
+
+            MigrateFromJsonIfExists();
+        }
+
+        private static void MigrateFromJsonIfExists()
+        {
+            if (_migrated) return;
+            _migrated = true;
+
             if (!File.Exists(ResourceMapPath))
-                return new Dictionary<string, LectureOfflineCache>();
+                return;
 
             try
             {
                 var json = File.ReadAllText(ResourceMapPath);
-                return JsonSerializer.Deserialize<Dictionary<string, LectureOfflineCache>>(json)
+                var map = JsonSerializer.Deserialize<Dictionary<string, LectureOfflineCache>>(json)
                     ?? new Dictionary<string, LectureOfflineCache>();
+
+                if (map.Count == 0)
+                {
+                    File.Delete(ResourceMapPath);
+                    return;
+                }
+
+                using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
+                conn.Open();
+
+                foreach (var kv in map)
+                {
+                    var cache = kv.Value;
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText =
+                        @"INSERT INTO offline_lecture_cache (lecture_id, pdf_path, video_path, elearning_path, updated_at)
+                          VALUES (@id, @pdf, @video, @elearn, @t)
+                          ON CONFLICT(lecture_id) DO UPDATE SET
+                            pdf_path = @pdf,
+                            video_path = @video,
+                            elearning_path = @elearn,
+                            updated_at = @t;";
+                    cmd.Parameters.AddWithValue("@id", cache.LectureId);
+                    cmd.Parameters.AddWithValue("@pdf", (object?)cache.PdfPath ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@video", (object?)cache.VideoPath ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@elearn", (object?)cache.ElearningPath ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
+                    cmd.ExecuteNonQuery();
+                }
+
+                File.Delete(ResourceMapPath);
             }
             catch
             {
-                return new Dictionary<string, LectureOfflineCache>();
+                // Keep JSON if migration fails
             }
-        }
-
-        // =========================
-        // LƯU TOÀN BỘ MAP
-        // =========================
-        private static void SaveMap(Dictionary<string, LectureOfflineCache> map)
-        {
-            Directory.CreateDirectory(AppConfig.CacheFolder);
-
-            File.WriteAllText(
-                ResourceMapPath,
-                JsonSerializer.Serialize(map, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                })
-            );
         }
 
         // =========================
@@ -59,17 +107,26 @@ namespace kido_teacher_app.Shared.Caching
             string? elearningPath
         )
         {
-            var map = LoadMap();
+            EnsureInitialized();
 
-            map[lectureId] = new LectureOfflineCache
-            {
-                LectureId = lectureId,
-                PdfPath = pdfPath,
-                VideoPath = videoPath,
-                ElearningPath = elearningPath
-            };
+            using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
+            conn.Open();
 
-            SaveMap(map);
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                @"INSERT INTO offline_lecture_cache (lecture_id, pdf_path, video_path, elearning_path, updated_at)
+                  VALUES (@id, @pdf, @video, @elearn, @t)
+                  ON CONFLICT(lecture_id) DO UPDATE SET
+                    pdf_path = @pdf,
+                    video_path = @video,
+                    elearning_path = @elearn,
+                    updated_at = @t;";
+            cmd.Parameters.AddWithValue("@id", lectureId);
+            cmd.Parameters.AddWithValue("@pdf", (object?)pdfPath ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@video", (object?)videoPath ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@elearn", (object?)elearningPath ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
+            cmd.ExecuteNonQuery();
         }
 
         // =========================
@@ -77,8 +134,30 @@ namespace kido_teacher_app.Shared.Caching
         // =========================
         public static LectureOfflineCache? Load(string lectureId)
         {
-            var map = LoadMap();
-            return map.ContainsKey(lectureId) ? map[lectureId] : null;
+            EnsureInitialized();
+
+            using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
+            conn.Open();
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText =
+                @"SELECT lecture_id, pdf_path, video_path, elearning_path
+                  FROM offline_lecture_cache
+                  WHERE lecture_id = @id
+                  LIMIT 1;";
+            cmd.Parameters.AddWithValue("@id", lectureId);
+
+            using var reader = cmd.ExecuteReader();
+            if (!reader.Read())
+                return null;
+
+            return new LectureOfflineCache
+            {
+                LectureId = reader.GetString(0),
+                PdfPath = reader.IsDBNull(1) ? null : reader.GetString(1),
+                VideoPath = reader.IsDBNull(2) ? null : reader.GetString(2),
+                ElearningPath = reader.IsDBNull(3) ? null : reader.GetString(3)
+            };
         }
 
         // =========================
@@ -86,42 +165,43 @@ namespace kido_teacher_app.Shared.Caching
         // =========================
         public static void Delete(string lectureId)
         {
-            var map = LoadMap();
+            var cache = Load(lectureId);
+            if (cache == null) return;
 
-            if (map.ContainsKey(lectureId))
+            // ===== XOA CAC FILE VAT LY =====
+            DeleteFileIfExists(cache.PdfPath);
+            DeleteFileIfExists(cache.VideoPath);
+            DeleteFileIfExists(cache.ElearningPath);
+
+            // ===== XOA THU MUC EXTRACT =====
+            try
             {
-                var cache = map[lectureId];
-
-                // ===== XÓA CÁC FILE VẬT LÝ =====
-                DeleteFileIfExists(cache.PdfPath);
-                DeleteFileIfExists(cache.VideoPath);
-                DeleteFileIfExists(cache.ElearningPath);
-
-                // ===== XÓA THƯ MỤC EXTRACT (NẾU RỖNG) =====
-                try
+                string lectureFolder = Path.Combine(AppConfig.LectureExtractFolder, lectureId);
+                if (Directory.Exists(lectureFolder))
                 {
-                    string lectureFolder = Path.Combine(AppConfig.LectureExtractFolder, lectureId);
-                    if (Directory.Exists(lectureFolder))
-                    {
-                        Directory.Delete(lectureFolder, true);
-                        System.Diagnostics.Debug.WriteLine($"[Cache] Deleted folder: {lectureFolder}");
-                    }
+                    Directory.Delete(lectureFolder, true);
+                    System.Diagnostics.Debug.WriteLine($"[Cache] Deleted folder: {lectureFolder}");
                 }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[Cache] Error deleting folder: {ex.Message}");
-                }
-
-                // ===== XÓA ENTRY TRONG MAP =====
-                map.Remove(lectureId);
-                SaveMap(map);
-
-                System.Diagnostics.Debug.WriteLine($"[Cache] Deleted offline cache for lecture: {lectureId}");
             }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Cache] Error deleting folder: {ex.Message}");
+            }
+
+            // ===== XOA ENTRY TRONG DB =====
+            EnsureInitialized();
+            using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"DELETE FROM offline_lecture_cache WHERE lecture_id = @id;";
+            cmd.Parameters.AddWithValue("@id", lectureId);
+            cmd.ExecuteNonQuery();
+
+            System.Diagnostics.Debug.WriteLine($"[Cache] Deleted offline cache for lecture: {lectureId}");
         }
 
         // =========================
-        // HELPER: XÓA FILE NẾU TỒN TẠI
+        // HELPER: XOA FILE NEU TON TAI
         // =========================
         private static void DeleteFileIfExists(string? filePath)
         {
@@ -148,21 +228,24 @@ namespace kido_teacher_app.Shared.Caching
         {
             try
             {
-                // Xóa file JSON cache
-                if (File.Exists(ResourceMapPath))
+                EnsureInitialized();
+
+                using (var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}"))
                 {
-                    File.Delete(ResourceMapPath);
-                    System.Diagnostics.Debug.WriteLine($"[Cache] Deleted cache file: {ResourceMapPath}");
+                    conn.Open();
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = @"DELETE FROM offline_lecture_cache;";
+                    cmd.ExecuteNonQuery();
                 }
 
-                // Xóa thư mục Lectures
+                // Xoa thu muc Lectures
                 if (Directory.Exists(AppConfig.LectureExtractFolder))
                 {
                     Directory.Delete(AppConfig.LectureExtractFolder, true);
                     System.Diagnostics.Debug.WriteLine($"[Cache] Deleted lectures folder: {AppConfig.LectureExtractFolder}");
                 }
 
-                // Xóa thư mục Downloads (file ZIP)
+                // Xoa thu muc Downloads (file ZIP)
                 if (Directory.Exists(AppConfig.DownloadFolder))
                 {
                     Directory.Delete(AppConfig.DownloadFolder, true);

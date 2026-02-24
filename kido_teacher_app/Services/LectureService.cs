@@ -1,5 +1,7 @@
 ﻿using kido_teacher_app.Config;
 using kido_teacher_app.Model;
+using kido_teacher_app.Shared.Caching;
+using kido_teacher_app.Shared.Network;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -8,7 +10,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace kido_teacher_app.Services
@@ -31,25 +32,6 @@ namespace kido_teacher_app.Services
         }
 
         // =====================================================
-        // CREATE LECTURE
-        // =====================================================
-        public static async Task<bool> CreateAsync(LectureCreateDto dto)
-        {
-            EnsureAuthorized();
-
-            var json = JsonConvert.SerializeObject(dto);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync(ApiRoutes.LECTURES, content);
-            var text = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"HTTP {(int)response.StatusCode}: {text}");
-
-            return true;
-        }
-
-        // =====================================================
         // GET ALL LECTURES
         // =====================================================
         public static List<LectureDto> NormalizeLectures(IEnumerable<LectureDto>? lectures)
@@ -68,17 +50,36 @@ namespace kido_teacher_app.Services
             EnsureAuthorized();
 
             var url = $"{AppConfig.ApiBaseUrl}{ApiRoutes.LECTURES}?page=1&size=1000";
+            const string cacheKey = "lectures_all";
 
-            var res = await client.GetAsync(url);
-            if (!res.IsSuccessStatusCode) return new();
+            try
+            {
+                if (OfflineState.IsOffline())
+                {
+                    var cached = await DbCacheService.GetAsync<List<LectureDto>>(cacheKey);
+                    return cached ?? new();
+                }
 
-            var json = await res.Content.ReadAsStringAsync();
+                var res = await client.GetAsync(url);
+                if (!res.IsSuccessStatusCode) throw new Exception();
 
-            var api = JsonConvert.DeserializeObject<
-                ApiResponse<Wrapper<List<LectureDto>>>>
-                (json);
+                var json = await res.Content.ReadAsStringAsync();
 
-            return api?.data?.data ?? new();
+                var api = JsonConvert.DeserializeObject<
+                    ApiResponse<Wrapper<List<LectureDto>>>>
+                    (json);
+
+                var data = api?.data?.data ?? new();
+                var normalized = CacheImagePathNormalizer.NormalizeLecturesForCache(data);
+                await DbCacheService.SaveAsync(cacheKey, JsonConvert.SerializeObject(normalized));
+
+                return data;
+            }
+            catch
+            {
+                var cached = await DbCacheService.GetAsync<List<LectureDto>>(cacheKey);
+                return cached ?? new();
+            }
         }
 
         // =====================================================
@@ -106,24 +107,42 @@ namespace kido_teacher_app.Services
             var url = $"{AppConfig.ApiBaseUrl}{ApiRoutes.LECTURES}?{query}";
 
             System.Diagnostics.Debug.WriteLine($"[LectureService] GetAllAsync URL: {url}");
+            var cacheKey = $"lectures_all_{courseId ?? "-"}_{groupId ?? "-"}_{(search ?? "-")}";
 
-            var res = await client.GetAsync(url);
-            if (!res.IsSuccessStatusCode)
+            try
             {
-                System.Diagnostics.Debug.WriteLine($"[LectureService] HTTP {(int)res.StatusCode}: {res.StatusCode}");
-                return new();
+                if (OfflineState.IsOffline())
+                {
+                    var cached = await DbCacheService.GetAsync<List<LectureDto>>(cacheKey);
+                    return cached ?? new();
+                }
+
+                var res = await client.GetAsync(url);
+                if (!res.IsSuccessStatusCode)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[LectureService] HTTP {(int)res.StatusCode}: {res.StatusCode}");
+                    throw new Exception();
+                }
+
+                var json = await res.Content.ReadAsStringAsync();
+
+                var api = JsonConvert.DeserializeObject<
+                    ApiResponse<Wrapper<List<LectureDto>>>>
+                    (json);
+
+                var result = api?.data?.data ?? new();
+                System.Diagnostics.Debug.WriteLine($"[LectureService] Loaded {result.Count} lectures");
+
+                var normalized = CacheImagePathNormalizer.NormalizeLecturesForCache(result);
+                await DbCacheService.SaveAsync(cacheKey, JsonConvert.SerializeObject(normalized));
+
+                return result;
             }
-
-            var json = await res.Content.ReadAsStringAsync();
-
-            var api = JsonConvert.DeserializeObject<
-                ApiResponse<Wrapper<List<LectureDto>>>>
-                (json);
-
-            var result = api?.data?.data ?? new();
-            System.Diagnostics.Debug.WriteLine($"[LectureService] Loaded {result.Count} lectures");
-
-            return result;
+            catch
+            {
+                var cached = await DbCacheService.GetAsync<List<LectureDto>>(cacheKey);
+                return cached ?? new();
+            }
         }
 
 
@@ -131,6 +150,9 @@ namespace kido_teacher_app.Services
         public static async Task<LessonDto?> GetLectureByIdAsync(string id)
         {
             EnsureAuthorized();
+
+            if (OfflineState.IsOffline())
+                return null;
 
             var res = await client.GetAsync($"/lecture/{id}");
             res.EnsureSuccessStatusCode();
@@ -146,24 +168,6 @@ namespace kido_teacher_app.Services
             public LessonDto data { get; set; }
         }
 
-        // cập nhật bài học 
-        public static async Task<bool> UpdateAsync(string id, LectureCreateDto dto)
-        {
-            EnsureAuthorized();   // ⭐ thêm dòng này
-
-            var json = JsonConvert.SerializeObject(dto);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var res = await client.PutAsync($"/lecture/{id}", content);
-
-            return res.IsSuccessStatusCode;
-        }
-        // xóa lớp học
-        public static async Task<bool> DeleteAsync(string id)
-        {
-            var res = await client.DeleteAsync($"/lecture/{id}");
-            return res.IsSuccessStatusCode;
-        }
         // lấy bài học theo mã lớp học và mã khóa học 
         public static async Task<List<LectureDto>> GetByClassCourseAsync(
             string classId, 
@@ -172,14 +176,36 @@ namespace kido_teacher_app.Services
             EnsureAuthorized();
             var url = $"{AppConfig.ApiBaseUrl}/lecture?page=1&size=1000" +
                       $"&courseId={courseId}&classId={classId}";
-            var res = await client.GetAsync(url);
-            if (!res.IsSuccessStatusCode)
-                return new();
-            var json = await res.Content.ReadAsStringAsync();
-            var api = JsonConvert.DeserializeObject<
-                ApiResponse<PagedResult<LectureDto>>
-            >(json);
-            return api?.data?.data ?? new();
+            var cacheKey = $"lectures_class_{classId}_course_{courseId}";
+
+            try
+            {
+                if (OfflineState.IsOffline())
+                {
+                    var cached = await DbCacheService.GetAsync<List<LectureDto>>(cacheKey);
+                    return cached ?? new();
+                }
+
+                var res = await client.GetAsync(url);
+                if (!res.IsSuccessStatusCode)
+                    throw new Exception();
+
+                var json = await res.Content.ReadAsStringAsync();
+                var api = JsonConvert.DeserializeObject<
+                    ApiResponse<PagedResult<LectureDto>>
+                >(json);
+
+                var data = api?.data?.data ?? new();
+                var normalized = CacheImagePathNormalizer.NormalizeLecturesForCache(data);
+                await DbCacheService.SaveAsync(cacheKey, JsonConvert.SerializeObject(normalized));
+
+                return data;
+            }
+            catch
+            {
+                var cached = await DbCacheService.GetAsync<List<LectureDto>>(cacheKey);
+                return cached ?? new();
+            }
         }
         // giải nén file zip bài học 
         // =====================================================
@@ -335,83 +361,6 @@ namespace kido_teacher_app.Services
             >(json);
             return api?.data;
         }
-        // =====================================================
-        // BULK ASSIGN LECTURES TO USERS
-        // =====================================================
-        public static async Task<bool> BulkAssignToUsersAsync(
-            List<string> userIds, 
-            List<string> lectureIds, 
-            DateTime startDate, 
-            DateTime endDate)
-        {
-            try
-            {
-                EnsureAuthorized();
-                var payload = new
-                {
-                    userIds = userIds,
-                    lectureIds = lectureIds,
-                    startDate = startDate.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                    endDate = endDate.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                };
-                var json = JsonConvert.SerializeObject(payload);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-                var response = await client.PostAsync(ApiRoutes.LECTURE_BULK_ASSIGN_USERS, content);
-                var responseText = await response.Content.ReadAsStringAsync();
-                if (!response.IsSuccessStatusCode)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[LectureService] BulkAssign failed: HTTP {(int)response.StatusCode}: {responseText}");
-                    return false;
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[LectureService] BulkAssign exception: {ex.Message}");
-                throw;
-            }
-        }
-        // =====================================================
-        // BULK ASSIGN LECTURES TO GROUPS
-        // =====================================================
-        public static async Task<bool> BulkAssignToGroupsAsync(
-            List<string> groupIds, 
-            List<string> lectureIds, 
-            DateTime startDate, 
-            DateTime endDate)
-        {
-            try
-            {
-                EnsureAuthorized();
-
-                var payload = new
-                {
-                    groupIds = groupIds,
-                    lectureIds = lectureIds,
-                    startDate = startDate.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                    endDate = endDate.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                };
-
-                var json = JsonConvert.SerializeObject(payload);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var response = await client.PostAsync(ApiRoutes.LECTURE_BULK_ASSIGN_GROUPS, content);
-                var responseText = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[LectureService] BulkAssignToGroups failed: HTTP {(int)response.StatusCode}: {responseText}");
-                    return false;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[LectureService] BulkAssignToGroups exception: {ex.Message}");
-                throw;
-            }
-        }
 
         // =====================================================
         // GET MAX CODE
@@ -424,3 +373,4 @@ namespace kido_teacher_app.Services
         }
     }
 }
+

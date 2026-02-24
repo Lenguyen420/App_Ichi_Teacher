@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace kido_teacher_app.Services
@@ -55,73 +54,6 @@ namespace kido_teacher_app.Services
             return result?.data;
         }
 
-        // =====================================================
-        // CREATE USER
-        // =====================================================
-        public static async Task<bool> CreateUserAsync(CreateUserRequest request)
-        {
-            EnsureAuthorized();
-
-            var json = JsonConvert.SerializeObject(request);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync(ApiRoutes.USERS, content);
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"HTTP {(int)response.StatusCode}: {responseText}");
-
-            return true;
-        }
-
-        // =====================================================
-        // UPDATE USER (FULL BODY – BAO GỒM groupIds)
-        // =====================================================
-        public static async Task<bool> UpdateUserAsync(
-            string userId,
-            UpdateUserRequest request
-        )
-        {
-            EnsureAuthorized();
-
-            var json = JsonConvert.SerializeObject(request);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PutAsync(ApiRoutes.UserById(userId), content);
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"HTTP {(int)response.StatusCode}: {responseText}");
-
-            return true;
-        }
-
-        // =====================================================
-        // UPDATE USER GROUPS ONLY (DÙNG CHO FORM NHÓM)
-        // =====================================================
-        public static async Task<bool> UpdateUserGroupsAsync(
-            string userId,
-            List<string> groupIds
-        )
-        {
-            EnsureAuthorized();
-
-            var body = new
-            {
-                groupIds = groupIds
-            };
-
-            var json = JsonConvert.SerializeObject(body);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PutAsync(ApiRoutes.UserById(userId), content);
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"HTTP {(int)response.StatusCode}: {responseText}");
-
-            return true;
-        }
 
         // =====================================================
         // GET GROUP IDS OF USER
@@ -141,20 +73,6 @@ namespace kido_teacher_app.Services
                 JsonConvert.DeserializeObject<ApiResponse<UserDto>>(json);
 
             return result?.data?.groupIds ?? new List<string>();
-        }
-
-        // =====================================================
-        // DELETE USER
-        // =====================================================
-        public static async Task<bool> DeleteAsync(string userId)
-        {
-            if (string.IsNullOrWhiteSpace(userId))
-                throw new ArgumentException("UserId không hợp lệ");
-
-            EnsureAuthorized();
-
-            var response = await client.DeleteAsync(ApiRoutes.UserById(userId));
-            return response.IsSuccessStatusCode;
         }
 
         // =====================================================

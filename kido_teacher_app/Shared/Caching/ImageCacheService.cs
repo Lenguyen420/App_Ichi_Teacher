@@ -1,4 +1,5 @@
 using kido_teacher_app.Config;
+using kido_teacher_app.Shared.Network;
 using System;
 using System.Drawing;
 using System.IO;
@@ -26,7 +27,7 @@ namespace kido_teacher_app.Shared.Caching
             System.Diagnostics.Debug.WriteLine($"[ImageCache] GetOrDownload: entityId={entityId}, filename={imageFilename}");
 
             // ===== 1?? KI?M TRA CACHE =====
-            var cachedImage = LoadFromCache(entityId, cacheFolder);
+            var cachedImage = LoadFromCache(entityId, imageFilename, cacheFolder);
             if (cachedImage != null)
             {
                 System.Diagnostics.Debug.WriteLine($"[ImageCache] Loaded from cache");
@@ -40,15 +41,34 @@ namespace kido_teacher_app.Shared.Caching
                 return null;
             }
 
-            var downloadedImage = await DownloadImageFromServerAsync(imageFilename);
-            if (downloadedImage == null)
+            if (OfflineState.IsOffline())
+            {
+                System.Diagnostics.Debug.WriteLine($"[ImageCache] Offline - skip download");
+                return null;
+            }
+
+            var downloadedBytes = await DownloadBytesFromServerAsync(imageFilename);
+            if (downloadedBytes == null || downloadedBytes.Length == 0)
             {
                 System.Diagnostics.Debug.WriteLine($"[ImageCache] Download failed");
                 return null;
             }
 
+            Image? downloadedImage = null;
+            try
+            {
+                using var ms = new MemoryStream(downloadedBytes);
+                using var tmp = Image.FromStream(ms);
+                downloadedImage = (Image)tmp.Clone();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ImageCache] Image decode failed: {ex.Message}");
+                return null;
+            }
+
             // ===== 3?? L?U CACHE =====
-            SaveToCache(entityId, downloadedImage, cacheFolder);
+            SaveBytesToCache(entityId, downloadedBytes, imageFilename, cacheFolder);
             System.Diagnostics.Debug.WriteLine($"[ImageCache] Saved to cache: {cacheFolder}");
 
             return downloadedImage;
@@ -57,18 +77,17 @@ namespace kido_teacher_app.Shared.Caching
         // =========================
         // LOAD FROM CACHE
         // =========================
-        private static Image? LoadFromCache(string entityId, string cacheFolder)
+        private static Image? LoadFromCache(string entityId, string? imageFilename, string cacheFolder)
         {
             try
             {
-                var pngPath = Path.Combine(cacheFolder, $"{entityId}.png");
-                var jpgPath = Path.Combine(cacheFolder, $"{entityId}.jpg");
-
-                if (File.Exists(pngPath))
-                    return Image.FromFile(pngPath);
-
-                if (File.Exists(jpgPath))
-                    return Image.FromFile(jpgPath);
+                var exts = new[] { ".png", ".jpg", ".jpeg", ".gif", ".bmp" };
+                foreach (var ext in exts)
+                {
+                    var path = Path.Combine(cacheFolder, $"{entityId}{ext}");
+                    if (File.Exists(path))
+                        return Image.FromFile(path);
+                }
 
                 return null;
             }
@@ -81,7 +100,7 @@ namespace kido_teacher_app.Shared.Caching
         // =========================
         // DOWNLOAD FROM SERVER
         // =========================
-        private static async Task<Image?> DownloadImageFromServerAsync(string filename)
+        private static async Task<byte[]?> DownloadBytesFromServerAsync(string filename)
         {
             try
             {
@@ -110,8 +129,6 @@ namespace kido_teacher_app.Shared.Caching
                 System.Diagnostics.Debug.WriteLine($"[ImageCache] Downloading: {url}");
 
                 using var req = new HttpRequestMessage(HttpMethod.Get, url);
-                req.Headers.Authorization =
-                    new AuthenticationHeaderValue("Bearer", Config.AuthSession.AccessToken);
 
                 var res = await client.SendAsync(req);
                 
@@ -126,11 +143,7 @@ namespace kido_teacher_app.Shared.Caching
 
                 var bytes = await res.Content.ReadAsByteArrayAsync();
                 System.Diagnostics.Debug.WriteLine($"[ImageCache] Downloaded {bytes.Length} bytes");
-
-                using var ms = new MemoryStream(bytes);
-                using var tmp = Image.FromStream(ms);
-
-                return (Image)tmp.Clone();
+                return bytes;
             }
             catch (Exception ex)
             {
@@ -142,20 +155,75 @@ namespace kido_teacher_app.Shared.Caching
         // =========================
         // SAVE TO CACHE
         // =========================
-        private static void SaveToCache(string entityId, Image image, string cacheFolder)
+        private static void SaveBytesToCache(string entityId, byte[] bytes, string? imageFilename, string cacheFolder)
         {
             try
             {
                 Directory.CreateDirectory(cacheFolder);
 
-                var path = Path.Combine(cacheFolder, $"{entityId}.png");
-                image.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+                var path = Path.Combine(cacheFolder, $"{entityId}{GetImageExtension(imageFilename)}");
+                File.WriteAllBytes(path, bytes);
             }
             catch
             {
                 // Fail silently
             }
         }
+
+        private static string? GetOriginalFilename(string? imageFilename)
+        {
+            if (string.IsNullOrWhiteSpace(imageFilename))
+                return null;
+
+            try
+            {
+                var name = imageFilename;
+                if (Uri.TryCreate(imageFilename, UriKind.Absolute, out var uri))
+                    name = uri.AbsolutePath;
+
+                var file = Path.GetFileName(name);
+                return string.IsNullOrWhiteSpace(file) ? null : file;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string GetImageExtension(string? imageFilename)
+        {
+            if (string.IsNullOrWhiteSpace(imageFilename))
+                return ".png";
+
+            try
+            {
+                var name = imageFilename;
+                if (Uri.TryCreate(imageFilename, UriKind.Absolute, out var uri))
+                    name = uri.AbsolutePath;
+
+                var ext = Path.GetExtension(name);
+                if (string.IsNullOrWhiteSpace(ext))
+                    return ".png";
+
+                ext = ext.ToLowerInvariant();
+                return ext switch
+                {
+                    ".jpg" => ".jpg",
+                    ".jpeg" => ".jpg",
+                    ".png" => ".png",
+                    ".gif" => ".gif",
+                    ".bmp" => ".bmp",
+                    ".webp" => ".png",
+                    _ => ".png"
+                };
+            }
+            catch
+            {
+                return ".png";
+            }
+        }
+
+        // ImageFormat mapping no longer needed when writing raw bytes.
 
         // =========================
         // DELETE CACHE
@@ -164,14 +232,13 @@ namespace kido_teacher_app.Shared.Caching
         {
             try
             {
-                var pngPath = Path.Combine(cacheFolder, $"{entityId}.png");
-                var jpgPath = Path.Combine(cacheFolder, $"{entityId}.jpg");
-
-                if (File.Exists(pngPath))
-                    File.Delete(pngPath);
-
-                if (File.Exists(jpgPath))
-                    File.Delete(jpgPath);
+                var exts = new[] { ".png", ".jpg", ".jpeg", ".gif", ".bmp" };
+                foreach (var ext in exts)
+                {
+                    var path = Path.Combine(cacheFolder, $"{entityId}{ext}");
+                    if (File.Exists(path))
+                        File.Delete(path);
+                }
             }
             catch
             {

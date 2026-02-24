@@ -1,87 +1,110 @@
 ﻿using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using kido_teacher_app.Model;
 using kido_teacher_app.Config;
-using System.IO;
+using kido_teacher_app.Shared.Caching;
+using kido_teacher_app.Shared.Logging;
+using kido_teacher_app.Shared.Network;
 
 namespace kido_teacher_app.Services
 {
     public static class ClassService
     {
         private static readonly HttpClient client = new HttpClient();
-
-        // ======================================
-        // POST /classes – Tạo lớp học
-        // ======================================
-        public static async Task<ClassDto?> CreateAsync(ClassCreateDto dto)
-        {
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
-
-            var json = JsonConvert.SerializeObject(dto);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var res = await client.PostAsync($"{AppConfig.ApiBaseUrl}{ApiRoutes.CLASSES}", content);
-
-            if (!res.IsSuccessStatusCode)
-                return null;
-
-            var resJson = await res.Content.ReadAsStringAsync();
-            var apiRes = JsonConvert.DeserializeObject<ApiResponse<ClassDto>>(resJson);
-
-            return apiRes?.data;
-        }
+        private const string CacheKeyAll = "classes_all";
 
         // ======================================
         // GET /classes – Lấy danh sách lớp học
         // ======================================
         public static async Task<List<ClassDto>> GetAllAsync()
         {
+            if (OfflineState.IsOffline())
+            {
+                var cached = await DbCacheService.GetAsync<List<ClassDto>>(CacheKeyAll);
+                return cached ?? new List<ClassDto>();
+            }
+
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
 
-            var res = await client.GetAsync($"{AppConfig.ApiBaseUrl}{ApiRoutes.CLASSES}");
-            var json = await res.Content.ReadAsStringAsync();
+            try
+            {
+                var url = $"{AppConfig.ApiBaseUrl}{ApiRoutes.CLASSES}";
+                FileLog.Info($"[ClassService] GET {url}");
 
-            if (!res.IsSuccessStatusCode)
-                throw new Exception($"API {ApiRoutes.CLASSES} lỗi {(int)res.StatusCode}: {json}");
+                var res = await client.GetAsync(url);
+                var json = await res.Content.ReadAsStringAsync();
 
-            // ⭐ data = ARRAY
-            var apiRes =
-                JsonConvert.DeserializeObject<ApiResponse<List<ClassDto>>>(json);
+                if (!res.IsSuccessStatusCode)
+                {
+                    FileLog.Error($"[ClassService] HTTP {(int)res.StatusCode}: {json}");
+                    throw new Exception($"API {ApiRoutes.CLASSES} lỗi {(int)res.StatusCode}: {json}");
+                }
 
-            return apiRes?.data ?? new List<ClassDto>();
+                FileLog.Info($"[ClassService] HTTP {(int)res.StatusCode} bodyLength={json?.Length ?? 0}");
+                FileLog.Info($"[ClassService] Response body: {json}");
+
+                var data = ExtractClasses(json);
+
+                var normalized = CacheImagePathNormalizer.NormalizeClassesForCache(data);
+                await DbCacheService.SaveAsync(CacheKeyAll, JsonConvert.SerializeObject(normalized));
+
+                return data;
+            }
+            catch
+            {
+                var cached = await DbCacheService.GetAsync<List<ClassDto>>(CacheKeyAll);
+                return cached ?? new List<ClassDto>();
+            }
         }
 
-
-
-
-        // ======================================
-        // PATCH /classes/{id} – Cập nhật lớp học
-        // ======================================
-        public static async Task<bool> PatchAsync(string id, ClassCreateDto dto)
+        private static List<ClassDto> ExtractClasses(string json)
         {
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
+            // Supports: { data: [ ... ] } OR { data: { data: [ ... ] } } OR { data: { items: [ ... ] } }
+            try
+            {
+                var root = JObject.Parse(json);
+                var dataToken = root["data"];
+                if (dataToken == null || dataToken.Type == JTokenType.Null)
+                    return new List<ClassDto>();
 
-            var json = JsonConvert.SerializeObject(dto);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+                if (dataToken.Type == JTokenType.Array)
+                    return dataToken.ToObject<List<ClassDto>>() ?? new List<ClassDto>();
 
-            var res = await client.PatchAsync(
-                $"{AppConfig.ApiBaseUrl}{ApiRoutes.ClassById(id)}", content
-            );
+                if (dataToken.Type == JTokenType.Object)
+                {
+                    var nested = dataToken["data"] ?? dataToken["items"];
+                    if (nested != null && nested.Type == JTokenType.Array)
+                        return nested.ToObject<List<ClassDto>>() ?? new List<ClassDto>();
+                }
+            }
+            catch
+            {
+            }
 
-            return res.IsSuccessStatusCode;
+            // Fallback: original shape
+            try
+            {
+                var apiRes =
+                    JsonConvert.DeserializeObject<ApiResponse<List<ClassDto>>>(json);
+                return apiRes?.data ?? new List<ClassDto>();
+            }
+            catch
+            {
+                return new List<ClassDto>();
+            }
         }
-
 
         // lấy chi tiết lớp học để chỉnh sửa 
         public static async Task<ClassDto?> GetByIdAsync(string id)
         {
+            if (OfflineState.IsOffline())
+                return null;
+
             client.DefaultRequestHeaders.Authorization = null;
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
@@ -99,30 +122,5 @@ namespace kido_teacher_app.Services
             return apiRes?.data;
 
         }
-        // xóa lớp học 
-        public static async Task<bool> DeleteAsync(string id)
-        {
-            if (string.IsNullOrWhiteSpace(id))
-                return false;
-
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
-
-            var res = await client.DeleteAsync($"{AppConfig.ApiBaseUrl}{ApiRoutes.ClassById(id)}");
-            var json = await res.Content.ReadAsStringAsync();
-
-            // Nếu backend trả ApiResponse
-            try
-            {
-                var apiRes = JsonConvert.DeserializeObject<ApiResponse<object>>(json);
-                return res.IsSuccessStatusCode && apiRes?.success == true;
-            }
-            catch
-            {
-                // fallback: chỉ kiểm tra status
-                return res.IsSuccessStatusCode;
-            }
-        }
-
     }
 }

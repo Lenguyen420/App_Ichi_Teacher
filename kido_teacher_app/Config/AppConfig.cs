@@ -59,17 +59,25 @@ namespace kido_teacher_app.Config
         public static string CacheFolder =
             Path.Combine(AppDataRoot, "Cache");
 
-        // ⭐ Cache ảnh Course (Roaming)
+        // ⭐ Cache ảnh Course (Local)
         public static string CourseImageCacheFolder =
-            Path.Combine(AppDataRoaming, "Course");
+            Path.Combine(AppDataRoot, "Course");
 
-        // ⭐ Cache ảnh Lecture (Roaming)
+        // ⭐ Cache ảnh Lecture (Local)
         public static string LectureImageCacheFolder =
-            Path.Combine(AppDataRoaming, "Lecture");
+            Path.Combine(AppDataRoot, "Lecture");
 
-        // ⭐ Cache ảnh Class (Roaming)
+        // ⭐ Cache ảnh Class (Local)
         public static string ClassImageCacheFolder =
-            Path.Combine(AppDataRoaming, "Class");
+            Path.Combine(AppDataRoot, "Class");
+
+        // ⭐ SQLite DB folder (Local)
+        public static string DbFolder =
+            Path.Combine(AppDataRoot, "Db");
+
+        // ⭐ SQLite DB file path
+        public static string DbPath =
+            Path.Combine(DbFolder, "app_cache.db");
     }
 
 }

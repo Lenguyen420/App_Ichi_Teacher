@@ -90,13 +90,6 @@ namespace kido_teacher_app
             //  CHỈ GỌI 1 LẦN – TRƯỚC MỌI FORM
             ApplicationConfiguration.Initialize();
 
-            var autoLoggedIn = AuthService.TryLoginWithSavedTokenAsync().GetAwaiter().GetResult();
-            if (autoLoggedIn)
-            {
-                Application.Run(new Main_Form());
-                return;
-            }
-
             // ===== INIT DATA FOLDER =====
             string basePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -106,9 +99,26 @@ namespace kido_teacher_app
             AppConfig.DownloadFolder = Path.Combine(basePath, "Downloads");
             AppConfig.LectureExtractFolder = Path.Combine(basePath, "Lectures");
 
+            // ===== MIGRATE IMAGE CACHE FROM ROAMING -> LOCAL =====
+            MigrateImageCacheToLocal();
+
             Directory.CreateDirectory(AppConfig.DownloadFolder);
             Directory.CreateDirectory(AppConfig.LectureExtractFolder);
+            Directory.CreateDirectory(AppConfig.DbFolder);
+            Directory.CreateDirectory(AppConfig.ClassImageCacheFolder);
+            Directory.CreateDirectory(AppConfig.CourseImageCacheFolder);
+            Directory.CreateDirectory(AppConfig.LectureImageCacheFolder);
+            CleanZeroByteFiles(AppConfig.ClassImageCacheFolder);
+            CleanZeroByteFiles(AppConfig.CourseImageCacheFolder);
+            CleanZeroByteFiles(AppConfig.LectureImageCacheFolder);
             // ===========================
+
+            var autoLoggedIn = AuthService.TryLoginWithSavedTokenAsync().GetAwaiter().GetResult();
+            if (autoLoggedIn)
+            {
+                Application.Run(new Main_Form());
+                return;
+            }
 
             // ===== LOGIN FLOW =====
             using (var login = new Form_Login())
@@ -117,6 +127,99 @@ namespace kido_teacher_app
                 {
                     Application.Run(new Main_Form());
                 }
+            }
+        }
+
+        private static void MigrateImageCacheToLocal()
+        {
+            try
+            {
+                var roamingRoot = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "KidoTeacherApp"
+                );
+
+                var classSrc = Path.Combine(roamingRoot, "Class");
+                var courseSrc = Path.Combine(roamingRoot, "Course");
+                var lectureSrc = Path.Combine(roamingRoot, "Lecture");
+
+                CopyCacheFolder(classSrc, AppConfig.ClassImageCacheFolder);
+                CopyCacheFolder(courseSrc, AppConfig.CourseImageCacheFolder);
+                CopyCacheFolder(lectureSrc, AppConfig.LectureImageCacheFolder);
+
+                DeleteFolderSafe(classSrc);
+                DeleteFolderSafe(courseSrc);
+                DeleteFolderSafe(lectureSrc);
+            }
+            catch
+            {
+                // ignore migration errors
+            }
+        }
+
+        private static void CopyCacheFolder(string sourceDir, string destDir)
+        {
+            if (!Directory.Exists(sourceDir))
+                return;
+
+            Directory.CreateDirectory(destDir);
+
+            foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+            {
+                var relative = Path.GetRelativePath(sourceDir, file);
+                var dest = Path.Combine(destDir, relative);
+                var destParent = Path.GetDirectoryName(dest);
+                if (!Directory.Exists(destParent))
+                    Directory.CreateDirectory(destParent!);
+
+                if (!File.Exists(dest))
+                {
+                    File.Copy(file, dest, false);
+                }
+            }
+        }
+
+        private static void DeleteFolderSafe(string sourceDir)
+        {
+            try
+            {
+                if (Directory.Exists(sourceDir))
+                {
+                    Directory.Delete(sourceDir, true);
+                }
+            }
+            catch
+            {
+                // ignore delete errors
+            }
+        }
+
+        private static void CleanZeroByteFiles(string rootDir)
+        {
+            try
+            {
+                if (!Directory.Exists(rootDir))
+                    return;
+
+                foreach (var file in Directory.GetFiles(rootDir, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        var info = new FileInfo(file);
+                        if (info.Length == 0)
+                        {
+                            info.Delete();
+                        }
+                    }
+                    catch
+                    {
+                        // ignore per-file errors
+                    }
+                }
+            }
+            catch
+            {
+                // ignore
             }
         }
     }
