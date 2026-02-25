@@ -22,6 +22,7 @@ namespace kido_teacher_app
         {
             string username = usernameBox.Text.Trim();
             string password = passwordBox.Text.Trim();
+            var oldText = loginButton.Text;
 
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
@@ -57,6 +58,7 @@ namespace kido_teacher_app
                 // AuthSession.AccessToken
                 // AuthSession.UserId
                 // AuthSession.Role = TEACHER
+                await OfflinePrefetchService.PrefetchTeacherOfflineAsync();
 
                 DialogResult = DialogResult.OK;
                 Close();
@@ -72,6 +74,7 @@ namespace kido_teacher_app
             }
             finally
             {
+                loginButton.Text = oldText;
                 loginButton.Enabled = true;
             }
         }

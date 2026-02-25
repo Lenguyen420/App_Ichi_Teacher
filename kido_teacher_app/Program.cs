@@ -65,6 +65,7 @@ using kido_teacher_app.Config;
 using kido_teacher_app.Services;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace kido_teacher_app
@@ -116,6 +117,7 @@ namespace kido_teacher_app
             var autoLoggedIn = AuthService.TryLoginWithSavedTokenAsync().GetAwaiter().GetResult();
             if (autoLoggedIn)
             {
+                StartPrefetchInBackground();
                 Application.Run(new Main_Form());
                 return;
             }
@@ -125,9 +127,18 @@ namespace kido_teacher_app
             {
                 if (login.ShowDialog() == DialogResult.OK)
                 {
+                    StartPrefetchInBackground();
                     Application.Run(new Main_Form());
                 }
             }
+        }
+
+        private static void StartPrefetchInBackground()
+        {
+            _ = Task.Run(async () =>
+            {
+                await OfflinePrefetchService.PrefetchTeacherOfflineAsync(prefetchImages: true);
+            });
         }
 
         private static void MigrateImageCacheToLocal()

@@ -5,6 +5,7 @@ using kido_teacher_app.Shared.Caching;
 using System;
 using System.Drawing;
 using System.Linq;
+using System.Collections.Generic;
 using System.Windows.Forms;
 
 namespace kido_teacher_app.Forms.Main.Page
@@ -106,8 +107,9 @@ namespace kido_teacher_app.Forms.Main.Page
                 if (courses == null || courses.Count == 0)
                 {
                     System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] No courses loaded");
-                    MessageBox.Show($"Không có khóa học nào.\nTotal: {courses?.Count ?? 0}", "Debug");
-                    return;
+                    courses = await LoadCoursesFromLectureCacheAsync();
+                    if (courses == null || courses.Count == 0)
+                        return;
                 }
 
                 // ⭐ DEBUG: In ra tất cả courses nhận từ API theo classId
@@ -214,6 +216,50 @@ namespace kido_teacher_app.Forms.Main.Page
                 MessageBox.Show($"LỖI LOAD:\n{ex.Message}\n\nStack:\n{ex.StackTrace}", "ERROR");
                 System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] EXCEPTION: {ex}");
             }
+        }
+
+        private async Task<List<CourseDto>> LoadCoursesFromLectureCacheAsync()
+        {
+            var prefix = $"lectures_class_{_classId}_course_";
+            var keys = await DbCacheService.GetKeysByPrefixAsync(prefix);
+            if (keys == null || keys.Count == 0)
+                return new List<CourseDto>();
+
+            var courseIds = keys
+                .Select(k => k.StartsWith(prefix) ? k.Substring(prefix.Length) : null)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct()
+                .ToList();
+
+            if (courseIds.Count == 0)
+                return new List<CourseDto>();
+
+            var cachedCourses = await DbCacheService.GetAsync<List<CourseDto>>($"courses_class_{_classId}")
+                               ?? await DbCacheService.GetAsync<List<CourseDto>>("courses_all")
+                               ?? new List<CourseDto>();
+
+            var result = new List<CourseDto>();
+            int fallbackMonth = 1;
+
+            foreach (var id in courseIds)
+            {
+                var c = cachedCourses.FirstOrDefault(x => x.id == id);
+                if (c == null)
+                {
+                    c = new CourseDto
+                    {
+                        id = id,
+                        code = fallbackMonth.ToString(),
+                        name = $"Khóa học (offline) {fallbackMonth}",
+                        image = null
+                    };
+                    fallbackMonth++;
+                }
+
+                result.Add(c);
+            }
+
+            return result;
         }
 
     }

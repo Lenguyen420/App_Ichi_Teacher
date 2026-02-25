@@ -81,5 +81,28 @@ namespace kido_teacher_app.Services
             if (string.IsNullOrWhiteSpace(json)) return default;
             return JsonConvert.DeserializeObject<T>(json);
         }
+
+        public static async Task<List<string>> GetKeysByPrefixAsync(string prefix)
+        {
+            EnsureInitialized();
+
+            var keys = new List<string>();
+
+            await using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
+            await conn.OpenAsync();
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"SELECT cache_key FROM api_cache WHERE cache_key LIKE @p;";
+            cmd.Parameters.AddWithValue("@p", prefix + "%");
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                if (!reader.IsDBNull(0))
+                    keys.Add(reader.GetString(0));
+            }
+
+            return keys;
+        }
     }
 }
