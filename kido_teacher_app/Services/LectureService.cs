@@ -175,7 +175,7 @@ namespace kido_teacher_app.Services
         {
             EnsureAuthorized();
             var url = $"{AppConfig.ApiBaseUrl}/lecture?page=1&size=1000" +
-                      $"&courseId={courseId}&classId={classId}";
+                      $"&courseId={courseId}&classId={classId}&isGetResource=true";
             var cacheKey = $"lectures_class_{classId}_course_{courseId}";
 
             try

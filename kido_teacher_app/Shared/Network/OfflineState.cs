@@ -24,6 +24,15 @@ namespace kido_teacher_app.Shared.Network
             }
         }
 
+        public static void SetOffline(bool offline)
+        {
+            lock (LockObj)
+            {
+                _lastOffline = offline;
+                _lastCheckUtc = DateTime.UtcNow;
+            }
+        }
+
         private static bool HasInternet()
         {
             if (!NetworkInterface.GetIsNetworkAvailable())

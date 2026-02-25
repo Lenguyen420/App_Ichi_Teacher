@@ -25,6 +25,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
         private readonly string _courseName;
         private int _loadVersion;
+        private readonly float _dpiScale;
 
         //private LessonDto _lesson;
 
@@ -40,6 +41,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             InitializeComponent();
             //this.BackColor = Color.Red;
 
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+            _dpiScale = this.DeviceDpi / 96f;
+
             _classId = classId;
             _courseId = courseId;
             _className = className;
@@ -51,6 +55,8 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
             lblInfo.Text = $"Giáo Án / {className} / {courseName}";
             this.Load += async (s, e) => await LoadLecturesAsync();
+            this.flowList.SizeChanged += (s, e) => UpdateCardWidths();
+            ApplyDpiScaling();
             
         }
 
@@ -152,16 +158,10 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
                     //end
 
-                    string pdfOnline = null, videoOnline = null, lessonOnline = null;
                     string pdfOffline = null, videoOffline = null, lessonOffline = null;
 
                     foreach (var r in detail.resources)
                     {
-                        if (r.type == "PDF" && r.source == "ONLINE") pdfOnline = r.url;
-                        if (r.type == "VIDEO" && r.source == "ONLINE") videoOnline = r.url;
-                        if (r.type == "LESSON" && r.source == "ONLINE") lessonOnline = r.url;
-
-
                         //offline
 
                         if (r.type == "PDF" && (r.source == "OFFLINE" || r.source == "LOCAL"))
@@ -180,15 +180,14 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                             lec.id,
                             detail.title ?? "(Không có tiêu đề)",
                             detail.code ?? "---",
-                            pdfOnline,
-                            videoOnline,
-                            lessonOnline,
                             pdfOffline,
                             videoOffline,
                             lessonOffline
                         )
                     );
                 }
+
+                UpdateCardWidths();
             }
             catch (Exception ex)
             {
@@ -205,35 +204,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         // =========================
 
 
-
-        private void OpenOnline(string url, string title)
-        {
-            if (string.IsNullOrWhiteSpace(url)) return;
-
-            // PDF
-            if (url.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-            {
-                new Form_PdfViewer(url, title).Show();
-                return;
-            }
-
-            // E-LEARNING (story.html)
-            if (url.EndsWith("story.html", StringComparison.OrdinalIgnoreCase))
-            {
-                new Form_ElearningViewer(url, title).Show();
-                return;
-            }
-
-            // VIDEO / LINK KHÁC
-            try
-            {
-                System.Diagnostics.Process.Start(url);
-            }
-            catch
-            {
-                MessageBox.Show("Không mở được nội dung");
-            }
-        }
 
         private void OpenLocal(string filePath, string title)
         {
@@ -282,9 +252,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             string lectureId,
             string title,
             string code,
-            string pdfOnline,
-            string videoOnline,
-            string lessonOnline,
             string pdfOffline,
             string videoOffline,
             string lessonOffline
@@ -293,28 +260,27 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // CARD CHA
             Panel card = new Panel
             {
-                Height = 190,
-                Width = flowList.ClientSize.Width - 200,
+                Height = Scale(190),
+                Width = GetCardWidth(),
                 BorderStyle = BorderStyle.FixedSingle,
-                Margin = new Padding(5)
+                Margin = new Padding(Scale(5))
             };
 
             // TABLE CHÍNH
             TableLayoutPanel table = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 5,
+                ColumnCount = 4,
                 RowCount = 1,
-                Padding = new Padding(10)
+                Padding = new Padding(Scale(10))
             };
 
             table.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 170)); // Ảnh
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Scale(170))); // Ảnh
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 380)); // Info
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));         // Online
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 200));        // Offline
-            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));       // Xóa
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Scale(200)));        // Offline
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Scale(160)));       // Xóa
 
             // =======================
             // CỘT 1: ẢNH
@@ -331,7 +297,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             Panel info = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(5)
+                Padding = new Padding(Scale(5))
             };
 
             // ===== LABEL MÃ SỐ (NẰM DƯỚI CÙNG) =====
@@ -340,7 +306,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 Text = $"Mã số: {code ?? "---"}",
                 ForeColor = Color.Blue,
                 Dock = DockStyle.Bottom,
-                Height = 22,
+                Height = Scale(22),
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
@@ -348,7 +314,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             Label lblTitle = new Label
             {
                 Text = title ?? "(Không có tiêu đề)",
-                Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                Font = new Font("Segoe UI", ScaleFont(12), FontStyle.Bold),
                 Dock = DockStyle.Fill,
                 AutoEllipsis = true,
                 TextAlign = ContentAlignment.TopLeft
@@ -359,45 +325,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             info.Controls.Add(lblCode);  // Bottom
             table.Controls.Add(info, 1, 0);
             // =======================
-            // CỘT 3: XEM ONLINE
-            // =======================
-            FlowLayoutPanel online = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                Padding = new Padding(0),
-                AutoScroll = false
-            };
-
-            online.Controls.Add(new Label
-            {
-                Text = "Xem Online",
-                ForeColor = Color.Green,
-                Height = 24,
-                Width = 170,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                Margin = new Padding(0, 0, 0, 6)
-            });
-
-            Button btnPdfOn = CreateSimpleButton("Giáo án PDF", Color.Green);
-            Button btnVideoOn = CreateSimpleButton("Video dạy mẫu", Color.Green);
-            Button btnLessonOn = CreateSimpleButton("Bài giảng E-Learning", Color.Green);
-
-            btnPdfOn.Margin = new Padding(20, 0, 0, 6);
-            btnVideoOn.Margin = new Padding(20, 0, 0, 6);
-            btnLessonOn.Margin = new Padding(20, 0, 0, 0);
-
-            btnPdfOn.Click += (s, e) => OpenOnline(pdfOnline, title);
-            btnVideoOn.Click += (s, e) => OpenOnline(videoOnline, title);
-            btnLessonOn.Click += (s, e) => OpenOnline(lessonOnline, title);
-
-            online.Controls.AddRange(new Control[] { btnPdfOn, btnVideoOn, btnLessonOn });
-            table.Controls.Add(online, 2, 0);
-
-            // =======================
-            // CỘT 4: XEM OFFLINE
+            // CỘT 3: XEM OFFLINE
             // =======================
             FlowLayoutPanel offline = new FlowLayoutPanel
             {
@@ -412,11 +340,11 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             {
                 Text = "Xem Offline",
                 ForeColor = Color.Blue,
-                Height = 24,
-                Width = 170,
+                Height = Scale(24),
+                Width = Scale(170),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                Margin = new Padding(0, 0, 0, 6)
+                Font = new Font("Segoe UI", ScaleFont(9), FontStyle.Bold),
+                Margin = new Padding(0, 0, 0, Scale(6))
             });
 
                       
@@ -430,16 +358,16 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             btnVideoOff.Enabled = false;
             btnLessonOff.Enabled = false;
 
-            btnPdfOff.Margin = new Padding(20, 0, 0, 6);
-            btnVideoOff.Margin = new Padding(20, 0, 0, 6);
-            btnLessonOff.Margin = new Padding(20, 0, 0, 0);
+            btnPdfOff.Margin = new Padding(Scale(20), 0, 0, Scale(6));
+            btnVideoOff.Margin = new Padding(Scale(20), 0, 0, Scale(6));
+            btnLessonOff.Margin = new Padding(Scale(20), 0, 0, 0);
 
             offline.Controls.AddRange(new Control[] { btnPdfOff, btnVideoOff, btnLessonOff });
 
-            table.Controls.Add(offline, 3, 0);
+            table.Controls.Add(offline, 2, 0);
 
             // =======================
-            // CỘT 5: XÓA + CHƯA TẢI
+            // CỘT 4: XÓA + CHƯA TẢI
             // =======================
             FlowLayoutPanel deleteCol = new FlowLayoutPanel
             {
@@ -453,11 +381,11 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             Button btnDelete = new Button
             {
                 Text = "🗑 Xóa",
-                Width = 120,
-                Height = 28,
+                Width = Scale(120),
+                Height = Scale(28),
                 ForeColor = Color.Red,
                 FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(20, 0, 0, 6)
+                Margin = new Padding(Scale(20), 0, 0, Scale(6))
             };
 
             
@@ -468,9 +396,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             Button btnDown2 = CreateSimpleGrayButton("Chưa tải");
             Button btnDown3 = CreateSimpleGrayButton("Chưa tải");
 
-            btnDown1.Margin = new Padding(20, 0, 0, 6);
-            btnDown2.Margin = new Padding(20, 0, 0, 6);
-            btnDown3.Margin = new Padding(20, 0, 0, 0);
+            btnDown1.Margin = new Padding(Scale(20), 0, 0, Scale(6));
+            btnDown2.Margin = new Padding(Scale(20), 0, 0, Scale(6));
+            btnDown3.Margin = new Padding(Scale(20), 0, 0, 0);
 
 
             var offlineState = new OfflineLectureState();
@@ -484,7 +412,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             btnDown3.Click += BtnDownload_Click;
 
             deleteCol.Controls.AddRange(new Control[] { btnDelete, btnDown1, btnDown2, btnDown3 });
-            table.Controls.Add(deleteCol, 4, 0);
+            table.Controls.Add(deleteCol, 3, 0);
 
 
             // =========================
@@ -538,6 +466,29 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // GẮN VÀO CARD
             card.Controls.Add(table);
             return card;
+        }
+
+        private int GetCardWidth()
+        {
+            if (flowList == null) return 800;
+
+            int padding = flowList.Padding.Horizontal;
+            int scrollbar = SystemInformation.VerticalScrollBarWidth;
+            int width = flowList.ClientSize.Width - padding - scrollbar - 8;
+
+            return Math.Max(Scale(700), width);
+        }
+
+        private void UpdateCardWidths()
+        {
+            if (flowList == null) return;
+            int width = GetCardWidth();
+
+            foreach (Control c in flowList.Controls)
+            {
+                if (c is Panel p)
+                    p.Width = width;
+            }
         }
 
         // =====================================================
@@ -678,10 +629,11 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             return new Button
             {
                 Text = text,
-                Width = 170,
-                Height = 30,
+                Width = Scale(170),
+                Height = Scale(30),
                 ForeColor = color,
-                FlatStyle = FlatStyle.Flat
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", ScaleFont(9), FontStyle.Regular)
             };
         }
 
@@ -690,10 +642,11 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             return new Button
             {
                 Text = text,
-                Width = 120,
-                Height = 28,
+                Width = Scale(120),
+                Height = Scale(28),
                 ForeColor = Color.Gray,
-                FlatStyle = FlatStyle.Flat
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", ScaleFont(9), FontStyle.Regular)
             };
         }
 
@@ -747,6 +700,35 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         {
             public bool IsDownloaded { get; set; }
             public LectureFiles? Files { get; set; }
+        }
+
+        private int Scale(int value)
+        {
+            return (int)Math.Round(value * _dpiScale);
+        }
+
+        private float ScaleFont(float size)
+        {
+            return size * _dpiScale;
+        }
+
+        private void ApplyDpiScaling()
+        {
+            lblHeader.Height = Scale(50);
+            lblHeader.Font = new Font("Segoe UI", ScaleFont(16), FontStyle.Bold);
+            lblHeader.Padding = new Padding(Scale(20), 0, 0, 0);
+
+            lblInfo.Height = Scale(40);
+            lblInfo.Font = new Font("Segoe UI", ScaleFont(14), FontStyle.Bold);
+            lblInfo.Padding = new Padding(Scale(20), 0, 0, 0);
+
+            flowList.Padding = new Padding(Scale(15));
+
+            if (btnBack != null)
+            {
+                btnBack.Width = Scale(30);
+                btnBack.Height = Scale(30);
+            }
         }
     }
 }

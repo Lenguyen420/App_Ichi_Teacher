@@ -1,5 +1,6 @@
 ﻿using kido_teacher_app.Config;
 using kido_teacher_app.Model;
+using kido_teacher_app.Shared.Network;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -41,17 +42,35 @@ namespace kido_teacher_app.Services
         {
             EnsureAuthorized();
 
-            var response = await client.GetAsync(ApiRoutes.UserById(userId));
+            var cacheKey = $"user_{userId}";
 
-            if (!response.IsSuccessStatusCode)
-                return null;
+            try
+            {
+                if (OfflineState.IsOffline())
+                    return await DbCacheService.GetAsync<UserDto>(cacheKey);
 
-            var json = await response.Content.ReadAsStringAsync();
+                var response = await client.GetAsync(ApiRoutes.UserById(userId));
 
-            var result =
-                JsonConvert.DeserializeObject<ApiResponse<UserDto>>(json);
+                if (!response.IsSuccessStatusCode)
+                    return null;
 
-            return result?.data;
+                var json = await response.Content.ReadAsStringAsync();
+
+                var result =
+                    JsonConvert.DeserializeObject<ApiResponse<UserDto>>(json);
+
+                if (result?.data != null)
+                    await DbCacheService.SaveAsync(cacheKey, JsonConvert.SerializeObject(result.data));
+
+                return result?.data;
+            }
+            catch (Exception ex)
+            {
+                if (IsNetworkException(ex))
+                    OfflineState.SetOffline(true);
+
+                return await DbCacheService.GetAsync<UserDto>(cacheKey);
+            }
         }
 
 
@@ -85,6 +104,14 @@ namespace kido_teacher_app.Services
 
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
+        }
+
+        private static bool IsNetworkException(Exception ex)
+        {
+            if (ex is HttpRequestException || ex is TaskCanceledException || ex is System.Net.Sockets.SocketException)
+                return true;
+
+            return ex.InnerException != null && IsNetworkException(ex.InnerException);
         }
 
 

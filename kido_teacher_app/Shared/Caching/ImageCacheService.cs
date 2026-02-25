@@ -147,9 +147,20 @@ namespace kido_teacher_app.Shared.Caching
             }
             catch (Exception ex)
             {
+                if (IsNetworkException(ex))
+                    OfflineState.SetOffline(true);
+
                 System.Diagnostics.Debug.WriteLine($"[ImageCache] Exception: {ex.Message}");
                 return null;
             }
+        }
+
+        private static bool IsNetworkException(Exception ex)
+        {
+            if (ex is HttpRequestException || ex is TaskCanceledException || ex is System.Net.Sockets.SocketException)
+                return true;
+
+            return ex.InnerException != null && IsNetworkException(ex.InnerException);
         }
 
         // =========================

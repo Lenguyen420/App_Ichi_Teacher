@@ -110,6 +110,8 @@
                 btnBack.Location = new Point(x, y);
                 btnBack.BringToFront();
             }
+
+            this.UpdateCardWidths();
         }
 
         private void BtnBack_Click(object sender, EventArgs e)
