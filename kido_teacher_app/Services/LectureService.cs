@@ -14,6 +14,14 @@ using System.Threading.Tasks;
 
 namespace kido_teacher_app.Services
 {
+    public sealed class DownloadStats
+    {
+        public long BytesRead { get; set; }
+        public long TotalBytes { get; set; }
+        public double SpeedMbps { get; set; }
+        public int Percent { get; set; }
+        public string Phase { get; set; } = "DOWNLOAD";
+    }
 
     public static class LectureService
     {
@@ -211,10 +219,19 @@ namespace kido_teacher_app.Services
         // =====================================================
         // 🔥 DOWNLOAD & EXTRACT ZIP (SỬ DỤNG PATH TỪ API)
         // =====================================================
-        public static async Task<string?> DownloadAndExtractZipAsync(
+        public static Task<string?> DownloadAndExtractZipAsync(
             string resourcePath,
             string lectureId,
             IProgress<int>? progress = null)
+        {
+            return DownloadAndExtractZipAsync(resourcePath, lectureId, progress, null);
+        }
+
+        public static async Task<string?> DownloadAndExtractZipAsync(
+            string resourcePath,
+            string lectureId,
+            IProgress<int>? progress,
+            IProgress<DownloadStats>? statsProgress)
         {
             EnsureAuthorized();
             // Lấy tên file từ path (trước khi encode URL)
@@ -261,20 +278,40 @@ namespace kido_teacher_app.Services
             {
                 res.EnsureSuccessStatusCode();
                 var total = res.Content.Headers.ContentLength ?? 0;
-                var buffer = new byte[81920];
+                const int downloadBufferSize = 1024 * 1024; // 1 MB buffer to improve throughput
+                var buffer = new byte[downloadBufferSize];
                 long read = 0;
                 await using var input = await res.Content.ReadAsStreamAsync();
-                await using var output = new FileStream(tempZip, FileMode.Create, FileAccess.Write);
+                await using var output = new FileStream(
+                    tempZip,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None,
+                    downloadBufferSize,
+                    FileOptions.Asynchronous | FileOptions.SequentialScan
+                );
+                var sw = System.Diagnostics.Stopwatch.StartNew();
                 int len;
                 while ((len = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
                     await output.WriteAsync(buffer, 0, len);
                     read += len;
+                    int percent = 0;
                     if (total > 0)
                     {
-                        int percent = (int)(read * 50 / total);
+                        percent = (int)(read * 50 / total);
                         progress?.Report(percent);
                     }
+                    var seconds = sw.Elapsed.TotalSeconds;
+                    var speed = seconds > 0 ? (read / (1024d * 1024d)) / seconds : 0;
+                    statsProgress?.Report(new DownloadStats
+                    {
+                        BytesRead = read,
+                        TotalBytes = total,
+                        SpeedMbps = speed,
+                        Percent = percent,
+                        Phase = "DOWNLOAD"
+                    });
                 }
             }
             // ======================
@@ -328,6 +365,14 @@ namespace kido_teacher_app.Services
                     current++;
                     int percent = 50 + (int)(current * 50.0 / total);
                     progress?.Report(percent);
+                    statsProgress?.Report(new DownloadStats
+                    {
+                        BytesRead = 0,
+                        TotalBytes = 0,
+                        SpeedMbps = 0,
+                        Percent = percent,
+                        Phase = "EXTRACT"
+                    });
                     await Task.Yield();
                 }
             }

@@ -310,6 +310,17 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
+            // ===== LABEL TỐC ĐỘ MẠNG (DƯỚI MÃ SỐ) =====
+            Label lblSpeed = new Label
+            {
+                Text = "Tốc độ: -- MB/s",
+                ForeColor = Color.Gray,
+                Dock = DockStyle.Bottom,
+                Height = Scale(20),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Visible = false
+            };
+
             // ===== LABEL TIÊU ĐỀ (CHIẾM HẾT PHẦN TRÊN) =====
             Label lblTitle = new Label
             {
@@ -323,6 +334,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // THỨ TỰ ADD RẤT QUAN TRỌNG
             info.Controls.Add(lblTitle); // Fill
             info.Controls.Add(lblCode);  // Bottom
+            info.Controls.Add(lblSpeed); // Bottom (dưới mã số)
             table.Controls.Add(info, 1, 0);
             // =======================
             // CỘT 3: XEM OFFLINE
@@ -403,7 +415,17 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
             var offlineState = new OfflineLectureState();
 
-            btnDown1.Tag = new object[] { lesson, btnPdfOff, btnVideoOff, btnLessonOff, btnDown1, btnDown2, btnDown3 };
+            btnDown1.Tag = new object[]
+            {
+                lesson,
+                btnPdfOff,
+                btnVideoOff,
+                btnLessonOff,
+                btnDown1,
+                btnDown2,
+                btnDown3,
+                lblSpeed
+            };
             btnDown2.Tag = btnDown1.Tag;
             btnDown3.Tag = btnDown1.Tag;
 
@@ -497,7 +519,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private async void BtnDownload_Click(object? sender, EventArgs e)
         {
             if (sender is not Button btn) return;
-            if (btn.Tag is not object[] data || data.Length < 7) return;
+            if (btn.Tag is not object[] data || data.Length < 8) return;
 
             var lesson = data[0] as LectureDto;
             var btnPdfOff = data[1] as Button;
@@ -507,6 +529,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             var btnDown1 = data[4] as Button;
             var btnDown2 = data[5] as Button;
             var btnDown3 = data[6] as Button;
+            var lblSpeed = data[7] as Label;
 
             if (lesson == null) return;
 
@@ -528,6 +551,12 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = false;
             btnDown1.Text = btnDown2.Text = btnDown3.Text = "Đang tải...";
             btnDown1.ForeColor = btnDown2.ForeColor = btnDown3.ForeColor = Color.Orange;
+            if (lblSpeed != null)
+            {
+                lblSpeed.ForeColor = Color.Orange;
+                lblSpeed.Text = "Tốc độ: đang đo...";
+                lblSpeed.Visible = true;
+            }
 
             // =========================
             // 3️⃣ PROGRESS (ĐÃ TỐI ƯU)
@@ -543,6 +572,20 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btnDown1.Text = $"Đang tải {percent}%";
             });
 
+            var statsProgress = new Progress<DownloadStats>(stat =>
+            {
+                if (lblSpeed == null) return;
+
+                if (stat.Phase == "DOWNLOAD")
+                {
+                    lblSpeed.Text = $"Tốc độ: {stat.SpeedMbps:0.0} MB/s";
+                }
+                else if (stat.Phase == "EXTRACT")
+                {
+                    lblSpeed.Text = "Đang giải nén...";
+                }
+            });
+
             // =========================
             // 4️⃣ DOWNLOAD + EXTRACT (SỬ DỤNG PATH TỪ API)
             // NOTE: Đẩy toàn bộ await nặng sang background thread
@@ -552,7 +595,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             await Task.Run(async () =>
             {
                 extractPath = await LectureService
-                    .DownloadAndExtractZipAsync(offlineZip.url, lesson.id, progress);
+                    .DownloadAndExtractZipAsync(offlineZip.url, lesson.id, progress, statsProgress);
             });
 
             // =========================
@@ -561,9 +604,19 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             btnDown1.Text = btnDown2.Text = btnDown3.Text = "Đã tải";
             btnDown1.ForeColor = btnDown2.ForeColor = btnDown3.ForeColor = Color.Green;
             btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = false;
+            if (lblSpeed != null)
+            {
+                lblSpeed.ForeColor = Color.Gray;
+                lblSpeed.Visible = false;
+            }
 
             if (string.IsNullOrEmpty(extractPath))
             {
+                if (lblSpeed != null)
+                {
+                    lblSpeed.Text = "Tốc độ: -- MB/s";
+                    lblSpeed.Visible = false;
+                }
                 MessageBox.Show("Giải nén thất bại");
                 return;
             }
