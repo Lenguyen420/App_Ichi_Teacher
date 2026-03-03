@@ -328,9 +328,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 Font = new Font("Segoe UI", ScaleFont(12), FontStyle.Bold),
                 Dock = DockStyle.Top,
                 AutoSize = false,
-                Height = Scale(32),
-                AutoEllipsis = true,
-                TextAlign = ContentAlignment.MiddleLeft
+                AutoEllipsis = false,
+                UseCompatibleTextRendering = true,
+                TextAlign = ContentAlignment.TopLeft
             };
 
             // THỨ TỰ ADD RẤT QUAN TRỌNG
@@ -338,6 +338,8 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             info.Controls.Add(lblCode);  // Bottom
             info.Controls.Add(lblSpeed); // Bottom (dưới mã số)
             table.Controls.Add(info, 1, 0);
+            UpdateTitleLayout(lblTitle, info, lblCode, lblSpeed);
+            info.SizeChanged += (s, e) => UpdateTitleLayout(lblTitle, info, lblCode, lblSpeed);
             // =======================
             // CỘT 3: XEM OFFLINE
             // =======================
@@ -784,6 +786,29 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btnBack.Width = Scale(30);
                 btnBack.Height = Scale(30);
             }
+        }
+
+        private void UpdateTitleLayout(Label lblTitle, Panel info, Label lblCode, Label lblSpeed)
+        {
+            if (lblTitle == null || info == null) return;
+
+            int horizontalPadding = info.Padding.Horizontal;
+            int availableWidth = Math.Max(10, info.ClientSize.Width - horizontalPadding);
+
+            int bottomHeight = 0;
+            if (lblCode != null) bottomHeight += lblCode.Height;
+            if (lblSpeed != null && lblSpeed.Visible) bottomHeight += lblSpeed.Height;
+
+            int availableHeight = Math.Max(Scale(24), info.ClientSize.Height - bottomHeight - info.Padding.Vertical);
+
+            lblTitle.Width = availableWidth;
+            var size = TextRenderer.MeasureText(
+                lblTitle.Text,
+                lblTitle.Font,
+                new Size(availableWidth, availableHeight),
+                TextFormatFlags.WordBreak | TextFormatFlags.NoPadding | TextFormatFlags.NoClipping
+            );
+            lblTitle.Height = Math.Min(availableHeight, size.Height);
         }
     }
 }
