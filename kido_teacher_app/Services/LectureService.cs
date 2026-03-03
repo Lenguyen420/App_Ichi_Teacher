@@ -321,21 +321,16 @@ namespace kido_teacher_app.Services
             {
                 int total = zip.Entries.Count;
                 int current = 0;
-                // Tìm thư mục gốc chung (nếu có)
+                // Luôn strip thư mục gốc đầu tiên (nếu có), kể cả khi zip có thêm entry lẻ
                 string? commonRoot = null;
                 var firstEntry = zip.Entries.FirstOrDefault(e => !string.IsNullOrEmpty(e.Name));
                 if (firstEntry != null)
                 {
-                    var parts = firstEntry.FullName.Split('/');
-                    if (parts.Length > 1)
+                    var normalized = firstEntry.FullName.Replace('\\', '/');
+                    var parts = normalized.Split('/');
+                    if (parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[0]))
                     {
-                        // Kiểm tra xem tất cả entries có cùng thư mục gốc không
                         commonRoot = parts[0] + "/";
-                        bool allHaveCommonRoot = zip.Entries
-                            .Where(e => !string.IsNullOrEmpty(e.Name))
-                            .All(e => e.FullName.StartsWith(commonRoot));
-                        if (!allHaveCommonRoot)
-                            commonRoot = null;
                     }
                 }
                 foreach (var entry in zip.Entries)
@@ -344,7 +339,8 @@ namespace kido_teacher_app.Services
                     if (string.IsNullOrEmpty(entry.Name))
                         continue;
                     // Bỏ qua thư mục gốc nếu tìm thấy
-                    var relativePath = entry.FullName;
+                    var normalizedFullName = entry.FullName.Replace('\\', '/');
+                    var relativePath = normalizedFullName;
                     if (!string.IsNullOrEmpty(commonRoot) && relativePath.StartsWith(commonRoot))
                     {
                         relativePath = relativePath.Substring(commonRoot.Length);
