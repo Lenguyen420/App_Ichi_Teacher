@@ -36,9 +36,12 @@ namespace kido_teacher_app.Shared.Caching
                         pdf_path TEXT,
                         video_path TEXT,
                         elearning_path TEXT,
+                        offline_zip_url TEXT,
                         updated_at TEXT NOT NULL
                       );";
                 cmd.ExecuteNonQuery();
+
+                EnsureSchemaUpToDate(conn);
 
                 _initialized = true;
             }
@@ -104,7 +107,8 @@ namespace kido_teacher_app.Shared.Caching
             string lectureId,
             string? pdfPath,
             string? videoPath,
-            string? elearningPath
+            string? elearningPath,
+            string? offlineZipUrl
         )
         {
             EnsureInitialized();
@@ -114,17 +118,19 @@ namespace kido_teacher_app.Shared.Caching
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                @"INSERT INTO offline_lecture_cache (lecture_id, pdf_path, video_path, elearning_path, updated_at)
-                  VALUES (@id, @pdf, @video, @elearn, @t)
+                @"INSERT INTO offline_lecture_cache (lecture_id, pdf_path, video_path, elearning_path, offline_zip_url, updated_at)
+                  VALUES (@id, @pdf, @video, @elearn, @zip, @t)
                   ON CONFLICT(lecture_id) DO UPDATE SET
                     pdf_path = @pdf,
                     video_path = @video,
                     elearning_path = @elearn,
+                    offline_zip_url = @zip,
                     updated_at = @t;";
             cmd.Parameters.AddWithValue("@id", lectureId);
             cmd.Parameters.AddWithValue("@pdf", (object?)pdfPath ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@video", (object?)videoPath ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@elearn", (object?)elearningPath ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@zip", (object?)offlineZipUrl ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
             cmd.ExecuteNonQuery();
         }
@@ -141,7 +147,7 @@ namespace kido_teacher_app.Shared.Caching
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                @"SELECT lecture_id, pdf_path, video_path, elearning_path
+                @"SELECT lecture_id, pdf_path, video_path, elearning_path, offline_zip_url
                   FROM offline_lecture_cache
                   WHERE lecture_id = @id
                   LIMIT 1;";
@@ -156,7 +162,8 @@ namespace kido_teacher_app.Shared.Caching
                 LectureId = reader.GetString(0),
                 PdfPath = reader.IsDBNull(1) ? null : reader.GetString(1),
                 VideoPath = reader.IsDBNull(2) ? null : reader.GetString(2),
-                ElearningPath = reader.IsDBNull(3) ? null : reader.GetString(3)
+                ElearningPath = reader.IsDBNull(3) ? null : reader.GetString(3),
+                OfflineZipUrl = reader.IsDBNull(4) ? null : reader.GetString(4)
             };
         }
 
@@ -257,6 +264,41 @@ namespace kido_teacher_app.Shared.Caching
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[Cache] Error clearing data: {ex.Message}");
+            }
+        }
+
+        // =========================
+        // SCHEMA MIGRATION
+        // =========================
+        private static void EnsureSchemaUpToDate(SqliteConnection conn)
+        {
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"PRAGMA table_info(offline_lecture_cache);";
+                using var reader = cmd.ExecuteReader();
+                bool hasOfflineZipUrl = false;
+
+                while (reader.Read())
+                {
+                    var col = reader.GetString(1);
+                    if (string.Equals(col, "offline_zip_url", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasOfflineZipUrl = true;
+                        break;
+                    }
+                }
+
+                if (!hasOfflineZipUrl)
+                {
+                    using var alter = conn.CreateCommand();
+                    alter.CommandText = @"ALTER TABLE offline_lecture_cache ADD COLUMN offline_zip_url TEXT;";
+                    alter.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Cache] Schema migration error: {ex.Message}");
             }
         }
     }

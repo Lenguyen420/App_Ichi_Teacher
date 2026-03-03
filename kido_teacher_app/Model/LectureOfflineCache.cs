@@ -7,5 +7,6 @@
         public string? PdfPath { get; set; }
         public string? VideoPath { get; set; }
         public string? ElearningPath { get; set; }
+        public string? OfflineZipUrl { get; set; }
     }
 }

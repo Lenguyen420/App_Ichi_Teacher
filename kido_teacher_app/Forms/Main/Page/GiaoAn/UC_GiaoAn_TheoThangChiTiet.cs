@@ -159,6 +159,10 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                     //end
 
                     string pdfOffline = null, videoOffline = null, lessonOffline = null;
+                    string? cachedOfflineZipUrl = cache?.OfflineZipUrl;
+                    string? currentOfflineZipUrl = detail.resources
+                        .FirstOrDefault(r => r.source == "OFFLINE")
+                        ?.url;
 
                     foreach (var r in detail.resources)
                     {
@@ -174,6 +178,16 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                             lessonOffline = r.url;
                     }
 
+                    bool needsUpdate =
+                        cache != null &&
+                        !string.IsNullOrWhiteSpace(cachedOfflineZipUrl) &&
+                        !string.IsNullOrWhiteSpace(currentOfflineZipUrl) &&
+                        !string.Equals(
+                            cachedOfflineZipUrl,
+                            currentOfflineZipUrl,
+                            StringComparison.OrdinalIgnoreCase
+                        );
+
                     flowList.Controls.Add(
                         CreateLessonItem(
                             detail,
@@ -182,7 +196,8 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                             detail.code ?? "---",
                             pdfOffline,
                             videoOffline,
-                            lessonOffline
+                            lessonOffline,
+                            needsUpdate
                         )
                     );
                 }
@@ -254,7 +269,8 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             string code,
             string pdfOffline,
             string videoOffline,
-            string lessonOffline
+            string lessonOffline,
+            bool needsUpdate
         )
         {
             // CARD CHA
@@ -380,6 +396,20 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
             offline.Controls.AddRange(new Control[] { btnPdfOff, btnVideoOff, btnLessonOff });
 
+            Label lblUpdate = new Label
+            {
+                Text = "Vui lòng cập nhật giáo án mới",
+                ForeColor = Color.Red,
+                Height = Scale(20),
+                Width = Scale(170),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0, Scale(6), 0, 0),
+                Visible = needsUpdate
+            };
+
+            offline.Controls.Add(lblUpdate);
+
             table.Controls.Add(offline, 2, 0);
 
             // =======================
@@ -428,7 +458,8 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btnDown1,
                 btnDown2,
                 btnDown3,
-                lblSpeed
+                lblSpeed,
+                lblUpdate
             };
             btnDown2.Tag = btnDown1.Tag;
             btnDown3.Tag = btnDown1.Tag;
@@ -489,6 +520,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btnDown3
             };
 
+            lblUpdate.Tag = btnDown1.Tag;
+            lblUpdate.Click += BtnUpdate_Click;
+
             // GẮN VÀO CARD
             card.Controls.Add(table);
             return card;
@@ -523,8 +557,21 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private async void BtnDownload_Click(object? sender, EventArgs e)
         {
             if (sender is not Button btn) return;
-            if (btn.Tag is not object[] data || data.Length < 8) return;
+            if (btn.Tag is not object[] data || data.Length < 9) return;
 
+            await DownloadOrUpdateAsync(data, isUpdate: false);
+        }
+
+        private async void BtnUpdate_Click(object? sender, EventArgs e)
+        {
+            if (sender is not Label lbl) return;
+            if (lbl.Tag is not object[] data || data.Length < 9) return;
+
+            await DownloadOrUpdateAsync(data, isUpdate: true);
+        }
+
+        private async Task DownloadOrUpdateAsync(object[] data, bool isUpdate)
+        {
             var lesson = data[0] as LectureDto;
             var btnPdfOff = data[1] as Button;
             var btnVideoOff = data[2] as Button;
@@ -534,6 +581,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             var btnDown2 = data[5] as Button;
             var btnDown3 = data[6] as Button;
             var lblSpeed = data[7] as Label;
+            var lblUpdate = data[8] as Label;
 
             if (lesson == null) return;
 
@@ -555,6 +603,12 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = false;
             btnDown1.Text = btnDown2.Text = btnDown3.Text = "Đang tải...";
             btnDown1.ForeColor = btnDown2.ForeColor = btnDown3.ForeColor = Color.Orange;
+            if (lblUpdate != null)
+            {
+                lblUpdate.Enabled = false;
+                lblUpdate.Visible = isUpdate ? true : lblUpdate.Visible;
+                if (isUpdate) lblUpdate.Text = "Đang cập nhật...";
+            }
             if (lblSpeed != null)
             {
                 lblSpeed.ForeColor = Color.Orange;
@@ -613,6 +667,12 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 lblSpeed.ForeColor = Color.Gray;
                 lblSpeed.Visible = false;
             }
+            if (lblUpdate != null)
+            {
+                lblUpdate.Text = "Vui lòng cập nhật giáo án mới";
+                lblUpdate.Visible = false;
+                lblUpdate.Enabled = true;
+            }
 
             if (string.IsNullOrEmpty(extractPath))
             {
@@ -634,7 +694,8 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 lesson.id,
                 files.PdfPath,
                 files.VideoPath,
-                files.ElearningPath
+                files.ElearningPath,
+                offlineZip.url
             );
 
             // =========================
