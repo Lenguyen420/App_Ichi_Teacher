@@ -326,13 +326,15 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             {
                 Text = title ?? "(Không có tiêu đề)",
                 Font = new Font("Segoe UI", ScaleFont(12), FontStyle.Bold),
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
+                AutoSize = false,
+                Height = Scale(32),
                 AutoEllipsis = true,
-                TextAlign = ContentAlignment.TopLeft
+                TextAlign = ContentAlignment.MiddleLeft
             };
 
             // THỨ TỰ ADD RẤT QUAN TRỌNG
-            info.Controls.Add(lblTitle); // Fill
+            info.Controls.Add(lblTitle); // Top (single line)
             info.Controls.Add(lblCode);  // Bottom
             info.Controls.Add(lblSpeed); // Bottom (dưới mã số)
             table.Controls.Add(info, 1, 0);
