@@ -1,6 +1,5 @@
 ﻿
 using kido_teacher_app.Forms.Main.Page.GioiThieu;
-using kido_teacher_app.Forms.Main.Page.QuanLyNoiDung;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -39,15 +38,6 @@ namespace kido_teacher_app.Forms.Main.Page
             slideTimer.Tick += SlideTimer_Tick;
             slideTimer.Start(); // ⭐ BẮT BUỘC
         }
-        private void EditImg_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            using (var frm = new Form_ChinhSuaAnhGioiThieu())
-            {
-                frm.StartPosition = FormStartPosition.CenterParent;
-                frm.ShowDialog(this);   // mở popup modal
-            }
-        }
-
         private void EditInfo_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             using (var frm = new Form_ChinhSuaThongTinCongTy())

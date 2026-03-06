@@ -7,6 +7,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>True</UseWPF>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <AssemblyName>Kido Teacher</AssemblyName>
     <UseAppHost>true</UseAppHost>
     <ApplicationIcon>Resources\logo4.ico</ApplicationIcon>

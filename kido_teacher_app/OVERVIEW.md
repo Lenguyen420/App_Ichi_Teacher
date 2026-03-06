@@ -24,7 +24,7 @@
 - `UC_GiaoAn`: hiển thị danh sách lớp (card), load ảnh qua cache.
 - Giao án theo tháng: `UC_GiaoAnTheoThang`, chi tiết `UC_GiaoAn_TheoThangChiTiet`.
 - Viewer: `Form_PdfViewer`, `Form_ElearningViewer`.
-- Giới thiệu: có form chỉnh sửa thông tin/ảnh (`Form_ChinhSuaThongTinCongTy`, `Form_ChinhSuaAnhGioiThieu`).
+- Giới thiệu: có form chỉnh sửa thông tin (`Form_ChinhSuaThongTinCongTy`).
 
 ## Services (API/logic)
 - `AuthService`: login admin/teacher, lưu token, kiểm tra token, parse JWT claims.
