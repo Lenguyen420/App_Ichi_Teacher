@@ -5,5 +5,6 @@
         public string? PdfPath { get; set; }
         public string? VideoPath { get; set; }
         public string? ElearningPath { get; set; }
+        public string? PowerPointPath { get; set; }
     }
 }

@@ -19,7 +19,20 @@ namespace kido_teacher_app.Services
 
                 ElearningPath = Directory
                     .GetFiles(extractPath, "story.html", SearchOption.TopDirectoryOnly)
+                    .FirstOrDefault(),
+
+                PowerPointPath = Directory
+                    .GetFiles(extractPath, "*.pptx", SearchOption.TopDirectoryOnly)
                     .FirstOrDefault()
+                    ?? Directory
+                        .GetFiles(extractPath, "*.ppsx", SearchOption.TopDirectoryOnly)
+                        .FirstOrDefault()
+                    ?? Directory
+                        .GetFiles(extractPath, "*.ppt", SearchOption.TopDirectoryOnly)
+                        .FirstOrDefault()
+                    ?? Directory
+                        .GetFiles(extractPath, "*.pps", SearchOption.TopDirectoryOnly)
+                        .FirstOrDefault()
             };
         }
     }

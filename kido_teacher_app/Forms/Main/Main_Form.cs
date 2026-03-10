@@ -2,88 +2,62 @@
 //using kido_teacher_app.Forms.Main.Page.QuanLyTaiKhoan;
 using kido_teacher_app.Services;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace kido_teacher_app
 {
     public partial class Main_Form : Form
     {
-        private Panel selectedMenu = null;
+        private Panel? selectedMenu;
+        private UserControl? currentControl;
 
+        private UC_GioiThieu? gioiThieuControl;
+        private UC_TaiKhoan? taiKhoanControl;
+        private UC_GiaoAn? giaoAnControl;
+
+        private readonly HashSet<UserControl> persistentControls = new HashSet<UserControl>();
 
         public Main_Form()
         {
             InitializeComponent();
-            this.WindowState = FormWindowState.Maximized;
+            WindowState = FormWindowState.Maximized;
 
-            RegisterMenuEvents();   //Gán sự kiện menu click
-
-            // Load mặc định
             SelectMenu(menuGioiThieu);
-            ShowControl(new UC_GioiThieu());
-        }
-
-        private void RegisterMenuEvents()
-        {
-            menuGioiThieu.Click += menu_Click;
-            menuTaiKhoan.Click += menu_Click;
-            //menuThemMoi.Click += menu_Click;
-            menuGiaoAn.Click += menu_Click;
-            //menuQLTaiKhoan.Click += menu_Click;
-            //menuQLBaiGiang.Click += menu_Click;
+            gioiThieuControl = new UC_GioiThieu();
+            ShowPersistentControl(gioiThieuControl);
         }
 
         private async void menu_Click(object sender, EventArgs e)
         {
-            Panel clickedMenu = sender as Panel;
+            Panel? clickedMenu = sender as Panel;
 
-            // Nếu click vào Label hoặc PictureBox → lấy panel cha
+            // Nếu click vào Label hoặc PictureBox -> lấy panel cha
             if (clickedMenu == null)
-                clickedMenu = (sender as Control).Parent as Panel;
+                clickedMenu = (sender as Control)?.Parent as Panel;
+
+            if (clickedMenu == null)
+                return;
 
             if (clickedMenu == menuGioiThieu)
             {
                 SelectMenu(menuGioiThieu);
-                ShowControl(new UC_GioiThieu());
+                gioiThieuControl ??= new UC_GioiThieu();
+                ShowPersistentControl(gioiThieuControl);
             }
             else if (clickedMenu == menuTaiKhoan)
             {
-                //SelectMenu(menuTaiKhoan);
-                //ShowControl(new UC_TaiKhoan());
                 SelectMenu(menuTaiKhoan);
                 await LoadTaiKhoanAsync();
             }
-            //else if (clickedMenu == menuThemMoi)
-            //{
-            //    SelectMenu(menuThemMoi);
-            //    ShowControl(new UC_ThemMoiBaiGiang());
-            //}
             else if (clickedMenu == menuGiaoAn)
             {
-                //SelectMenu(menuGiaoAn);
-                //ShowControl(new UC_GiaoAn());
                 SelectMenu(menuGiaoAn);
-
-                var courseId = await GetFirstCourseIdAsync();
-
-                ShowControl(new UC_GiaoAn(courseId));
+                await LoadGiaoAnAsync();
             }
-            //else if (clickedMenu == menuQLTaiKhoan)
-            //{
-            //    SelectMenu(menuQLTaiKhoan);
-            //    ShowControl(new UC_QuanLyTaiKhoan_Main());
-            //}
-            //else if (clickedMenu == menuQLBaiGiang)
-            //{
-            //    SelectMenu(menuQLBaiGiang);
-            //    ShowControl(new UC_TaiKhoan_QLBG());
-            //}
-            //else if (clickedMenu == menuThongBao)
-            //{
-            //    SelectMenu(menuThongBao);
-            //    ShowControl(new UC_ThongBao());
-            //}
         }
 
         private async Task<string> GetFirstCourseIdAsync()
@@ -103,41 +77,64 @@ namespace kido_teacher_app
 
         public void ShowControl(UserControl uc)
         {
-            ReplaceMainControl(uc);
+            ReplaceMainControl(uc, keepAlive: false);
         }
 
         public void LoadUserControl(UserControl uc)
         {
-            ReplaceMainControl(uc);
+            ReplaceMainControl(uc, keepAlive: false);
+        }
+
+        private void ShowPersistentControl(UserControl uc)
+        {
+            ReplaceMainControl(uc, keepAlive: true);
         }
 
         private async Task LoadTaiKhoanAsync()
         {
             var user = await UserService.GetByIdAsync(AuthSession.UserId);
 
-            var uc = new UC_TaiKhoan();
-            uc.LoadUser(user);
-
-            ReplaceMainControl(uc);
+            taiKhoanControl ??= new UC_TaiKhoan();
+            taiKhoanControl.LoadUser(user);
+            ShowPersistentControl(taiKhoanControl);
         }
 
-        private void ReplaceMainControl(UserControl uc)
+        private async Task LoadGiaoAnAsync()
         {
-            panelMain.SuspendLayout();
-
-            // ControlCollection.Clear() không đảm bảo giải phóng object cũ.
-            // Dispose explicit để tránh giữ timer/image trong RAM.
-            for (int i = panelMain.Controls.Count - 1; i >= 0; i--)
+            if (giaoAnControl == null)
             {
-                panelMain.Controls[i].Dispose();
+                var courseId = await GetFirstCourseIdAsync();
+                giaoAnControl = new UC_GiaoAn(courseId);
             }
 
-            panelMain.Controls.Clear();
+            ShowPersistentControl(giaoAnControl);
+        }
+
+        private void ReplaceMainControl(UserControl uc, bool keepAlive)
+        {
+            if (ReferenceEquals(currentControl, uc))
+                return;
+
+            panelMain.SuspendLayout();
+
+            if (currentControl != null)
+            {
+                panelMain.Controls.Remove(currentControl);
+
+                if (!persistentControls.Contains(currentControl))
+                {
+                    currentControl.Dispose();
+                }
+            }
+
+            if (keepAlive)
+                persistentControls.Add(uc);
+
             uc.Dock = DockStyle.Fill;
             panelMain.Controls.Add(uc);
+            currentControl = uc;
 
             panelMain.ResumeLayout();
         }
-
     }
 }

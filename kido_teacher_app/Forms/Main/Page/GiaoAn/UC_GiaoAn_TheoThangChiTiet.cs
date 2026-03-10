@@ -153,12 +153,22 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                                 url = cache.ElearningPath
                             });
                         }
+
+                        if (!string.IsNullOrEmpty(cache.PowerPointPath))
+                        {
+                            detail.resources.Add(new LectureResourceDto
+                            {
+                                type = "POWERPOINT",
+                                source = "LOCAL",
+                                url = cache.PowerPointPath
+                            });
+                        }
                     }
 
 
                     //end
 
-                    string pdfOffline = null, videoOffline = null, lessonOffline = null;
+                    string pdfOffline = null, videoOffline = null, lessonOffline = null, powerPointOffline = null;
                     string? cachedOfflineZipUrl = cache?.OfflineZipUrl;
                     string? currentOfflineZipUrl = detail.resources
                         .FirstOrDefault(r => r.source == "OFFLINE")
@@ -176,6 +186,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
                         if (r.type == "LESSON" && (r.source == "OFFLINE" || r.source == "LOCAL"))
                             lessonOffline = r.url;
+
+                        if (r.type == "POWERPOINT" && (r.source == "OFFLINE" || r.source == "LOCAL"))
+                            powerPointOffline = r.url;
                     }
 
                     bool needsUpdate =
@@ -197,6 +210,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                             pdfOffline,
                             videoOffline,
                             lessonOffline,
+                            powerPointOffline,
                             needsUpdate
                         )
                     );
@@ -242,6 +256,28 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 return;
             }
 
+            if (
+                filePath.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase)
+                || filePath.EndsWith(".ppsx", StringComparison.OrdinalIgnoreCase)
+                || filePath.EndsWith(".ppt", StringComparison.OrdinalIgnoreCase)
+                || filePath.EndsWith(".pps", StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = filePath,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Không mở được file PowerPoint\n" + ex.Message);
+                }
+                return;
+            }
+
             // VIDEO local
             try
             {
@@ -270,13 +306,14 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             string pdfOffline,
             string videoOffline,
             string lessonOffline,
+            string powerPointOffline,
             bool needsUpdate
         )
         {
             // CARD CHA
             Panel card = new Panel
             {
-                Height = Scale(190),
+                Height = Scale(200),
                 Width = GetCardWidth(),
                 BorderStyle = BorderStyle.FixedSingle,
                 Margin = new Padding(Scale(5))
@@ -301,13 +338,30 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // =======================
             // CỘT 1: ẢNH
             // =======================
-            PictureBox pic = new PictureBox
+            Panel imageHost = new Panel
             {
                 Dock = DockStyle.Fill,
-                SizeMode = PictureBoxSizeMode.StretchImage,
+                Padding = new Padding(0)
+            };
+
+            PictureBox pic = new PictureBox
+            {
+                Size = new Size(Scale(150), Scale(150)),
+                SizeMode = PictureBoxSizeMode.Zoom,
                 Image = Properties.Resources.lessondefault
             };
-            table.Controls.Add(pic, 0, 0);
+
+            void CenterImage()
+            {
+                pic.Left = Math.Max(0, (imageHost.ClientSize.Width - pic.Width) / 2);
+                pic.Top = Math.Max(0, (imageHost.ClientSize.Height - pic.Height) / 2);
+            }
+
+            imageHost.Controls.Add(pic);
+            imageHost.Resize += (s, e) => CenterImage();
+            CenterImage();
+
+            table.Controls.Add(imageHost, 0, 0);
 
             // phần cột 2
             Panel info = new Panel
@@ -385,16 +439,19 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             Button btnPdfOff = CreateSimpleButton("Giáo án PDF", Color.Red);
             Button btnVideoOff = CreateSimpleButton("Video dạy mẫu", Color.Red);
             Button btnLessonOff = CreateSimpleButton("Bài giảng E-Learning", Color.Red);
+            Button btnPowerPointOff = CreateSimpleButton("Bài giảng PowerPoint", Color.Red);
 
             btnPdfOff.Enabled = false;
             btnVideoOff.Enabled = false;
             btnLessonOff.Enabled = false;
+            btnPowerPointOff.Enabled = false;
 
             btnPdfOff.Margin = new Padding(Scale(20), 0, 0, Scale(6));
             btnVideoOff.Margin = new Padding(Scale(20), 0, 0, Scale(6));
-            btnLessonOff.Margin = new Padding(Scale(20), 0, 0, 0);
+            btnLessonOff.Margin = new Padding(Scale(20), 0, 0, Scale(6));
+            btnPowerPointOff.Margin = new Padding(Scale(20), 0, 0, 0);
 
-            offline.Controls.AddRange(new Control[] { btnPdfOff, btnVideoOff, btnLessonOff });
+            offline.Controls.AddRange(new Control[] { btnPdfOff, btnVideoOff, btnLessonOff, btnPowerPointOff });
 
             Label lblUpdate = new Label
             {
@@ -441,10 +498,12 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             Button btnDown1 = CreateSimpleGrayButton("Chưa tải");
             Button btnDown2 = CreateSimpleGrayButton("Chưa tải");
             Button btnDown3 = CreateSimpleGrayButton("Chưa tải");
+            Button btnDown4 = CreateSimpleGrayButton("Chưa tải");
 
             btnDown1.Margin = new Padding(Scale(20), 0, 0, Scale(6));
             btnDown2.Margin = new Padding(Scale(20), 0, 0, Scale(6));
-            btnDown3.Margin = new Padding(Scale(20), 0, 0, 0);
+            btnDown3.Margin = new Padding(Scale(20), 0, 0, Scale(6));
+            btnDown4.Margin = new Padding(Scale(20), 0, 0, 0);
 
 
             var offlineState = new OfflineLectureState();
@@ -455,20 +514,24 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btnPdfOff,
                 btnVideoOff,
                 btnLessonOff,
+                btnPowerPointOff,
                 btnDown1,
                 btnDown2,
                 btnDown3,
+                btnDown4,
                 lblSpeed,
                 lblUpdate
             };
             btnDown2.Tag = btnDown1.Tag;
             btnDown3.Tag = btnDown1.Tag;
+            btnDown4.Tag = btnDown1.Tag;
 
             btnDown1.Click += BtnDownload_Click;
             btnDown2.Click += BtnDownload_Click;
             btnDown3.Click += BtnDownload_Click;
+            btnDown4.Click += BtnDownload_Click;
 
-            deleteCol.Controls.AddRange(new Control[] { btnDelete, btnDown1, btnDown2, btnDown3 });
+            deleteCol.Controls.AddRange(new Control[] { btnDelete, btnDown1, btnDown2, btnDown3, btnDown4 });
             table.Controls.Add(deleteCol, 3, 0);
 
 
@@ -509,15 +572,27 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btnDown3.Text = "Đã tải";
             }
 
+            if (!string.IsNullOrEmpty(powerPointOffline) && File.Exists(powerPointOffline))
+            {
+                btnPowerPointOff.Enabled = true;
+                btnPowerPointOff.ForeColor = Color.Blue;
+                btnPowerPointOff.FlatAppearance.BorderColor = Color.Blue;
+                btnPowerPointOff.Click += (s, e) => OpenLocal(powerPointOffline, title);
+
+                btnDown4.Text = "Đã tải";
+            }
+
             btnDelete.Tag = new object[]
             {
                 lesson,
                 btnPdfOff,
                 btnVideoOff,
                 btnLessonOff,
+                btnPowerPointOff,
                 btnDown1,
                 btnDown2,
-                btnDown3
+                btnDown3,
+                btnDown4
             };
 
             lblUpdate.Tag = btnDown1.Tag;
@@ -557,7 +632,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private async void BtnDownload_Click(object? sender, EventArgs e)
         {
             if (sender is not Button btn) return;
-            if (btn.Tag is not object[] data || data.Length < 9) return;
+            if (btn.Tag is not object[] data || data.Length < 11) return;
 
             await DownloadOrUpdateAsync(data, isUpdate: false);
         }
@@ -565,7 +640,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private async void BtnUpdate_Click(object? sender, EventArgs e)
         {
             if (sender is not Label lbl) return;
-            if (lbl.Tag is not object[] data || data.Length < 9) return;
+            if (lbl.Tag is not object[] data || data.Length < 11) return;
 
             await DownloadOrUpdateAsync(data, isUpdate: true);
         }
@@ -576,12 +651,14 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             var btnPdfOff = data[1] as Button;
             var btnVideoOff = data[2] as Button;
             var btnLessonOff = data[3] as Button;
+            var btnPowerPointOff = data[4] as Button;
 
-            var btnDown1 = data[4] as Button;
-            var btnDown2 = data[5] as Button;
-            var btnDown3 = data[6] as Button;
-            var lblSpeed = data[7] as Label;
-            var lblUpdate = data[8] as Label;
+            var btnDown1 = data[5] as Button;
+            var btnDown2 = data[6] as Button;
+            var btnDown3 = data[7] as Button;
+            var btnDown4 = data[8] as Button;
+            var lblSpeed = data[9] as Label;
+            var lblUpdate = data[10] as Label;
 
             if (lesson == null) return;
 
@@ -600,9 +677,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // =========================
             // 2️⃣ CHUẨN BỊ UI
             // =========================
-            btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = false;
-            btnDown1.Text = btnDown2.Text = btnDown3.Text = "Đang tải...";
-            btnDown1.ForeColor = btnDown2.ForeColor = btnDown3.ForeColor = Color.Orange;
+            btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = btnDown4.Enabled = false;
+            btnDown1.Text = btnDown2.Text = btnDown3.Text = btnDown4.Text = "Đang tải...";
+            btnDown1.ForeColor = btnDown2.ForeColor = btnDown3.ForeColor = btnDown4.ForeColor = Color.Orange;
             if (lblUpdate != null)
             {
                 lblUpdate.Enabled = false;
@@ -659,9 +736,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // =========================
             // 5️⃣ UPDATE UI SAU KHI XONG
             // =========================
-            btnDown1.Text = btnDown2.Text = btnDown3.Text = "Đã tải";
-            btnDown1.ForeColor = btnDown2.ForeColor = btnDown3.ForeColor = Color.Green;
-            btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = false;
+            btnDown1.Text = btnDown2.Text = btnDown3.Text = btnDown4.Text = "Đã tải";
+            btnDown1.ForeColor = btnDown2.ForeColor = btnDown3.ForeColor = btnDown4.ForeColor = Color.Green;
+            btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = btnDown4.Enabled = false;
             if (lblSpeed != null)
             {
                 lblSpeed.ForeColor = Color.Gray;
@@ -695,6 +772,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 files.PdfPath,
                 files.VideoPath,
                 files.ElearningPath,
+                files.PowerPointPath,
                 offlineZip.url
             );
 
@@ -740,6 +818,14 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 );
             }
 
+            if (!string.IsNullOrEmpty(files.PowerPointPath))
+            {
+                EnableOfflineButton(
+                    btnPowerPointOff,
+                    () => OpenLocal(files.PowerPointPath, lesson.title)
+                );
+            }
+
         }
 
         private Button CreateSimpleButton(string text, Color color)
@@ -772,16 +858,18 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private async void BtnDeleteOffline_Click(object? sender, EventArgs e)
         {
             if (sender is not Button btn) return;
-            if (btn.Tag is not object[] data || data.Length < 7) return;
+            if (btn.Tag is not object[] data || data.Length < 9) return;
 
             var lesson = data[0] as LectureDto;
             var btnPdfOff = data[1] as Button;
             var btnVideoOff = data[2] as Button;
             var btnLessonOff = data[3] as Button;
+            var btnPowerPointOff = data[4] as Button;
 
-            var btnDown1 = data[4] as Button;
-            var btnDown2 = data[5] as Button;
-            var btnDown3 = data[6] as Button;
+            var btnDown1 = data[5] as Button;
+            var btnDown2 = data[6] as Button;
+            var btnDown3 = data[7] as Button;
+            var btnDown4 = data[8] as Button;
 
             if (lesson == null) return;
 

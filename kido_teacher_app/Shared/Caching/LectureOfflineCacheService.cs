@@ -36,6 +36,7 @@ namespace kido_teacher_app.Shared.Caching
                         pdf_path TEXT,
                         video_path TEXT,
                         elearning_path TEXT,
+                        powerpoint_path TEXT,
                         offline_zip_url TEXT,
                         updated_at TEXT NOT NULL
                       );";
@@ -77,17 +78,19 @@ namespace kido_teacher_app.Shared.Caching
                     var cache = kv.Value;
                     using var cmd = conn.CreateCommand();
                     cmd.CommandText =
-                        @"INSERT INTO offline_lecture_cache (lecture_id, pdf_path, video_path, elearning_path, updated_at)
-                          VALUES (@id, @pdf, @video, @elearn, @t)
+                        @"INSERT INTO offline_lecture_cache (lecture_id, pdf_path, video_path, elearning_path, powerpoint_path, updated_at)
+                          VALUES (@id, @pdf, @video, @elearn, @powerpoint, @t)
                           ON CONFLICT(lecture_id) DO UPDATE SET
                             pdf_path = @pdf,
                             video_path = @video,
                             elearning_path = @elearn,
+                            powerpoint_path = @powerpoint,
                             updated_at = @t;";
                     cmd.Parameters.AddWithValue("@id", cache.LectureId);
                     cmd.Parameters.AddWithValue("@pdf", (object?)cache.PdfPath ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@video", (object?)cache.VideoPath ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@elearn", (object?)cache.ElearningPath ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@powerpoint", (object?)cache.PowerPointPath ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
                     cmd.ExecuteNonQuery();
                 }
@@ -108,6 +111,7 @@ namespace kido_teacher_app.Shared.Caching
             string? pdfPath,
             string? videoPath,
             string? elearningPath,
+            string? powerpointPath,
             string? offlineZipUrl
         )
         {
@@ -118,18 +122,20 @@ namespace kido_teacher_app.Shared.Caching
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                @"INSERT INTO offline_lecture_cache (lecture_id, pdf_path, video_path, elearning_path, offline_zip_url, updated_at)
-                  VALUES (@id, @pdf, @video, @elearn, @zip, @t)
+                @"INSERT INTO offline_lecture_cache (lecture_id, pdf_path, video_path, elearning_path, powerpoint_path, offline_zip_url, updated_at)
+                  VALUES (@id, @pdf, @video, @elearn, @powerpoint, @zip, @t)
                   ON CONFLICT(lecture_id) DO UPDATE SET
                     pdf_path = @pdf,
                     video_path = @video,
                     elearning_path = @elearn,
+                    powerpoint_path = @powerpoint,
                     offline_zip_url = @zip,
                     updated_at = @t;";
             cmd.Parameters.AddWithValue("@id", lectureId);
             cmd.Parameters.AddWithValue("@pdf", (object?)pdfPath ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@video", (object?)videoPath ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@elearn", (object?)elearningPath ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@powerpoint", (object?)powerpointPath ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@zip", (object?)offlineZipUrl ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
             cmd.ExecuteNonQuery();
@@ -147,7 +153,7 @@ namespace kido_teacher_app.Shared.Caching
 
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
-                @"SELECT lecture_id, pdf_path, video_path, elearning_path, offline_zip_url
+                @"SELECT lecture_id, pdf_path, video_path, elearning_path, powerpoint_path, offline_zip_url
                   FROM offline_lecture_cache
                   WHERE lecture_id = @id
                   LIMIT 1;";
@@ -163,7 +169,8 @@ namespace kido_teacher_app.Shared.Caching
                 PdfPath = reader.IsDBNull(1) ? null : reader.GetString(1),
                 VideoPath = reader.IsDBNull(2) ? null : reader.GetString(2),
                 ElearningPath = reader.IsDBNull(3) ? null : reader.GetString(3),
-                OfflineZipUrl = reader.IsDBNull(4) ? null : reader.GetString(4)
+                PowerPointPath = reader.IsDBNull(4) ? null : reader.GetString(4),
+                OfflineZipUrl = reader.IsDBNull(5) ? null : reader.GetString(5)
             };
         }
 
@@ -179,6 +186,7 @@ namespace kido_teacher_app.Shared.Caching
             DeleteFileIfExists(cache.PdfPath);
             DeleteFileIfExists(cache.VideoPath);
             DeleteFileIfExists(cache.ElearningPath);
+            DeleteFileIfExists(cache.PowerPointPath);
 
             // ===== XOA THU MUC EXTRACT =====
             try
@@ -278,6 +286,7 @@ namespace kido_teacher_app.Shared.Caching
                 cmd.CommandText = @"PRAGMA table_info(offline_lecture_cache);";
                 using var reader = cmd.ExecuteReader();
                 bool hasOfflineZipUrl = false;
+                bool hasPowerPointPath = false;
 
                 while (reader.Read())
                 {
@@ -285,8 +294,19 @@ namespace kido_teacher_app.Shared.Caching
                     if (string.Equals(col, "offline_zip_url", StringComparison.OrdinalIgnoreCase))
                     {
                         hasOfflineZipUrl = true;
-                        break;
                     }
+
+                    if (string.Equals(col, "powerpoint_path", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasPowerPointPath = true;
+                    }
+                }
+
+                if (!hasPowerPointPath)
+                {
+                    using var alter = conn.CreateCommand();
+                    alter.CommandText = @"ALTER TABLE offline_lecture_cache ADD COLUMN powerpoint_path TEXT;";
+                    alter.ExecuteNonQuery();
                 }
 
                 if (!hasOfflineZipUrl)
