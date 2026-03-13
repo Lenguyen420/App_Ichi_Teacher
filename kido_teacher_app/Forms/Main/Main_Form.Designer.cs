@@ -66,7 +66,6 @@
             menuTaiKhoan = CreateMenu("Tài Khoản", Properties.Resources.icon_user, ref y);
             //menuGiaoAn = CreateMenu("Giáo Án", Properties.Resources.icon_book, ref y);
             menuBaiThi = CreateMenu("Bài Thi", Properties.Resources.icon_baithi1, ref y);
-            menuLichSuBaiThi = CreateMenu("Lịch Sử Bài Thi", Properties.Resources.icon_LichSuBaiThi, ref y);
             //menuThemMoi = CreateMenu("Thêm Mới Bài Giảng", Properties.Resources.icon_add, ref y);
             //menuQLTaiKhoan = CreateMenu("Quản Lý Tài Khoản", Properties.Resources.icon_settings, ref y);
             //menuQLBaiGiang = CreateMenu("Quản Lý Bài Giảng", Properties.Resources.icon_list, ref y);

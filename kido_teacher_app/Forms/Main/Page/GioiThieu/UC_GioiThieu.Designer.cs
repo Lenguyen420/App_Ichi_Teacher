@@ -176,50 +176,50 @@ namespace kido_teacher_app.Forms.Main.Page
             layout.Controls.Add(centerPanel, 1, 0);
 
             // RIGHT PANEL — CANH LỀ PHẢI
-            var rightPanel = new Panel
-            {
-                Dock = DockStyle.Fill
-            };
+            //var rightPanel = new Panel
+            //{
+            //    Dock = DockStyle.Fill
+            //};
 
-            editImg = new LinkLabel
-            {
-                Text = "Chỉnh Sửa Hình Ảnh Giới Thiệu",
-                Font = new Font("Segoe UI", 11),
-                AutoSize = true,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-            editImg.LinkClicked += EditImg_LinkClicked;
+            //editImg = new LinkLabel
+            //{
+            //    Text = "Chỉnh Sửa Hình Ảnh Giới Thiệu",
+            //    Font = new Font("Segoe UI", 11),
+            //    AutoSize = true,
+            //    Anchor = AnchorStyles.Top | AnchorStyles.Right
+            //};
+            //editImg.LinkClicked += EditImg_LinkClicked;
 
 
-            editInfo = new LinkLabel
-            {
-                Text = "Chỉnh Sửa Thông Tin Công Ty",
-                Font = new Font("Segoe UI", 11),
-                AutoSize = true,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-            editInfo.LinkClicked += EditInfo_LinkClicked;
+            //editInfo = new LinkLabel
+            //{
+            //    Text = "Chỉnh Sửa Thông Tin Công Ty",
+            //    Font = new Font("Segoe UI", 11),
+            //    AutoSize = true,
+            //    Anchor = AnchorStyles.Top | AnchorStyles.Right
+            //};
+            //editInfo.LinkClicked += EditInfo_LinkClicked;
 
-            rightPanel.Controls.Add(editImg);
-            rightPanel.Controls.Add(editInfo);
+            //rightPanel.Controls.Add(editImg);
+            //rightPanel.Controls.Add(editInfo);
 
-            // ⭐ canh sát lề phải bằng Resize
-            rightPanel.Resize += (s, e) =>
-            {
-                int padding = 20;
+            //// ⭐ canh sát lề phải bằng Resize
+            //rightPanel.Resize += (s, e) =>
+            //{
+            //    int padding = 20;
 
-                editImg.Location = new Point(
-                    rightPanel.Width - editImg.Width - padding,
-                    35
-                );
+            //    editImg.Location = new Point(
+            //        rightPanel.Width - editImg.Width - padding,
+            //        35
+            //    );
 
-                editInfo.Location = new Point(
-                    rightPanel.Width - editInfo.Width - padding,
-                    65
-                );
-            };
+            //    editInfo.Location = new Point(
+            //        rightPanel.Width - editInfo.Width - padding,
+            //        65
+            //    );
+            //};
 
-            layout.Controls.Add(rightPanel, 2, 0);
+            //layout.Controls.Add(rightPanel, 2, 0);
 
             // ================= ADD =================
             container.Controls.Add(bannerContainer);

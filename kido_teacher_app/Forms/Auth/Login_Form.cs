@@ -38,7 +38,7 @@ namespace kido_teacher_app
                 // ==================================================
                 string deviceId = Environment.MachineName;
 
-                await AuthService.LoginTeacherAsync(
+                await AuthService.LoginStudentAsync(
                     username,
                     password,
                     deviceId

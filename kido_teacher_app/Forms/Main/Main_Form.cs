@@ -1,6 +1,5 @@
 ﻿using kido_teacher_app.Forms.Main.Page;
-using kido_teacher_app.Forms.Main.Page.BaiThi;
- 
+  
 
 //using kido_teacher_app.Forms.Main.Page.QuanLyTaiKhoan;
 using kido_teacher_app.Services;
@@ -35,7 +34,7 @@ namespace kido_teacher_app
             //menuThemMoi.Click += menu_Click;
             //menuGiaoAn.Click += menu_Click;
             menuBaiThi.Click += menu_Click;
-            menuLichSuBaiThi.Click += menu_Click;
+            //menuLichSuBaiThi.Click += menu_Click;
             //menuQLTaiKhoan.Click += menu_Click;
             //menuQLBaiGiang.Click += menu_Click;
         }
@@ -79,14 +78,14 @@ namespace kido_teacher_app
             else if (clickedMenu == menuBaiThi)
             {
                 SelectMenu(menuBaiThi);
-                ShowControl(new UC_BaiThi_Main());
+                ShowControl(new UC_BaiThi());
             }
-            else if (clickedMenu == menuLichSuBaiThi)
-            {
-                SelectMenu(menuLichSuBaiThi);
-                //ShowControl(new UC_LichSuBaiThi( ));
-                ShowControl(new UC_LichSuBaiThi(panelMain, currentClass));
-            }
+            //else if (clickedMenu == menuLichSuBaiThi)
+            //{
+            //    SelectMenu(menuLichSuBaiThi);
+            //    //ShowControl(new UC_LichSuBaiThi( ));
+            //    ShowControl(new UC_LichSuBaiThi(panelMain, currentClass));
+            //}
             //else if (clickedMenu == menuQLTaiKhoan)
             //{
             //    SelectMenu(menuQLTaiKhoan);
