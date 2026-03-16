@@ -62,9 +62,9 @@
             this.btnBack.Width = 30;
             this.btnBack.Height = 30;
             this.btnBack.Cursor = Cursors.Hand;
-
-            // thêm vào control trước để Resize có thể reposition
-            this.Controls.Add(this.btnBack);
+            this.btnBack.BackColor = this.lblInfo.BackColor;
+            this.btnBack.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            this.btnBack.Location = new Point(1050, 55);
 
             //MakePictureBoxRound(this.btnBack);
 
@@ -89,9 +89,8 @@
             this.Controls.Add(this.flowList);
             this.Controls.Add(this.lblInfo);
             this.Controls.Add(this.lblHeader);
-
-            // ⭐ ĐĂNG KÝ SỰ KIỆN RESIZE ĐỂ ĐẶT ICON ĐÚNG VỊ TRÍ
-            this.Resize += UC_GiaoAn_TheoThangChiTiet_Resize;
+            this.Controls.Add(this.btnBack);
+            this.Controls.SetChildIndex(this.btnBack, 0);
 
             this.Name = "UC_GiaoAn_TheoThangChiTiet";
             this.Size = new System.Drawing.Size(1100, 650);
@@ -100,34 +99,15 @@
             this.PerformLayout();
         }
 
-        private void UC_GiaoAn_TheoThangChiTiet_Resize(object sender, EventArgs e)
-        {
-            if (btnBack != null && lblInfo != null)
-            {
-                int y = lblInfo.Top + (lblInfo.Height - btnBack.Height) / 2;
-                int x = this.Width - btnBack.Width - 20;
-
-                btnBack.Location = new Point(x, y);
-                btnBack.BringToFront();
-            }
-
-            this.UpdateCardWidths();
-        }
-
         private void BtnBack_Click(object sender, EventArgs e)
         {
-            Control parent = this.Parent;
+            Main_Form main = this.FindForm() as Main_Form;
+            if (main == null)
+                return;
 
-            if (parent != null)
-            {
-                parent.Controls.Remove(this);
-                parent.Controls.Add(
-                    new UC_GiaoAnTheoThang(_className, _classId, _courseId)
-                    {
-                        Dock = DockStyle.Fill
-                    }
-                );
-            }
+            main.LoadUserControl(
+                new UC_GiaoAnTheoThang(_className, _classId, _courseId)
+            );
         }
     }
 }

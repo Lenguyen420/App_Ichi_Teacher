@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -12,6 +13,8 @@ namespace kido_teacher_app
 {
     public partial class Main_Form : Form
     {
+        private const int WM_SETREDRAW = 0x000B;
+
         private Panel? selectedMenu;
         private UserControl? currentControl;
 
@@ -25,6 +28,7 @@ namespace kido_teacher_app
         {
             InitializeComponent();
             WindowState = FormWindowState.Maximized;
+            SetDoubleBuffered(panelMain);
 
             SelectMenu(menuGioiThieu);
             gioiThieuControl = new UC_GioiThieu();
@@ -115,26 +119,73 @@ namespace kido_teacher_app
             if (ReferenceEquals(currentControl, uc))
                 return;
 
+            var previousControl = currentControl;
+            var shouldDisposePrevious =
+                previousControl != null && !persistentControls.Contains(previousControl);
+
+            SetRedraw(panelMain, false);
             panelMain.SuspendLayout();
 
-            if (currentControl != null)
+            try
             {
-                panelMain.Controls.Remove(currentControl);
-
-                if (!persistentControls.Contains(currentControl))
+                if (previousControl != null)
                 {
-                    currentControl.Dispose();
+                    panelMain.Controls.Remove(previousControl);
+                }
+
+                if (keepAlive)
+                    persistentControls.Add(uc);
+
+                uc.Dock = DockStyle.Fill;
+                panelMain.Controls.Add(uc);
+                currentControl = uc;
+            }
+            finally
+            {
+                panelMain.ResumeLayout(true);
+                SetRedraw(panelMain, true);
+                if (IsHandleCreated)
+                {
+                    BeginInvoke(new Action(() => panelMain.Invalidate(true)));
+                }
+                else
+                {
+                    panelMain.Invalidate(true);
                 }
             }
 
-            if (keepAlive)
-                persistentControls.Add(uc);
-
-            uc.Dock = DockStyle.Fill;
-            panelMain.Controls.Add(uc);
-            currentControl = uc;
-
-            panelMain.ResumeLayout();
+            if (shouldDisposePrevious)
+            {
+                if (IsHandleCreated)
+                {
+                    BeginInvoke(new Action(() => previousControl?.Dispose()));
+                }
+                else
+                {
+                    previousControl?.Dispose();
+                }
+            }
         }
+
+        private static void SetDoubleBuffered(Control control)
+        {
+            typeof(Control)
+                .GetProperty(
+                    "DoubleBuffered",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+                )
+                ?.SetValue(control, true, null);
+        }
+
+        private static void SetRedraw(Control control, bool enabled)
+        {
+            if (!control.IsHandleCreated)
+                return;
+
+            SendMessage(control.Handle, WM_SETREDRAW, enabled ? 1 : 0, 0);
+        }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
     }
 }

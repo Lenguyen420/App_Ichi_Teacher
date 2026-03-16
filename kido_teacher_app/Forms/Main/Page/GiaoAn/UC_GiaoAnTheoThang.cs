@@ -33,6 +33,7 @@ namespace kido_teacher_app.Forms.Main.Page
             _courseId = courseId;
 
             this.Load += UC_GiaoAnTheoThang_Load;
+            flowMonths.SizeChanged += (s, e) => UpdateMonthFlowPadding();
         }
         private void Month_MouseEnter(object sender, EventArgs e)
         {
@@ -59,7 +60,7 @@ namespace kido_teacher_app.Forms.Main.Page
             if (sender is not PictureBox pic || pic.Tag is not MonthTag tag)
                 return;
 
-            lblTitle.Text = $"Giáo Án / {_className} / Tháng {tag.Month}";
+            lblTitle.Text = $"Giáo Án / {_className} / {tag.CourseName}";
 
             Main_Form main = this.FindForm() as Main_Form;
 
@@ -75,19 +76,10 @@ namespace kido_teacher_app.Forms.Main.Page
         }
         private void BtnBack_Click(object sender, EventArgs e)
         {
-            Control parent = this.Parent;
-            if (parent == null) return;
+            Main_Form main = this.FindForm() as Main_Form;
+            if (main == null) return;
 
-            parent.Controls.Remove(this);
-            parent.Controls.Add(new UC_GiaoAn(_courseId) { Dock = DockStyle.Fill });
-        }
-        private void UC_GiaoAnTheoThang_Resize(object sender, EventArgs e)
-        {
-            int x = this.Width - btnBack.Width - 20;
-            int y = lblWelcome.Height + (lblTitle.Height - btnBack.Height) / 2;
-
-            btnBack.Location = new Point(x, y);
-            btnBack.BringToFront();
+            main.LoadUserControl(new UC_GiaoAn(_courseId));
         }
 
         // ===============================
@@ -119,38 +111,20 @@ namespace kido_teacher_app.Forms.Main.Page
                 }
 
                 var data = courses
-                    .Where(x => !string.IsNullOrEmpty(x.code))
+                    .Where(x => !string.IsNullOrWhiteSpace(x.name))
                     .Select(x => new
                     {
-                        Course = x,  // ⭐ Giữ object gốc để debug
-                        Month = 0,   // placeholder
                         CourseId = x.id,
-                        x.name,
-                        x.image
+                        Name = x.name,
+                        Image = x.image
                     })
                     .ToList();
 
-                System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] Before parse - Count: {data.Count}");
+                var parsedData = data
+                    .OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase)
+                    .ToList();
 
-                // ⭐ Parse month sau, có try-catch
-                var parsedData = new List<(int Month, string CourseId, string Name, string Image)>();
-                foreach (var item in data)
-                {
-                    try
-                    {
-                        int month = int.Parse(item.Course.code);
-                        parsedData.Add((month, item.CourseId, item.name, item.image));
-                        System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] Parsed: code={item.Course.code} → month={month}, name={item.name}");
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] Parse failed for code={item.Course.code}: {ex.Message}");
-                    }
-                }
-
-                parsedData = parsedData.OrderBy(x => x.Month).ToList();
-
-                System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] After parse - Count: {parsedData.Count}");
+                System.Diagnostics.Debug.WriteLine($"[UC_GiaoAnTheoThang] Loaded by name - Count: {parsedData.Count}");
 
                 flowMonths.Controls.Clear();
 
@@ -160,7 +134,7 @@ namespace kido_teacher_app.Forms.Main.Page
                     {
                         Width = 213,
                         Height = 213,
-                        Margin = new Padding(15),
+                        Margin = new Padding(8),
                         BackColor = Color.Transparent
                     };
 
@@ -168,11 +142,11 @@ namespace kido_teacher_app.Forms.Main.Page
                     {
                         Size = normalSize,
                         Location = new Point(4, 4),
-                        SizeMode = PictureBoxSizeMode.StretchImage,
+                        SizeMode = PictureBoxSizeMode.Zoom,
                         Cursor = Cursors.Hand,
                         Tag = new MonthTag
                         {
-                            Month = c.Month,
+                            Month = 0,
                             CourseId = c.CourseId,
                             CourseName = c.Name
                         },
@@ -209,6 +183,7 @@ namespace kido_teacher_app.Forms.Main.Page
                     flowMonths.Controls.Add(wrap);
                 }
 
+                UpdateMonthFlowPadding();
                 lblTitle.Text = $"Giáo Án / {_className}";
             }
             catch (Exception ex)
@@ -260,6 +235,27 @@ namespace kido_teacher_app.Forms.Main.Page
             }
 
             return result;
+        }
+
+        private void UpdateMonthFlowPadding()
+        {
+            if (flowMonths == null)
+                return;
+
+            const int itemWidth = 229;
+            const int minHorizontalPadding = 8;
+            int availableWidth = Math.Max(0, flowMonths.ClientSize.Width);
+
+            if (availableWidth <= itemWidth)
+            {
+                flowMonths.Padding = new Padding(minHorizontalPadding, 20, minHorizontalPadding, 20);
+                return;
+            }
+
+            int itemsPerRow = Math.Max(1, availableWidth / itemWidth);
+            int usedWidth = itemsPerRow * itemWidth;
+            int horizontalPadding = Math.Max(minHorizontalPadding, (availableWidth - usedWidth) / 2);
+            flowMonths.Padding = new Padding(horizontalPadding, 20, horizontalPadding, 20);
         }
 
     }

@@ -5,10 +5,12 @@ using kido_teacher_app.Model;
 using kido_teacher_app.Models;
 using kido_teacher_app.Services;
 using kido_teacher_app.Shared.Caching;
+using kido_teacher_app.Shared.Network;
 using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -26,6 +28,8 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private readonly string _courseName;
         private int _loadVersion;
         private readonly float _dpiScale;
+        private bool _loadStarted;
+        private string? _lastRenderedLectureSignature;
 
         //private LessonDto _lesson;
 
@@ -39,25 +43,37 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             )
         {
             InitializeComponent();
-            //this.BackColor = Color.Red;
 
             this.AutoScaleMode = AutoScaleMode.Dpi;
             _dpiScale = this.DeviceDpi / 96f;
-
             _classId = classId;
             _courseId = courseId;
+            _month = month;
             _className = className;
             _courseName = courseName;
 
-           
-            //LoadLessons();
-
+            SetStyle(
+                ControlStyles.AllPaintingInWmPaint
+                    | ControlStyles.OptimizedDoubleBuffer
+                    | ControlStyles.UserPaint,
+                true
+            );
+            UpdateStyles();
+            SetDoubleBuffered(flowList);
 
             lblInfo.Text = $"Giáo Án / {className} / {courseName}";
-            this.Load += async (s, e) => await LoadLecturesAsync();
+            this.Load += UC_GiaoAn_TheoThangChiTiet_Load;
             this.flowList.SizeChanged += (s, e) => UpdateCardWidths();
             ApplyDpiScaling();
-            
+        }
+
+        private void UC_GiaoAn_TheoThangChiTiet_Load(object? sender, EventArgs e)
+        {
+            if (_loadStarted)
+                return;
+
+            _loadStarted = true;
+            BeginInvoke(new Action(async () => await LoadLecturesAsync()));
         }
 
 
@@ -68,59 +84,86 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private async Task LoadLecturesAsync()
         {
             int loadVersion = Interlocked.Increment(ref _loadVersion);
-            System.Diagnostics.Debug.WriteLine(
-                $"[UC_GiaoAn_TheoThangChiTiet] LoadLecturesAsync start v={loadVersion}, class={_classId}, course={_courseId}"
-            );
+            string cacheKey = $"lectures_class_{_classId}_course_{_courseId}";
 
             try
             {
-                flowList.Controls.Clear();
+                if (loadVersion != _loadVersion)
+                    return;
 
-                var lecturesRaw =
-                    await LectureService.GetByClassCourseAsync(_classId, _courseId);
+                var cachedLecturesRaw = await DbCacheService.GetAsync<List<LectureDto>>(cacheKey);
+                var cachedLectures = LectureService.NormalizeLectures(cachedLecturesRaw);
+                bool renderedFromCache = false;
+
+                if (cachedLectures.Count > 0)
+                {
+                    await RenderLecturesAsync(cachedLectures, loadVersion);
+                    renderedFromCache = true;
+                }
+
+                if (OfflineState.IsOffline())
+                {
+                    if (!renderedFromCache)
+                        flowList.Controls.Clear();
+                    return;
+                }
+
+                var lecturesRaw = await LectureService.GetByClassCourseAsync(_classId, _courseId);
                 var lectures = LectureService.NormalizeLectures(lecturesRaw);
 
                 if (loadVersion != _loadVersion)
                     return;
 
-                if (lectures == null || lectures.Count == 0)
+                if (lectures.Count == 0)
                 {
-                    // ⭐ KHÔNG HIỂN THỊ GÌ, CHỈ ĐỂ TRỐNG
+                    if (!renderedFromCache)
+                        flowList.Controls.Clear();
                     return;
                 }
 
-                foreach (var lec in lectures)
+                if (
+                    renderedFromCache
+                    && string.Equals(
+                        _lastRenderedLectureSignature,
+                        BuildLectureSignature(lectures),
+                        StringComparison.Ordinal
+                    )
+                )
+                {
+                    return;
+                }
+
+                await RenderLecturesAsync(lectures, loadVersion);
+            }
+            catch (Exception ex)
+            {
+            }
+        }
+
+        private async Task RenderLecturesAsync(
+            List<LectureDto> lectures,
+            int loadVersion)
+        {
+            if (loadVersion != _loadVersion)
+                return;
+
+            _lastRenderedLectureSignature = BuildLectureSignature(lectures);
+            flowList.SuspendLayout();
+            flowList.Controls.Clear();
+
+            foreach (var lec in lectures)
+            {
+                try
                 {
                     if (loadVersion != _loadVersion)
                         return;
 
                     var detail = lec;
-                    bool needFetchDetail =
-                        detail.resources == null ||
-                        detail.resources.Count == 0 ||
-                        string.IsNullOrWhiteSpace(detail.title) ||
-                        string.IsNullOrWhiteSpace(detail.code);
 
-                    if (needFetchDetail)
-                    {
-                        var fetched = await LectureService.GetByIdAsync(lec.id);
-                        if (loadVersion != _loadVersion)
-                            return;
-
-                        if (fetched != null)
-                            detail = fetched;
-                    }
-
-                    // ⭐ BẮT BUỘC
                     if (detail.resources == null)
                         detail.resources = new List<LectureResourceDto>();
 
-                    //load cache
-                    // =========================
-                    // 🔥 LOAD OFFLINE CACHE (BƯỚC 4)
-                    // =========================
                     var cache = LectureOfflineCacheService.Load(lec.id);
-                    System.Diagnostics.Debug.WriteLine($"[Cache] Load for lecture {lec.id}: {(cache != null ? "Found" : "Not found")}");
 
                     if (cache != null)
                     {
@@ -165,9 +208,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                         }
                     }
 
-
-                    //end
-
                     string pdfOffline = null, videoOffline = null, lessonOffline = null, powerPointOffline = null;
                     string? cachedOfflineZipUrl = cache?.OfflineZipUrl;
                     string? currentOfflineZipUrl = detail.resources
@@ -176,8 +216,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
                     foreach (var r in detail.resources)
                     {
-                        //offline
-
                         if (r.type == "PDF" && (r.source == "OFFLINE" || r.source == "LOCAL"))
                             pdfOffline = r.url;
 
@@ -211,19 +249,18 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                             videoOffline,
                             lessonOffline,
                             powerPointOffline,
-                            needsUpdate
+                            needsUpdate,
+                            cache != null
                         )
                     );
                 }
+                catch (Exception ex)
+                {
+                }
+            }
 
-                UpdateCardWidths();
-            }
-            catch (Exception ex)
-            {
-                // ⭐ LOG LỖI RA FILE (KHÔNG HIỂN THỊ MESSAGEBOX)
-                System.Diagnostics.Debug.WriteLine($"[ERROR] LoadLecturesAsync: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[STACK] {ex.StackTrace}");
-            }
+            flowList.ResumeLayout();
+            UpdateCardWidths();
         }
 
 
@@ -273,7 +310,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Không mở được file PowerPoint\n" + ex.Message);
                 }
                 return;
             }
@@ -289,7 +325,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Không mở được file\n" + ex.Message);
             }
         }
 
@@ -307,7 +342,8 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             string videoOffline,
             string lessonOffline,
             string powerPointOffline,
-            bool needsUpdate
+            bool needsUpdate,
+            bool isDownloaded
         )
         {
             // CARD CHA
@@ -318,6 +354,25 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 BorderStyle = BorderStyle.FixedSingle,
                 Margin = new Padding(Scale(5))
             };
+
+            // THÔNG BÁO CẬP NHẬT NẾU CẦN
+            Label? lblUpdateNotification = null;
+            if (needsUpdate)
+            {
+                lblUpdateNotification = new Label
+                {
+                    Text = "Có cập nhật",
+                    ForeColor = Color.Red,
+                    BackColor = Color.Yellow,
+                    Font = new Font("Segoe UI", ScaleFont(8), FontStyle.Bold),
+                    AutoSize = true,
+                    Location = new Point(Scale(5), Scale(5)),
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Padding = new Padding(Scale(2))
+                };
+                card.Controls.Add(lblUpdateNotification);
+                lblUpdateNotification.BringToFront();
+            }
 
             // TABLE CHÍNH
             TableLayoutPanel table = new TableLayoutPanel
@@ -399,7 +454,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 Dock = DockStyle.Top,
                 AutoSize = false,
                 AutoEllipsis = false,
-                UseCompatibleTextRendering = true,
+                UseCompatibleTextRendering = false,
                 TextAlign = ContentAlignment.TopLeft
             };
 
@@ -470,7 +525,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             table.Controls.Add(offline, 2, 0);
 
             // =======================
-            // CỘT 4: XÓA + CHƯA TẢI
+            // CỘT 4: XÓA + TẢI OFFLINE
             // =======================
             FlowLayoutPanel deleteCol = new FlowLayoutPanel
             {
@@ -495,43 +550,31 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             btnDelete.Click -= BtnDeleteOffline_Click;
             btnDelete.Click += BtnDeleteOffline_Click;
 
-            Button btnDown1 = CreateSimpleGrayButton("Chưa tải");
-            Button btnDown2 = CreateSimpleGrayButton("Chưa tải");
-            Button btnDown3 = CreateSimpleGrayButton("Chưa tải");
-            Button btnDown4 = CreateSimpleGrayButton("Chưa tải");
+            Button btnDownload = CreateSimpleGrayButton(
+                isDownloaded ? "Đã tải" : "Tải offline"
+            );
 
-            btnDown1.Margin = new Padding(Scale(20), 0, 0, Scale(6));
-            btnDown2.Margin = new Padding(Scale(20), 0, 0, Scale(6));
-            btnDown3.Margin = new Padding(Scale(20), 0, 0, Scale(6));
-            btnDown4.Margin = new Padding(Scale(20), 0, 0, 0);
+            btnDownload.Height = Scale(132);
+            btnDownload.Margin = new Padding(Scale(20), 0, 0, 0);
 
 
             var offlineState = new OfflineLectureState();
 
-            btnDown1.Tag = new object[]
+            btnDownload.Tag = new object[]
             {
                 lesson,
                 btnPdfOff,
                 btnVideoOff,
                 btnLessonOff,
                 btnPowerPointOff,
-                btnDown1,
-                btnDown2,
-                btnDown3,
-                btnDown4,
+                btnDownload,
                 lblSpeed,
                 lblUpdate
             };
-            btnDown2.Tag = btnDown1.Tag;
-            btnDown3.Tag = btnDown1.Tag;
-            btnDown4.Tag = btnDown1.Tag;
 
-            btnDown1.Click += BtnDownload_Click;
-            btnDown2.Click += BtnDownload_Click;
-            btnDown3.Click += BtnDownload_Click;
-            btnDown4.Click += BtnDownload_Click;
+            btnDownload.Click += BtnDownload_Click;
 
-            deleteCol.Controls.AddRange(new Control[] { btnDelete, btnDown1, btnDown2, btnDown3, btnDown4 });
+            deleteCol.Controls.AddRange(new Control[] { btnDelete, btnDownload });
             table.Controls.Add(deleteCol, 3, 0);
 
 
@@ -546,8 +589,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btnPdfOff.ForeColor = Color.Blue;
                 btnPdfOff.FlatAppearance.BorderColor = Color.Blue;
                 btnPdfOff.Click += (s, e) => OpenLocal(pdfOffline, title);
-
-                btnDown1.Text = "Đã tải";
             }
 
             // VIDEO
@@ -557,8 +598,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btnVideoOff.ForeColor = Color.Blue;
                 btnVideoOff.FlatAppearance.BorderColor = Color.Blue;
                 btnVideoOff.Click += (s, e) => OpenLocal(videoOffline, title);
-
-                btnDown2.Text = "Đã tải";
             }
 
             // LESSON
@@ -568,8 +607,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btnLessonOff.ForeColor = Color.Blue;
                 btnLessonOff.FlatAppearance.BorderColor = Color.Blue;
                 btnLessonOff.Click += (s, e) => OpenLocal(lessonOffline, title);
-
-                btnDown3.Text = "Đã tải";
             }
 
             if (!string.IsNullOrEmpty(powerPointOffline) && File.Exists(powerPointOffline))
@@ -578,8 +615,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btnPowerPointOff.ForeColor = Color.Blue;
                 btnPowerPointOff.FlatAppearance.BorderColor = Color.Blue;
                 btnPowerPointOff.Click += (s, e) => OpenLocal(powerPointOffline, title);
-
-                btnDown4.Text = "Đã tải";
             }
 
             btnDelete.Tag = new object[]
@@ -589,14 +624,16 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btnVideoOff,
                 btnLessonOff,
                 btnPowerPointOff,
-                btnDown1,
-                btnDown2,
-                btnDown3,
-                btnDown4
+                btnDownload
             };
 
-            lblUpdate.Tag = btnDown1.Tag;
+            lblUpdate.Tag = btnDownload.Tag;
             lblUpdate.Click += BtnUpdate_Click;
+            if (lblUpdateNotification != null)
+            {
+                lblUpdateNotification.Tag = btnDownload.Tag;
+                lblUpdateNotification.Click += BtnUpdate_Click;
+            }
 
             // GẮN VÀO CARD
             card.Controls.Add(table);
@@ -632,7 +669,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private async void BtnDownload_Click(object? sender, EventArgs e)
         {
             if (sender is not Button btn) return;
-            if (btn.Tag is not object[] data || data.Length < 11) return;
+            if (btn.Tag is not object[] data || data.Length < 8) return;
 
             await DownloadOrUpdateAsync(data, isUpdate: false);
         }
@@ -640,7 +677,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private async void BtnUpdate_Click(object? sender, EventArgs e)
         {
             if (sender is not Label lbl) return;
-            if (lbl.Tag is not object[] data || data.Length < 11) return;
+            if (lbl.Tag is not object[] data || data.Length < 8) return;
 
             await DownloadOrUpdateAsync(data, isUpdate: true);
         }
@@ -653,14 +690,12 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             var btnLessonOff = data[3] as Button;
             var btnPowerPointOff = data[4] as Button;
 
-            var btnDown1 = data[5] as Button;
-            var btnDown2 = data[6] as Button;
-            var btnDown3 = data[7] as Button;
-            var btnDown4 = data[8] as Button;
-            var lblSpeed = data[9] as Label;
-            var lblUpdate = data[10] as Label;
+            var btnDownload = data[5] as Button;
+            var lblSpeed = data[6] as Label;
+            var lblUpdate = data[7] as Label;
 
             if (lesson == null) return;
+            if (btnDownload == null) return;
 
             // =========================
             // 1️⃣ TÌM ZIP OFFLINE
@@ -677,9 +712,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // =========================
             // 2️⃣ CHUẨN BỊ UI
             // =========================
-            btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = btnDown4.Enabled = false;
-            btnDown1.Text = btnDown2.Text = btnDown3.Text = btnDown4.Text = "Đang tải...";
-            btnDown1.ForeColor = btnDown2.ForeColor = btnDown3.ForeColor = btnDown4.ForeColor = Color.Orange;
+            btnDownload.Enabled = false;
+            btnDownload.Text = "Đang tải...";
+            btnDownload.ForeColor = Color.Orange;
             if (lblUpdate != null)
             {
                 lblUpdate.Enabled = false;
@@ -704,7 +739,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 lastPercent = percent;
 
                 // NOTE: chỉ update 1 button để giảm lag UI
-                btnDown1.Text = $"Đang tải {percent}%";
+                btnDownload.Text = $"Đang tải {percent}%";
             });
 
             var statsProgress = new Progress<DownloadStats>(stat =>
@@ -729,16 +764,38 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
             await Task.Run(async () =>
             {
-                extractPath = await LectureService
-                    .DownloadAndExtractZipAsync(offlineZip.url, lesson.id, progress, statsProgress);
+                if (isUpdate)
+                {
+                    // Tạo temp lectureId
+                    var tempLectureId = lesson.id + "_temp";
+                    var tempExtractPath = await LectureService
+                        .DownloadAndExtractZipAsync(offlineZip.url, tempLectureId, progress, statsProgress);
+
+                    // Move từ temp vào final
+                    var tempPath = Path.Combine(AppConfig.LectureExtractFolder, tempLectureId);
+                    var finalPath = Path.Combine(AppConfig.LectureExtractFolder, lesson.id);
+
+                    if (Directory.Exists(finalPath))
+                        Directory.Delete(finalPath, true);
+
+                    if (Directory.Exists(tempPath))
+                        Directory.Move(tempPath, finalPath);
+
+                    extractPath = finalPath;
+                }
+                else
+                {
+                    extractPath = await LectureService
+                        .DownloadAndExtractZipAsync(offlineZip.url, lesson.id, progress, statsProgress);
+                }
             });
 
             // =========================
             // 5️⃣ UPDATE UI SAU KHI XONG
             // =========================
-            btnDown1.Text = btnDown2.Text = btnDown3.Text = btnDown4.Text = "Đã tải";
-            btnDown1.ForeColor = btnDown2.ForeColor = btnDown3.ForeColor = btnDown4.ForeColor = Color.Green;
-            btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = btnDown4.Enabled = false;
+            btnDownload.Text = "Đã tải";
+            btnDownload.ForeColor = Color.Green;
+            btnDownload.Enabled = false;
             if (lblSpeed != null)
             {
                 lblSpeed.ForeColor = Color.Gray;
@@ -826,6 +883,10 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 );
             }
 
+            if (isUpdate)
+            {
+                MessageBox.Show("Cập nhật giáo án thành công!");
+            }
         }
 
         private Button CreateSimpleButton(string text, Color color)
@@ -858,18 +919,14 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private async void BtnDeleteOffline_Click(object? sender, EventArgs e)
         {
             if (sender is not Button btn) return;
-            if (btn.Tag is not object[] data || data.Length < 9) return;
+            if (btn.Tag is not object[] data || data.Length < 6) return;
 
             var lesson = data[0] as LectureDto;
             var btnPdfOff = data[1] as Button;
             var btnVideoOff = data[2] as Button;
             var btnLessonOff = data[3] as Button;
             var btnPowerPointOff = data[4] as Button;
-
-            var btnDown1 = data[5] as Button;
-            var btnDown2 = data[6] as Button;
-            var btnDown3 = data[7] as Button;
-            var btnDown4 = data[8] as Button;
+            var btnDownload = data[5] as Button;
 
             if (lesson == null) return;
 
@@ -937,6 +994,43 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             }
         }
 
+        private static void SetDoubleBuffered(Control control)
+        {
+            typeof(Control)
+                .GetProperty(
+                    "DoubleBuffered",
+                    BindingFlags.Instance | BindingFlags.NonPublic
+                )
+                ?.SetValue(control, true, null);
+        }
+
+        private static string BuildLectureSignature(List<LectureDto> lectures)
+        {
+            return string.Join(
+                "||",
+                lectures.Select(lecture =>
+                {
+                    var resources = lecture.resources ?? new List<LectureResourceDto>();
+                    var resourceSignature = string.Join(
+                        "|",
+                        resources
+                            .OrderBy(r => r.type ?? string.Empty)
+                            .ThenBy(r => r.source ?? string.Empty)
+                            .ThenBy(r => r.url ?? string.Empty)
+                            .Select(r => $"{r.type}:{r.source}:{r.url}")
+                    );
+
+                    return string.Join(
+                        "::",
+                        lecture.id ?? string.Empty,
+                        lecture.code ?? string.Empty,
+                        lecture.title ?? string.Empty,
+                        resourceSignature
+                    );
+                })
+            );
+        }
+
         private void UpdateTitleLayout(Label lblTitle, Panel info, Label lblCode, Label lblSpeed)
         {
             if (lblTitle == null || info == null) return;
@@ -951,11 +1045,12 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             int availableHeight = Math.Max(Scale(24), info.ClientSize.Height - bottomHeight - info.Padding.Vertical);
 
             lblTitle.Width = availableWidth;
+            lblTitle.MaximumSize = new Size(availableWidth, 0);
             var size = TextRenderer.MeasureText(
                 lblTitle.Text,
                 lblTitle.Font,
                 new Size(availableWidth, availableHeight),
-                TextFormatFlags.WordBreak | TextFormatFlags.NoPadding | TextFormatFlags.NoClipping
+                TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl
             );
             lblTitle.Height = Math.Min(availableHeight, size.Height);
         }

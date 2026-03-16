@@ -32,30 +32,37 @@ namespace kido_teacher_app.Forms.Main.Page
             // ===== HEADER XÁM =====
             lblWelcome.Text = "Chào Mừng Bạn Đến Với KIDO";
             lblWelcome.Dock = DockStyle.Top;
-            lblWelcome.Height = 55;
-            lblWelcome.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
-            lblWelcome.BackColor = Color.LightGray;
+            lblWelcome.Height = 50;
+            lblWelcome.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            lblWelcome.BackColor = Color.FromArgb(220, 220, 220);
+            lblWelcome.TextAlign = ContentAlignment.MiddleLeft;
+            lblWelcome.Padding = new Padding(20, 0, 0, 0);
 
             // ===== HEADER XANH =====
             lblTitle.Text = "Giáo Án / Khối 1";
             lblTitle.Dock = DockStyle.Top;
-            lblTitle.Height = 45;
-            lblTitle.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            lblTitle.Height = 40;
+            lblTitle.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
             lblTitle.BackColor = Color.FromArgb(146, 208, 80);
+            lblTitle.TextAlign = ContentAlignment.MiddleLeft;
+            lblTitle.Padding = new Padding(20, 0, 0, 0);
 
             // ===== BACK BUTTON =====
             btnBack.Image = Properties.Resources.icon_back1;
             btnBack.SizeMode = PictureBoxSizeMode.StretchImage;
             btnBack.Size = new Size(30, 30);
             btnBack.Cursor = Cursors.Hand;
+            btnBack.BackColor = lblTitle.BackColor;
+            btnBack.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnBack.Location = new Point(1050, 55);
             btnBack.Click += BtnBack_Click;
-            this.Controls.Add(btnBack);
 
             // ===== FLOW MONTHS =====
             flowMonths.Dock = DockStyle.Fill;
             flowMonths.AutoScroll = true;
             flowMonths.WrapContents = true;
-            flowMonths.Padding = new Padding(40, 20, 40, 20);
+            flowMonths.Padding = new Padding(8, 20, 8, 20);
+            flowMonths.BackColor = Color.White;
 
             //// ===== TẠO 12 THÁNG =====
             //for (int i = 1; i <= 12; i++)
@@ -67,8 +74,8 @@ namespace kido_teacher_app.Forms.Main.Page
             this.Controls.Add(flowMonths);
             this.Controls.Add(lblTitle);
             this.Controls.Add(lblWelcome);
-
-            this.Resize += UC_GiaoAnTheoThang_Resize;
+            this.Controls.Add(btnBack);
+            this.Controls.SetChildIndex(btnBack, 0);
 
             this.ResumeLayout(false);
         }

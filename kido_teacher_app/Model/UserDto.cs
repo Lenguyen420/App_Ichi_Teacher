@@ -55,16 +55,30 @@ namespace kido_teacher_app.Model   // ⭐ BẮT BUỘC PHẢI CÓ
         public string activatedDate { get; set; } = string.Empty;
         public string expiredDate { get; set; } = string.Empty;
 
+        [JsonConverter(typeof(SafeBooleanJsonConverter))]
         public bool isLinkedAccount { get; set; }
+
+        [JsonConverter(typeof(SafeBooleanJsonConverter))]
         public bool isDisabled { get; set; }
         public string status { get; set; } = string.Empty;
 
         // ===== QUYỀN =====
+        [JsonConverter(typeof(SafeBooleanJsonConverter))]
         public bool canCreateTeacherCode { get; set; }
+
+        [JsonConverter(typeof(SafeBooleanJsonConverter))]
         public bool canCreateAdminCode { get; set; }
+
+        [JsonConverter(typeof(SafeBooleanJsonConverter))]
         public bool canAddLesson { get; set; }
+
+        [JsonConverter(typeof(SafeBooleanJsonConverter))]
         public bool canUpdateLesson { get; set; }
+
+        [JsonConverter(typeof(SafeBooleanJsonConverter))]
         public bool canManageLesson { get; set; }
+
+        [JsonConverter(typeof(SafeBooleanJsonConverter))]
         public bool canManageAccount { get; set; }
 
         // ===== NHÓM =====
