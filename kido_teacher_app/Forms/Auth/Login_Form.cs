@@ -1,4 +1,4 @@
-﻿//using kido_teacher_app.Config;
+using kido_teacher_app.Config;
 using kido_teacher_app.Model;
 using kido_teacher_app.Services;
 using System;
@@ -35,21 +35,19 @@ namespace kido_teacher_app
 
                 string deviceId = Environment.MachineName;
 
-                // ✅ 1. LOGIN
                 await AuthService.LoginStudentAsync(
                     username,
                     password,
                     deviceId
                 );
 
-                // ✅ 2. GỌI API LẤY USER
                 var user = await UserService.GetByIdAsync(AuthSession.UserId);
 
                 if (user != null)
                 {
                     AuthSession.Username = user.userName;
                     AuthSession.Email = user.email;
-                    //AuthSession.Avatar = user.avatar;
+                    AuthSession.UserId = user.id;
                 }
                 else
                 {
@@ -57,7 +55,6 @@ namespace kido_teacher_app
                     return;
                 }
 
-                // ✅ 3. ĐÓNG FORM
                 DialogResult = DialogResult.OK;
                 Close();
             }
