@@ -33,22 +33,31 @@ namespace kido_teacher_app
             {
                 loginButton.Enabled = false;
 
-                // ==================================================
-                // LOGIN GIÁO VIÊN QUA API
-                // ==================================================
                 string deviceId = Environment.MachineName;
 
+                // ✅ 1. LOGIN
                 await AuthService.LoginStudentAsync(
                     username,
                     password,
                     deviceId
                 );
 
-                // AuthService đã set:
-                // AuthSession.AccessToken
-                // AuthSession.UserId
-                // AuthSession.Role = TEACHER
+                // ✅ 2. GỌI API LẤY USER
+                var user = await UserService.GetByIdAsync(AuthSession.UserId);
 
+                if (user != null)
+                {
+                    AuthSession.Username = user.userName;
+                    AuthSession.Email = user.email;
+                    //AuthSession.Avatar = user.avatar;
+                }
+                else
+                {
+                    MessageBox.Show("Không lấy được thông tin user");
+                    return;
+                }
+
+                // ✅ 3. ĐÓNG FORM
                 DialogResult = DialogResult.OK;
                 Close();
             }
@@ -66,7 +75,6 @@ namespace kido_teacher_app
                 loginButton.Enabled = true;
             }
         }
-
 
         private void iconEye_Click(object sender, EventArgs e)
         {

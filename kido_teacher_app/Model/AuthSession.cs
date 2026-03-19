@@ -6,5 +6,10 @@
         public static string UserId;
 
         public static string? Role { get; set; } // ADMIN | TEACHER
+
+        // ⭐ THÊM
+        public static string Username { get; set; }
+        public static string Email { get; set; }
+        public static string Avatar { get; set; }
     }
 }

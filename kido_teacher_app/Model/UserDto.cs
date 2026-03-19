@@ -1,35 +1,4 @@
-﻿//using Newtonsoft.Json;
-
-//namespace kido_teacher_app.Model
-//{
-//    public class UserDto
-//    {
-//        [JsonProperty("id")]
-//        public string id { get; set; }
-
-
-
-//        public string userName { get; set; }
-//        public string fullName { get; set; }
-//        public string email { get; set; }
-//        public string role { get; set; }
-
-//        public string phoneNumber { get; set; }
-//        public string birthday { get; set; }
-//        public string gender { get; set; }
-//        public string citizenId { get; set; }
-//        public string address { get; set; }
-//        public string note { get; set; }
-//        public string userType { get; set; }
-//        public string activatedDate { get; set; }
-//        public string expiredDate { get; set; }
-//        public bool isLinkedAccount { get; set; }
-
-//        public string status { get; set; }
-//        public List<string> groupIds { get; set; }
-
-//    }
-//}
+﻿ 
 using Newtonsoft.Json;
 using System.Collections.Generic;
 

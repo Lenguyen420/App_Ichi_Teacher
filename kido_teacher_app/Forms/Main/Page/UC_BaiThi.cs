@@ -15,23 +15,29 @@ namespace kido_teacher_app.Forms.Main.Page
             InitWeb();
         }
 
+
         private async void InitWeb()
         {
-            webView = new WebView2();
-            webView.Dock = DockStyle.Fill;
+            webView = new WebView2
+            {
+                Dock = DockStyle.Fill
+            };
+
             this.Controls.Add(webView);
 
             await webView.EnsureCoreWebView2Async();
 
-            // truyền token
-            if (!string.IsNullOrEmpty(AuthSession.AccessToken))
-            {
-                await webView.CoreWebView2.ExecuteScriptAsync(
-                    $"localStorage.setItem('token','{AuthSession.AccessToken}')"
-                );
-            }
+            var safeToken = AuthSession.AccessToken?.Replace("'", "\\'");
+            var safeUsername = AuthSession.Username?.Replace("'", "\\'");
 
-            webView.Source = new Uri("http://160.250.132.143:5173/");
+            string script = $@"
+        localStorage.setItem('accessToken', '{safeToken}');
+        localStorage.setItem('username', '{safeUsername}');
+    ";
+
+            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(script);
+
+            webView.Source = new Uri("https://fe.kidostudent.kidoedu.vn");
         }
     }
     }
