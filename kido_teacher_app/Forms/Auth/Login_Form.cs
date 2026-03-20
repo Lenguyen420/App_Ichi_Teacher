@@ -33,10 +33,7 @@ namespace kido_teacher_app
             try
             {
                 loginButton.Enabled = false;
-
-                // ==================================================
-                // LOGIN GIÁO VIÊN QUA API
-                // ==================================================
+ 
                 string deviceId = Environment.MachineName;
 
                 await AuthService.LoginTeacherAsync(
