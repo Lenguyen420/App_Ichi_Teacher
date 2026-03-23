@@ -128,7 +128,7 @@ namespace kido_teacher_app.Forms.Main.Page
             var layout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 3
+                ColumnCount = 2
             };
 
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
@@ -143,7 +143,8 @@ namespace kido_teacher_app.Forms.Main.Page
             leftPanel.Controls.AddRange(new Control[]
             {
                 MakeIcon(Properties.Resources.icon_address, 10, 10),
-                MakeFooterLabel("Địa chỉ: 231/1 Nguyễn Phúc Chu, Phường 15, Quận Tân Bình", 40, 10),
+                //MakeFooterLabel("Địa chỉ: 231/1 Nguyễn Phúc Chu, Phường 15, Quận Tân Bình", 40, 10),
+                MakeFooterLabel("Địa chỉ: 231/1 Nguyễn Phúc Chu, Phường Tân Sơn, Thành phố Hồ Chí Minh", 40, 10),
 
                 MakeIcon(Properties.Resources.icon_phone, 10, 40),
                 MakeFooterLabel("Điện thoại: 0707 868 600 – 0789 636 979", 40, 40),
@@ -173,14 +174,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
             centerPanel.Controls.Add(pictureHopDong);
             layout.Controls.Add(centerPanel, 1, 0);
-
-            // RIGHT PANEL — CANH LỀ PHẢI
-            var rightPanel = new Panel
-            {
-                Dock = DockStyle.Fill
-            };
-
-            layout.Controls.Add(rightPanel, 2, 0);
+ 
 
             // ================= ADD =================
             container.Controls.Add(bannerContainer);
@@ -210,7 +204,8 @@ namespace kido_teacher_app.Forms.Main.Page
                 Font = new Font("Segoe UI", 11),
                 AutoSize = true,
                 Location = new Point(x, y),
-                MaximumSize = new Size(650, 0)
+                MaximumSize = new Size(900, 0)
+                
             };
         }
     }
