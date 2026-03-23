@@ -151,7 +151,7 @@
                 "- Hỗ trợ: Ultra Viewer\n" +
                 "- Điện thoại: 0707 868 600 - 0789 636 979\n" +
                 "- Email: hcns@IchiSkillManager.edu.vn\n" +
-                "- Địa chỉ: 231/1 Nguyễn Phúc Chu, Phường 15, Quận Tân Bình";
+                "- Địa chỉ: 231/1 Nguyễn Phúc Chu, Phường Tân Sơn, Thành phố Hồ Chí Minh";
 
             // ICON FACEBOOK
             iconFB = new PictureBox();
