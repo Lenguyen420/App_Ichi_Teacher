@@ -321,18 +321,8 @@ namespace kido_teacher_app.Services
             {
                 int total = zip.Entries.Count;
                 int current = 0;
-                // Luôn strip thư mục gốc đầu tiên (nếu có), kể cả khi zip có thêm entry lẻ
-                string? commonRoot = null;
-                var firstEntry = zip.Entries.FirstOrDefault(e => !string.IsNullOrEmpty(e.Name));
-                if (firstEntry != null)
-                {
-                    var normalized = firstEntry.FullName.Replace('\\', '/');
-                    var parts = normalized.Split('/');
-                    if (parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[0]))
-                    {
-                        commonRoot = parts[0] + "/";
-                    }
-                }
+                var commonRoot = GetSharedRootFolder(zip.Entries);
+
                 foreach (var entry in zip.Entries)
                 {
                     // bỏ thư mục rỗng
@@ -345,6 +335,9 @@ namespace kido_teacher_app.Services
                     {
                         relativePath = relativePath.Substring(commonRoot.Length);
                     }
+
+                    relativePath = NormalizeExtractRelativePath(relativePath);
+
                     // Bỏ qua nếu path rỗng sau khi remove root
                     if (string.IsNullOrWhiteSpace(relativePath))
                         continue;
@@ -389,6 +382,88 @@ namespace kido_teacher_app.Services
             }
             return extractRoot;
         }
+
+        private static string? GetSharedRootFolder(IEnumerable<ZipArchiveEntry> entries)
+        {
+            string? rootFolder = null;
+
+            foreach (var entry in entries.Where(e => !string.IsNullOrEmpty(e.Name)))
+            {
+                var normalized = entry.FullName.Replace('\\', '/');
+                var parts = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+                if (parts.Length < 2)
+                    return null;
+
+                if (string.IsNullOrWhiteSpace(parts[0]))
+                    return null;
+
+                if (rootFolder == null)
+                {
+                    rootFolder = parts[0];
+                    continue;
+                }
+
+                if (!string.Equals(rootFolder, parts[0], StringComparison.Ordinal))
+                    return null;
+            }
+
+            return string.IsNullOrWhiteSpace(rootFolder) ? null : rootFolder + "/";
+        }
+
+        private static string NormalizeExtractRelativePath(string relativePath)
+        {
+            var parts = relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length < 2)
+                return relativePath;
+
+            if (IsReservedElearningFolder(parts[0]))
+                return relativePath;
+
+            if (!ShouldStripWrapperFolder(parts[1]))
+                return relativePath;
+
+            return string.Join("/", parts.Skip(1));
+        }
+
+        private static bool IsReservedElearningFolder(string folderName)
+        {
+            return
+                string.Equals(folderName, "html5", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(folderName, "mobile", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(folderName, "story_content", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ShouldStripWrapperFolder(string childName)
+        {
+            return
+                IsReservedElearningFolder(childName)
+                || IsStandaloneLectureDocument(childName)
+                || IsStorylineRootAsset(childName);
+        }
+
+        private static bool IsStorylineRootAsset(string fileName)
+        {
+            return
+                string.Equals(fileName, "story.html", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(fileName, "analytics-frame.html", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(fileName, "html5.dbs", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(fileName, "meta.xml", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsStandaloneLectureDocument(string filePath)
+        {
+            var extension = Path.GetExtension(filePath);
+
+            return
+                string.Equals(extension, ".pdf", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(extension, ".pptx", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(extension, ".ppsx", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(extension, ".ppt", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(extension, ".pps", StringComparison.OrdinalIgnoreCase);
+        }
+
         public static async Task<LectureDto?> GetByIdAsync(string lectureId)
         {
             EnsureAuthorized();

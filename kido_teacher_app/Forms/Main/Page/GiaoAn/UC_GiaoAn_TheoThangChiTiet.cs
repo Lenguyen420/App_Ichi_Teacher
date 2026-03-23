@@ -7,6 +7,7 @@ using kido_teacher_app.Services;
 using kido_teacher_app.Shared.Caching;
 using kido_teacher_app.Shared.Network;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -14,7 +15,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 {
@@ -30,6 +30,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
         private readonly float _dpiScale;
         private bool _loadStarted;
         private string? _lastRenderedLectureSignature;
+        private readonly Dictionary<Button, EventHandler> _offlineButtonHandlers = new();
 
         //private LessonDto _lesson;
 
@@ -163,6 +164,10 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                     if (detail.resources == null)
                         detail.resources = new List<LectureResourceDto>();
 
+                    string? currentOfflineZipUrl = detail.resources
+                        .FirstOrDefault(r => r.source == "OFFLINE")
+                        ?.url;
+
                     var cache = LectureOfflineCacheService.Load(lec.id);
 
                     if (cache != null)
@@ -210,9 +215,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
                     string pdfOffline = null, videoOffline = null, lessonOffline = null, powerPointOffline = null;
                     string? cachedOfflineZipUrl = cache?.OfflineZipUrl;
-                    string? currentOfflineZipUrl = detail.resources
-                        .FirstOrDefault(r => r.source == "OFFLINE")
-                        ?.url;
 
                     foreach (var r in detail.resources)
                     {
@@ -262,14 +264,9 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             flowList.ResumeLayout();
             UpdateCardWidths();
         }
-
-
-
         // =========================
         // HELPERS
         // =========================
-
-
 
         private void OpenLocal(string filePath, string title)
         {
@@ -843,9 +840,12 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 btn.FlatAppearance.BorderColor = Color.Blue;
                 btn.FlatAppearance.BorderSize = 1;
 
-                // NOTE: tránh gán click nhiều lần
-                btn.Click -= (s, e) => clickAction();
-                btn.Click += (s, e) => clickAction();
+                if (_offlineButtonHandlers.TryGetValue(btn, out var existingHandler))
+                    btn.Click -= existingHandler;
+
+                EventHandler handler = (s, e) => clickAction();
+                _offlineButtonHandlers[btn] = handler;
+                btn.Click += handler;
             }
 
             // PDF OFFLINE
