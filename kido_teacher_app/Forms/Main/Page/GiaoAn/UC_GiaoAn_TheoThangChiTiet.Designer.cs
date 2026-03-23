@@ -48,7 +48,7 @@
             this.lblInfo.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Bold);
             this.lblInfo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.lblInfo.Padding = new Padding(20, 0, 0, 0);
-
+            
             /// ================================
             // ⭐ BACK BUTTON (NO TRANSPARENT)
             // ================================
@@ -64,9 +64,25 @@
             this.btnBack.Cursor = Cursors.Hand;
             this.btnBack.BackColor = this.lblInfo.BackColor;
             this.btnBack.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            this.btnBack.Location = new Point(1050, 55);
+            //this.btnBack.Location = new Point(1050, 55);
 
             //MakePictureBoxRound(this.btnBack);
+            this.lblInfo.Controls.Add(this.btnBack);
+
+            //  set vị trí chuẩn trong header
+            this.btnBack.Location = new Point(
+                this.lblInfo.Width - this.btnBack.Width - 10,
+                (this.lblInfo.Height - this.btnBack.Height) / 2
+            );
+
+            // 👉 xử lý resize đúng chỗ
+            this.lblInfo.Resize += (s, e) =>
+            {
+                btnBack.Location = new Point(
+                    lblInfo.Width - btnBack.Width - 10,
+                    (lblInfo.Height - btnBack.Height) / 2
+                );
+            };
 
             // Click → quay về màn trước
             this.btnBack.Click += BtnBack_Click;
@@ -89,8 +105,8 @@
             this.Controls.Add(this.flowList);
             this.Controls.Add(this.lblInfo);
             this.Controls.Add(this.lblHeader);
-            this.Controls.Add(this.btnBack);
-            this.Controls.SetChildIndex(this.btnBack, 0);
+            //this.Controls.Add(this.btnBack);
+            //this.Controls.SetChildIndex(this.btnBack, 0);
 
             this.Name = "UC_GiaoAn_TheoThangChiTiet";
             this.Size = new System.Drawing.Size(1100, 650);

@@ -54,8 +54,25 @@ namespace kido_teacher_app.Forms.Main.Page
             btnBack.Cursor = Cursors.Hand;
             btnBack.BackColor = lblTitle.BackColor;
             btnBack.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnBack.Location = new Point(1050, 55);
+            //btnBack.Location = new Point(1050, 55);
+
+            lblTitle.Controls.Add(btnBack);
+
+            btnBack.Location = new Point(
+                lblTitle.Width - btnBack.Width - 10,
+                (lblTitle.Height - btnBack.Height) / 2
+            );
+            lblTitle.Resize += (s, e) =>
+            {
+                btnBack.Location = new Point(
+                    lblTitle.Width - btnBack.Width - 10,
+                    (lblTitle.Height - btnBack.Height) / 2
+                );
+            };
+
             btnBack.Click += BtnBack_Click;
+
+           
 
             // ===== FLOW MONTHS =====
             flowMonths.Dock = DockStyle.Fill;
@@ -74,8 +91,8 @@ namespace kido_teacher_app.Forms.Main.Page
             this.Controls.Add(flowMonths);
             this.Controls.Add(lblTitle);
             this.Controls.Add(lblWelcome);
-            this.Controls.Add(btnBack);
-            this.Controls.SetChildIndex(btnBack, 0);
+            //this.Controls.Add(btnBack);
+            //this.Controls.SetChildIndex(btnBack, 0);
 
             this.ResumeLayout(false);
         }
