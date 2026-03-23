@@ -194,71 +194,39 @@ namespace kido_teacher_app.Services
         {
             EnsureAuthorized();
 
-            // Lấy tên file từ path (trước khi encode URL)
-            var zipFilename = Path.GetFileName(resourcePath);
-
-            // Xác định URL: nếu đã là full URL thì dùng luôn, nếu là path thì gắn ApiBaseUrl
-            string url;
-            if (resourcePath.StartsWith("http://") || resourcePath.StartsWith("https://"))
-            {
-                // Đã là full URL
-                url = resourcePath;
-            }
-            else
-            {
-                // Là relative path - cần gắn ApiBaseUrl
-                var baseUrl = AppConfig.ApiBaseUrl.TrimEnd('/');
-                
-                // Đảm bảo có dấu / ở đầu path
-                if (!resourcePath.StartsWith("/"))
-                    resourcePath = "/" + resourcePath;
-                
-                // Encode các ký tự đặc biệt trong path (nhưng giữ nguyên dấu /)
-                var segments = resourcePath.Split('/');
-                var encodedSegments = segments.Select(s => 
-                    string.IsNullOrEmpty(s) ? s : Uri.EscapeDataString(s)
-                );
-                var encodedPath = string.Join("/", encodedSegments);
-                
-                url = $"{baseUrl}{encodedPath}";
-            }
-
-            // Debug log
+            string url = BuildResourceUrl(resourcePath);
             System.Diagnostics.Debug.WriteLine($"[LectureService] Download URL: {url}");
 
-            // Đảm bảo thư mục Downloads tồn tại
             if (!Directory.Exists(AppConfig.DownloadFolder))
                 Directory.CreateDirectory(AppConfig.DownloadFolder);
 
-            // Lưu file ZIP vào thư mục Downloads
-            var tempZip = Path.Combine(AppConfig.DownloadFolder, zipFilename);
-            System.Diagnostics.Debug.WriteLine($"[LectureService] Download to: {tempZip}");
-
-            // ⭐ Giải nén vào thư mục Lectures/{lectureId}
             var extractRoot = Path.Combine(
                 AppConfig.LectureExtractFolder,
                 lectureId
             );
             System.Diagnostics.Debug.WriteLine($"[LectureService] Extract to: {extractRoot}");
 
-            if (Directory.Exists(extractRoot))
-                Directory.Delete(extractRoot, true);
-
             Directory.CreateDirectory(extractRoot);
 
-            // ======================
-            // 1️⃣ DOWNLOAD (0–50%)
-            // ======================
+            string? tempFile = null;
+            string? downloadFileName = null;
+            string? mediaType = null;
+
             using (var res = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {
                 res.EnsureSuccessStatusCode();
+
+                mediaType = res.Content.Headers.ContentType?.MediaType;
+                downloadFileName = ResolveDownloadFileName(resourcePath, res.Content.Headers);
+                tempFile = Path.Combine(AppConfig.DownloadFolder, downloadFileName);
+                System.Diagnostics.Debug.WriteLine($"[LectureService] Download to: {tempFile}");
 
                 var total = res.Content.Headers.ContentLength ?? 0;
                 var buffer = new byte[81920];
                 long read = 0;
 
                 await using var input = await res.Content.ReadAsStreamAsync();
-                await using var output = new FileStream(tempZip, FileMode.Create, FileAccess.Write);
+                await using var output = new FileStream(tempFile, FileMode.Create, FileAccess.Write);
 
                 int len;
                 while ((len = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
@@ -274,94 +242,193 @@ namespace kido_teacher_app.Services
                 }
             }
 
-            // ======================
-            // 2️⃣ EXTRACT (50–100%) - BỎ QUA THỨ MỤC GỐC
-            // ======================
-            using (var zip = ZipFile.OpenRead(tempZip))
+            if (string.IsNullOrEmpty(tempFile) || string.IsNullOrEmpty(downloadFileName))
             {
-                int total = zip.Entries.Count;
-                int current = 0;
+                return null;
+            }
 
-                // Tìm thư mục gốc chung (nếu có)
-                string? commonRoot = null;
-                var firstEntry = zip.Entries.FirstOrDefault(e => !string.IsNullOrEmpty(e.Name));
-                if (firstEntry != null)
-                {
-                    var parts = firstEntry.FullName.Split('/');
-                    if (parts.Length > 1)
-                    {
-                        // Kiểm tra xem tất cả entries có cùng thư mục gốc không
-                        commonRoot = parts[0] + "/";
-                        bool allHaveCommonRoot = zip.Entries
-                            .Where(e => !string.IsNullOrEmpty(e.Name))
-                            .All(e => e.FullName.StartsWith(commonRoot));
-                        
-                        if (!allHaveCommonRoot)
-                            commonRoot = null;
-                    }
-                }
-
-                System.Diagnostics.Debug.WriteLine($"[LectureService] Common root folder: {commonRoot ?? "(none)"}");
-
-                foreach (var entry in zip.Entries)
-                {
-                    // bỏ thư mục rỗng
-                    if (string.IsNullOrEmpty(entry.Name))
-                        continue;
-
-                    // Bỏ qua thư mục gốc nếu tìm thấy
-                    var relativePath = entry.FullName;
-                    if (!string.IsNullOrEmpty(commonRoot) && relativePath.StartsWith(commonRoot))
-                    {
-                        relativePath = relativePath.Substring(commonRoot.Length);
-                    }
-
-                    // Bỏ qua nếu path rỗng sau khi remove root
-                    if (string.IsNullOrWhiteSpace(relativePath))
-                        continue;
-
-                    var destinationPath = Path.GetFullPath(
-                        Path.Combine(extractRoot, relativePath)
-                    );
-
-                    // 🔐 bảo vệ path traversal
-                    if (!destinationPath.StartsWith(extractRoot, StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    var dir = Path.GetDirectoryName(destinationPath);
-                    if (!Directory.Exists(dir))
-                        Directory.CreateDirectory(dir!);
-
-                    entry.ExtractToFile(destinationPath, true);
-
-                    current++;
-                    int percent = 50 + (int)(current * 50.0 / total);
-                    progress?.Report(percent);
-
-                    await Task.Yield();
-                }
+            if (IsZipResource(downloadFileName, mediaType))
+            {
+                await ExtractZipAsync(tempFile, extractRoot, progress);
+                System.Diagnostics.Debug.WriteLine($"[LectureService] Extract completed: {extractRoot}");
+            }
+            else
+            {
+                var destinationPath = Path.Combine(extractRoot, downloadFileName);
+                File.Copy(tempFile, destinationPath, true);
+                progress?.Report(100);
+                System.Diagnostics.Debug.WriteLine($"[LectureService] Saved file: {destinationPath}");
             }
 
             progress?.Report(100);
-            System.Diagnostics.Debug.WriteLine($"[LectureService] Extract completed: {extractRoot}");
 
-            // ======================
-            // 3️⃣ XÓA FILE ZIP SAU KHI GIẢI NÉN XONG
-            // ======================
             try
             {
-                if (File.Exists(tempZip))
+                if (File.Exists(tempFile))
                 {
-                    File.Delete(tempZip);
-                    System.Diagnostics.Debug.WriteLine($"[LectureService] Deleted ZIP: {tempZip}");
+                    File.Delete(tempFile);
+                    System.Diagnostics.Debug.WriteLine($"[LectureService] Deleted temp file: {tempFile}");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[LectureService] Failed to delete ZIP: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[LectureService] Failed to delete temp file: {ex.Message}");
             }
 
             return extractRoot;
+        }
+
+        private static string BuildResourceUrl(string resourcePath)
+        {
+            if (resourcePath.StartsWith("http://") || resourcePath.StartsWith("https://"))
+            {
+                return resourcePath;
+            }
+
+            var baseUrl = AppConfig.ApiBaseUrl.TrimEnd('/');
+
+            if (!resourcePath.StartsWith("/"))
+                resourcePath = "/" + resourcePath;
+
+            var segments = resourcePath.Split('/');
+            var encodedSegments = segments.Select(s =>
+                string.IsNullOrEmpty(s) ? s : Uri.EscapeDataString(s)
+            );
+            var encodedPath = string.Join("/", encodedSegments);
+
+            return $"{baseUrl}{encodedPath}";
+        }
+
+        private static string ResolveDownloadFileName(
+            string resourcePath,
+            HttpContentHeaders headers)
+        {
+            var fileName =
+                headers.ContentDisposition?.FileNameStar ??
+                headers.ContentDisposition?.FileName;
+
+            if (!string.IsNullOrWhiteSpace(fileName))
+            {
+                fileName = fileName.Trim('"');
+            }
+            else
+            {
+                fileName = Path.GetFileName(resourcePath.Split('?')[0]);
+            }
+
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                fileName = "resource";
+            }
+
+            if (string.IsNullOrWhiteSpace(Path.GetExtension(fileName)))
+            {
+                var extension = GetExtensionFromMediaType(headers.ContentType?.MediaType);
+                if (!string.IsNullOrWhiteSpace(extension))
+                {
+                    fileName += extension;
+                }
+            }
+
+            foreach (var invalidChar in Path.GetInvalidFileNameChars())
+            {
+                fileName = fileName.Replace(invalidChar, '_');
+            }
+
+            return fileName;
+        }
+
+        private static string? GetExtensionFromMediaType(string? mediaType)
+        {
+            return mediaType?.ToLowerInvariant() switch
+            {
+                "application/zip" => ".zip",
+                "application/x-zip-compressed" => ".zip",
+                "application/pdf" => ".pdf",
+                "video/mp4" => ".mp4",
+                "text/html" => ".html",
+                _ => null
+            };
+        }
+
+        private static bool IsZipResource(string fileName, string? mediaType)
+        {
+            return Path.GetExtension(fileName)
+                    .Equals(".zip", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(mediaType, "application/zip", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(mediaType, "application/x-zip-compressed", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static async Task ExtractZipAsync(
+            string zipPath,
+            string extractRoot,
+            IProgress<int>? progress)
+        {
+            string extractRootFullPath = Path.GetFullPath(extractRoot);
+            if (!extractRootFullPath.EndsWith(Path.DirectorySeparatorChar))
+            {
+                extractRootFullPath += Path.DirectorySeparatorChar;
+            }
+
+            using var zip = ZipFile.OpenRead(zipPath);
+            int total = zip.Entries.Count;
+            int current = 0;
+
+            string? commonRoot = null;
+            var firstEntry = zip.Entries.FirstOrDefault(e => !string.IsNullOrEmpty(e.Name));
+            if (firstEntry != null)
+            {
+                var parts = firstEntry.FullName.Split('/');
+                if (parts.Length > 1)
+                {
+                    commonRoot = parts[0] + "/";
+                    bool allHaveCommonRoot = zip.Entries
+                        .Where(e => !string.IsNullOrEmpty(e.Name))
+                        .All(e => e.FullName.StartsWith(commonRoot, StringComparison.Ordinal));
+
+                    if (!allHaveCommonRoot)
+                        commonRoot = null;
+                }
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[LectureService] Common root folder: {commonRoot ?? "(none)"}");
+
+            foreach (var entry in zip.Entries)
+            {
+                if (string.IsNullOrEmpty(entry.Name))
+                    continue;
+
+                var relativePath = entry.FullName;
+                if (!string.IsNullOrEmpty(commonRoot) &&
+                    relativePath.StartsWith(commonRoot, StringComparison.Ordinal))
+                {
+                    relativePath = relativePath.Substring(commonRoot.Length);
+                }
+
+                if (string.IsNullOrWhiteSpace(relativePath))
+                    continue;
+
+                var destinationPath = Path.GetFullPath(
+                    Path.Combine(extractRootFullPath, relativePath)
+                );
+
+                if (!destinationPath.StartsWith(extractRootFullPath, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var dir = Path.GetDirectoryName(destinationPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
+                entry.ExtractToFile(destinationPath, true);
+
+                current++;
+                int percent = total == 0
+                    ? 100
+                    : 50 + (int)(current * 50.0 / total);
+                progress?.Report(percent);
+
+                await Task.Yield();
+            }
         }
 
         
