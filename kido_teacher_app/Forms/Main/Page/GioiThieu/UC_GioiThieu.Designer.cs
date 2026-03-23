@@ -143,7 +143,7 @@ namespace kido_teacher_app.Forms.Main.Page
             leftPanel.Controls.AddRange(new Control[]
             {
                 MakeIcon(Properties.Resources.icon_address, 10, 10),
-                MakeFooterLabel("Địa chỉ: 231/1 Nguyễn Phúc Chu, Phường 15, Quận Tân Bình", 40, 10),
+                MakeFooterLabel("Địa chỉ: 231/1 Nguyễn Phúc Chu, Phường Tân Sơn, Thành phố Hồ Chí Minh", 40, 10),
 
                 MakeIcon(Properties.Resources.icon_phone, 10, 40),
                 MakeFooterLabel("Điện thoại: 0707 868 600 – 0789 636 979", 40, 40),
