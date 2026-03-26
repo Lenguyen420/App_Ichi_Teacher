@@ -34,22 +34,22 @@
 
             PictureBox logo = new PictureBox()
             {
-                Image = Properties.Resources.logo_ichiskill,
+                Image = Properties.Resources.logo4,
                 Size = new Size(180, 180),
                 Location = new Point(50, 20),
                 SizeMode = PictureBoxSizeMode.Zoom,
                 //BackColor = Color.Transparent
             };
 
-            //logo.Paint += (s, e) =>
-            //{
-            //    e.Graphics.SmoothingMode =
-            //        System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            logo.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode =
+                    System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            //    var gp = new System.Drawing.Drawing2D.GraphicsPath();
-            //    gp.AddEllipse(0, 0, logo.Width - 1, logo.Height - 1);
-            //    logo.Region = new Region(gp);
-            //};
+                var gp = new System.Drawing.Drawing2D.GraphicsPath();
+                gp.AddEllipse(0, 0, logo.Width - 1, logo.Height - 1);
+                logo.Region = new Region(gp);
+            };
 
             panelLeft.Controls.Add(logo);
 
@@ -73,8 +73,8 @@
 
             this.Text = "Giáo viên";
             
-            // Set application icon from logo_ichiskill
-            using (var bmp = new Bitmap(Properties.Resources.logo_ichiskill))
+            // Set application icon from logo4
+            using (var bmp = new Bitmap(Properties.Resources.logo4))
             {
                 this.Icon = Icon.FromHandle(bmp.GetHicon());
             }
