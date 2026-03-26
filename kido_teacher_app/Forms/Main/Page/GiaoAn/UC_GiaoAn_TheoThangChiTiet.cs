@@ -27,7 +27,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
         private readonly string _courseName;
         private int _loadVersion;
-        private readonly float _dpiScale;
         private bool _loadStarted;
         private string? _lastRenderedLectureSignature;
         private readonly Dictionary<Button, EventHandler> _offlineButtonHandlers = new();
@@ -44,9 +43,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             )
         {
             InitializeComponent();
-
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            _dpiScale = this.DeviceDpi / 96f;
             _classId = classId;
             _courseId = courseId;
             _month = month;
@@ -65,7 +61,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             lblInfo.Text = $"Giáo Án / {className} / {courseName}";
             this.Load += UC_GiaoAn_TheoThangChiTiet_Load;
             this.flowList.SizeChanged += (s, e) => UpdateCardWidths();
-            ApplyDpiScaling();
         }
 
         private void UC_GiaoAn_TheoThangChiTiet_Load(object? sender, EventArgs e)
@@ -343,10 +338,14 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             bool isDownloaded
         )
         {
+            int actionButtonHeight = Scale(34);
+            int actionButtonSpacing = Scale(6);
+            int downloadButtonHeight = Scale(132);
+
             // CARD CHA
             Panel card = new Panel
             {
-                Height = Scale(200),
+                Height = GetCardHeight(needsUpdate, actionButtonHeight, actionButtonSpacing, downloadButtonHeight),
                 Width = GetCardWidth(),
                 BorderStyle = BorderStyle.FixedSingle,
                 Margin = new Padding(Scale(5))
@@ -470,7 +469,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
-                Padding = new Padding(0),
+                Padding = new Padding(0, 0, 0, Scale(4)),
                 AutoScroll = false
             };
 
@@ -529,18 +528,18 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
-                Padding = new Padding(0),
+                Padding = new Padding(0, 0, 0, Scale(4)),
                 AutoScroll = false
             };
 
             Button btnDelete = new Button
             {
-                Text = "🗑 Xóa",
+                Text = "Xóa",
                 Width = Scale(120),
-                Height = Scale(28),
+                Height = actionButtonHeight,
                 ForeColor = Color.Red,
                 FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(Scale(20), 0, 0, Scale(6))
+                Margin = new Padding(Scale(20), 0, 0, actionButtonSpacing)
             };
 
             
@@ -551,7 +550,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 isDownloaded ? "Đã tải" : "Tải offline"
             );
 
-            btnDownload.Height = Scale(132);
+            btnDownload.Height = downloadButtonHeight;
             btnDownload.Margin = new Padding(Scale(20), 0, 0, 0);
 
 
@@ -895,9 +894,11 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             {
                 Text = text,
                 Width = Scale(170),
-                Height = Scale(30),
+                Height = Scale(34),
                 ForeColor = color,
                 FlatStyle = FlatStyle.Flat,
+                AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", ScaleFont(9), FontStyle.Regular)
             };
         }
@@ -908,11 +909,40 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             {
                 Text = text,
                 Width = Scale(120),
-                Height = Scale(28),
+                Height = Scale(34),
                 ForeColor = Color.Gray,
                 FlatStyle = FlatStyle.Flat,
+                AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", ScaleFont(9), FontStyle.Regular)
             };
+        }
+
+        private int GetCardHeight(
+            bool needsUpdate,
+            int actionButtonHeight,
+            int actionButtonSpacing,
+            int downloadButtonHeight)
+        {
+            int imageColumnHeight = Scale(150);
+            int infoColumnHeight = Scale(150);
+
+            int offlineColumnHeight =
+                Scale(24) + actionButtonSpacing +
+                (actionButtonHeight * 4) + (actionButtonSpacing * 3);
+
+            if (needsUpdate)
+                offlineColumnHeight += Scale(20) + Scale(6);
+
+            int deleteColumnHeight =
+                actionButtonHeight + actionButtonSpacing + downloadButtonHeight;
+
+            int contentHeight = Math.Max(
+                Math.Max(imageColumnHeight, infoColumnHeight),
+                Math.Max(offlineColumnHeight, deleteColumnHeight)
+            );
+
+            return contentHeight + Scale(32);
         }
 
         // sự kiện xóa
@@ -967,31 +997,14 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
         private int Scale(int value)
         {
-            return (int)Math.Round(value * _dpiScale);
+            // This screen is hosted inside a fixed-pixel shell, so applying an
+            // extra DeviceDpi multiplier here makes it visually over-scale.
+            return value;
         }
 
         private float ScaleFont(float size)
         {
-            return size * _dpiScale;
-        }
-
-        private void ApplyDpiScaling()
-        {
-            lblHeader.Height = Scale(50);
-            lblHeader.Font = new Font("Segoe UI", ScaleFont(16), FontStyle.Bold);
-            lblHeader.Padding = new Padding(Scale(20), 0, 0, 0);
-
-            lblInfo.Height = Scale(40);
-            lblInfo.Font = new Font("Segoe UI", ScaleFont(14), FontStyle.Bold);
-            lblInfo.Padding = new Padding(Scale(20), 0, 0, 0);
-
-            flowList.Padding = new Padding(Scale(15));
-
-            if (btnBack != null)
-            {
-                btnBack.Width = Scale(30);
-                btnBack.Height = Scale(30);
-            }
+            return size;
         }
 
         private static void SetDoubleBuffered(Control control)

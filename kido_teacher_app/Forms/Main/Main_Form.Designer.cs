@@ -104,21 +104,29 @@
                 Cursor = Cursors.Hand
             };
 
+            int labelLeft = 70;
+            int rightPadding = 15;
+
             Label lbl = new Label()
             {
                 Text = text,
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
-                Location = new Point(70, 15),
+                Location = new Point(labelLeft, 0),
                 AutoSize = false,
-                MaximumSize = new Size(200, 0),
+                Size = new Size(menu.Width - labelLeft - rightPadding, menu.Height),
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true,
                 Cursor = Cursors.Hand
             };
 
-            lbl.Size = TextRenderer.MeasureText(text, lbl.Font, new Size(200, 0),
-                                                TextFormatFlags.WordBreak);
-
-            menu.Height = Math.Max(60, lbl.Height + 30);
+            menu.Resize += (s, e) =>
+            {
+                lbl.Size = new Size(
+                    Math.Max(80, menu.Width - labelLeft - rightPadding),
+                    menu.Height
+                );
+            };
 
             // Add controls
             menu.Controls.Add(pic);
