@@ -403,6 +403,16 @@ namespace kido_teacher_app.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap logo_ichiskill {
+            get {
+                object obj = ResourceManager.GetObject("logo_ichiskill", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap logo_kido {
             get {
                 object obj = ResourceManager.GetObject("logo_kido", resourceCulture);
