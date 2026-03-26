@@ -42,9 +42,9 @@
             logoIchi.Size = new Size(300, 300);
             logoIchi.SizeMode = PictureBoxSizeMode.Zoom;
             logoIchi.CircleBackColor = Color.White;
-           // logoIchi.InnerText = "KIDO";
+            // logoIchi.InnerText = "KIDO";
             //logoIchi.TextColor = Color.Blue;
-            logoIchi.Image = Properties.Resources.logo4;
+            logoIchi.Image = Properties.Resources.logo_ichiskill;
 
             // Công ty
             companyLabel.Font = new Font("Arial", 16F, FontStyle.Bold);
@@ -200,42 +200,42 @@
             public Color TextColor { get; set; } = Color.Black;
             public Color CircleBackColor { get; set; } = Color.White;
 
-            protected override void OnResize(EventArgs e)
-            {
-                base.OnResize(e);
-                var gp = new System.Drawing.Drawing2D.GraphicsPath();
-                gp.AddEllipse(0, 0, Width - 1, Height - 1);
-                this.Region = new Region(gp);
-            }
+            //protected override void OnResize(EventArgs e)
+            //{
+            //    base.OnResize(e);
+            //    var gp = new System.Drawing.Drawing2D.GraphicsPath();
+            //    gp.AddEllipse(0, 0, Width - 1, Height - 1);
+            //    this.Region = new Region(gp);
+            //}
 
-            protected override void OnPaint(PaintEventArgs e)
-            {
-                e.Graphics.SmoothingMode =
-                    System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            //protected override void OnPaint(PaintEventArgs e)
+            //{
+            //    e.Graphics.SmoothingMode =
+            //        System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-                // Nền tròn trắng
-                using (SolidBrush bg = new SolidBrush(CircleBackColor))
-                    e.Graphics.FillEllipse(bg, 0, 0, Width - 1, Height - 1);
+            //    // Nền tròn trắng
+            //    using (SolidBrush bg = new SolidBrush(CircleBackColor))
+            //        e.Graphics.FillEllipse(bg, 0, 0, Width - 1, Height - 1);
 
-                // BÓNG ĐỔ
-                using (SolidBrush shadow = new SolidBrush(Color.FromArgb(60, 0, 0, 0)))
-                    e.Graphics.FillEllipse(shadow, 8, 8, Width - 16, Height - 16);
+            //    // BÓNG ĐỔ
+            //    using (SolidBrush shadow = new SolidBrush(Color.FromArgb(60, 0, 0, 0)))
+            //        e.Graphics.FillEllipse(shadow, 8, 8, Width - 16, Height - 16);
 
-                // Vẽ text
-                if (!string.IsNullOrEmpty(InnerText))
-                {
-                    using (Font f = new Font("Arial", 48F, FontStyle.Bold))
-                    using (SolidBrush b = new SolidBrush(TextColor))
-                    {
-                        SizeF textSize = e.Graphics.MeasureString(InnerText, f);
-                        float x = (Width - textSize.Width) / 2;
-                        float y = (Height - textSize.Height) / 2;
-                        e.Graphics.DrawString(InnerText, f, b, x, y);
-                    }
-                }
+            //    // Vẽ text
+            //    if (!string.IsNullOrEmpty(InnerText))
+            //    {
+            //        using (Font f = new Font("Arial", 48F, FontStyle.Bold))
+            //        using (SolidBrush b = new SolidBrush(TextColor))
+            //        {
+            //            SizeF textSize = e.Graphics.MeasureString(InnerText, f);
+            //            float x = (Width - textSize.Width) / 2;
+            //            float y = (Height - textSize.Height) / 2;
+            //            e.Graphics.DrawString(InnerText, f, b, x, y);
+            //        }
+            //    }
 
-                base.OnPaint(e);
-            }
+            //    base.OnPaint(e);
+            //}
         }
     }
 }
