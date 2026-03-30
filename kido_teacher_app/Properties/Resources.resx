@@ -223,33 +223,6 @@
   <data name="logo_kido" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\image\logo_kido.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="logo_kido2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\logo_kido2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="logo_kido3" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\logo_kido3.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide2.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide3" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide3.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide4" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide4.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide5" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide5.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide6" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide6.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide7" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide7.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="slide8" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\slide8.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -303,5 +276,20 @@
   </data>
   <data name="logo_ichiskill" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\logo_ichi.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="slide14" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\slide14.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="slide15" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\slide15.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="slide16" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\slide16.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="slide12" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\slide12.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="slide13" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\slide13.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

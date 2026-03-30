@@ -94,7 +94,7 @@ namespace kido_teacher_app.Forms.Main.Page
             {
                 Dock = DockStyle.Fill,
                 SizeMode = PictureBoxSizeMode.Zoom,
-                Image = Properties.Resources.slide1
+                //Image = Properties.Resources.slide1
             };
 
             detailLink = new LinkLabel

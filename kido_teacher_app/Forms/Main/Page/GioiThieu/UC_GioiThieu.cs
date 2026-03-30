@@ -96,10 +96,11 @@ namespace kido_teacher_app.Forms.Main.Page
 
                 slideCache = new Image[]
                 {
-                    LoadAndResizeSlide("slide10.png", targetSize.Width, targetSize.Height, Properties.Resources.slide10),
-                    LoadAndResizeSlide("slide9.png", targetSize.Width, targetSize.Height, Properties.Resources.slide9),
-                    LoadAndResizeSlide("slide11.png", targetSize.Width, targetSize.Height, Properties.Resources.slide11),
-                    LoadAndResizeSlide("slide8.jpg", targetSize.Width, targetSize.Height, Properties.Resources.slide8)
+                    LoadAndResizeSlide("slide12.png", targetSize.Width, targetSize.Height, Properties.Resources.slide12),
+                    LoadAndResizeSlide("slide13.png", targetSize.Width, targetSize.Height, Properties.Resources.slide13),
+                    LoadAndResizeSlide("slide14.png", targetSize.Width, targetSize.Height, Properties.Resources.slide14),
+                    LoadAndResizeSlide("slide15.jpg", targetSize.Width, targetSize.Height, Properties.Resources.slide15),
+                    LoadAndResizeSlide("slide16.jpg", targetSize.Width, targetSize.Height, Properties.Resources.slide16),
                 };
 
                 slideCacheSize = targetSize;
