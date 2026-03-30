@@ -399,7 +399,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             {
                 Size = new Size(Scale(150), Scale(150)),
                 SizeMode = PictureBoxSizeMode.Zoom,
-                Image = Properties.Resources.lessondefault
+                Image = Properties.Resources.giaoan
             };
 
             void CenterImage()
