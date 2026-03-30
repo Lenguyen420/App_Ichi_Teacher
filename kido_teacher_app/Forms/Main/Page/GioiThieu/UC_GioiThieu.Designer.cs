@@ -87,7 +87,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
             lblCompany = new Label
             {
-                Text = "CÔNG TY CỔ PHẦN GIÁO DỤC KHOA HỌC CÔNG NGHỆ ICHI SKILL",
+                Text = "CÔNG TY TNHH KIDO EDU",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 ForeColor = Color.White,
@@ -182,14 +182,14 @@ namespace kido_teacher_app.Forms.Main.Page
                 Padding = new Padding(10)
             };
 
-            pictureHopDong = new PictureBox
-            {
-                Image = Properties.Resources.hopdong,
-                Dock = DockStyle.Fill,
-                SizeMode = PictureBoxSizeMode.Zoom   // ⭐ giữ tỉ lệ, FULL chiều cao footer
-            };
+            //pictureHopDong = new PictureBox
+            //{
+            //    Image = Properties.Resources.hopdong,
+            //    Dock = DockStyle.Fill,
+            //    SizeMode = PictureBoxSizeMode.Zoom   // ⭐ giữ tỉ lệ, FULL chiều cao footer
+            //};
 
-            centerPanel.Controls.Add(pictureHopDong);
+            //centerPanel.Controls.Add(pictureHopDong);
             layout.Controls.Add(centerPanel, 1, 0);
  
 
