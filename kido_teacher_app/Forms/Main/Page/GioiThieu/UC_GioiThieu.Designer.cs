@@ -70,6 +70,21 @@ namespace kido_teacher_app.Forms.Main.Page
                 BackColor = Color.FromArgb(76, 175, 80)
             };
 
+            Button btnToggleSlide = new Button()
+            {
+                Text = "Dừng",
+                Width = 80,
+                Height = 30,
+                BackColor = Color.White,
+                ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat,
+                Location = new Point(10, 7) // bên trái
+            };
+
+            btnToggleSlide.FlatAppearance.BorderSize = 0;
+            btnToggleSlide.Click += BtnToggleSlide_Click;
+
+
             lblCompany = new Label
             {
                 Text = "CÔNG TY CỔ PHẦN GIÁO DỤC KHOA HỌC CÔNG NGHỆ ICHI SKILL",
@@ -79,6 +94,8 @@ namespace kido_teacher_app.Forms.Main.Page
                 TextAlign = ContentAlignment.MiddleCenter
             };
             header2.Controls.Add(lblCompany);
+            header2.Controls.Add(btnToggleSlide);
+            btnToggleSlide.BringToFront();
 
             topHeader.Controls.Add(header2);
             topHeader.Controls.Add(header1);

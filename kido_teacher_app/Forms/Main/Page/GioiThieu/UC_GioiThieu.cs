@@ -19,11 +19,13 @@ namespace kido_teacher_app.Forms.Main.Page
         private System.Windows.Forms.Timer slideTimer;
         private Image[] slideImages;
         private int currentSlideIndex = 0;
+        private bool isSlideRunning = true;
         public UC_GioiThieu()
         {
             InitializeComponent();
             InitSlideShow();
             Disposed += (_, __) => CleanupSlideShow();
+
         }
         private void InitSlideShow()
         {
@@ -37,6 +39,28 @@ namespace kido_teacher_app.Forms.Main.Page
             slideTimer.Interval = 4000; // 4 giây
             slideTimer.Tick += SlideTimer_Tick;
             slideTimer.Start(); // ⭐ BẮT BUỘC
+
+        }
+
+        // xử lý logic dừng slide 
+        private void BtnToggleSlide_Click(object sender, EventArgs e)
+        {
+            if (slideTimer == null) return;
+
+            if (isSlideRunning)
+            {
+                slideTimer.Stop();
+                isSlideRunning = false;
+
+                ((Button)sender).Text = "Tiếp tục";
+            }
+            else
+            {
+                slideTimer.Start();
+                isSlideRunning = true;
+
+                ((Button)sender).Text = "Dừng";
+            }
         }
         private void EditInfo_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
