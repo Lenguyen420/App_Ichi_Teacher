@@ -24,7 +24,8 @@ namespace kido_teacher_app.Forms.Main.Page
         Properties.Resources.slide10,
         Properties.Resources.slide9,
        Properties.Resources.slide11,
-       Properties.Resources.slide8
+       Properties.Resources.slide8,
+       Properties.Resources.slide1
             };
 
             currentSlideIndex = 0;

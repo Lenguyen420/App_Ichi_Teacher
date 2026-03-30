@@ -224,16 +224,16 @@
     <value>..\Resources\image\logo_kido.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="slide8" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide8.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>C:\Users\lethi\OneDrive\Desktop\icon\Ảnh_Slide\slide12.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="slide9" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide9.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>C:\Users\lethi\OneDrive\Desktop\icon\Ảnh_Slide\slide13.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="slide10" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide10.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>C:\Users\lethi\OneDrive\Desktop\icon\Ảnh_Slide\slide15.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="slide11" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>C:\Users\lethi\OneDrive\Desktop\icon\Ảnh_Slide\slide16.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="Thang1" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>Thang1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -290,6 +290,6 @@
     <value>..\Resources\icon_trai.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="slide1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>C:\Users\lethi\OneDrive\Desktop\icon\Ảnh_Slide\slide14.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>
