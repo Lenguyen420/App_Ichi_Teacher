@@ -434,38 +434,13 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // ✅ ENABLE OFFLINE BUTTON NẾU ĐÃ TẢI
             // =========================
 
-            // PDF
-            if (!string.IsNullOrEmpty(pdfOffline) && File.Exists(pdfOffline))
-            {
-                btnPdfOff.Enabled = true;
-                btnPdfOff.ForeColor = Color.Blue;
-                btnPdfOff.FlatAppearance.BorderColor = Color.Blue;
-                btnPdfOff.Click += (s, e) => OpenLocal(pdfOffline, title);
+            BindOfflineButton(btnPdfOff, pdfOffline, title);
+            BindOfflineButton(btnVideoOff, videoOffline, title);
+            BindOfflineButton(btnLessonOff, lessonOffline, title);
 
-                btnDown1.Text = "Đã tải";
-            }
-
-            // VIDEO
-            if (!string.IsNullOrEmpty(videoOffline) && File.Exists(videoOffline))
-            {
-                btnVideoOff.Enabled = true;
-                btnVideoOff.ForeColor = Color.Blue;
-                btnVideoOff.FlatAppearance.BorderColor = Color.Blue;
-                btnVideoOff.Click += (s, e) => OpenLocal(videoOffline, title);
-
-                btnDown2.Text = "Đã tải";
-            }
-
-            // LESSON
-            if (!string.IsNullOrEmpty(lessonOffline) && File.Exists(lessonOffline))
-            {
-                btnLessonOff.Enabled = true;
-                btnLessonOff.ForeColor = Color.Blue;
-                btnLessonOff.FlatAppearance.BorderColor = Color.Blue;
-                btnLessonOff.Click += (s, e) => OpenLocal(lessonOffline, title);
-
-                btnDown3.Text = "Đã tải";
-            }
+            UpdateDownloadButtonState(btnDown1, pdfOffline);
+            UpdateDownloadButtonState(btnDown2, videoOffline);
+            UpdateDownloadButtonState(btnDown3, lessonOffline);
 
             btnDelete.Tag = new object[]
             {
@@ -500,120 +475,163 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             var btnDown2 = data[5] as Button;
             var btnDown3 = data[6] as Button;
 
-            if (lesson == null) return;
-
-            // =========================
-            // 1️⃣ TÌM ZIP OFFLINE
-            // =========================
-            var offlineZip = lesson.resources
-                .FirstOrDefault(r => r.source == "OFFLINE");
-
-            if (offlineZip == null)
+            if (lesson == null ||
+                btnPdfOff == null ||
+                btnVideoOff == null ||
+                btnLessonOff == null ||
+                btnDown1 == null ||
+                btnDown2 == null ||
+                btnDown3 == null)
             {
-                MessageBox.Show("Không có tài nguyên offline");
                 return;
             }
 
-            // =========================
-            // 2️⃣ CHUẨN BỊ UI
-            // =========================
-            btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = false;
-            btnDown1.Text = btnDown2.Text = btnDown3.Text = "Đang tải...";
-            btnDown1.ForeColor = btnDown2.ForeColor = btnDown3.ForeColor = Color.Orange;
+            var requestedType = GetRequestedResourceType(btn, btnDown1, btnDown2);
+            var offlineResource = ResolveOfflineResource(lesson, requestedType);
 
-            // =========================
-            // 3️⃣ PROGRESS (ĐÃ TỐI ƯU)
-            // NOTE: tránh update UI liên tục
-            // =========================
+            if (offlineResource == null)
+            {
+                MessageBox.Show($"Không có tài nguyên offline cho {requestedType}");
+                return;
+            }
+
+            btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = false;
+            btn.ForeColor = Color.Orange;
+            btn.Text = "Đang tải...";
+
             int lastPercent = -1;
             var progress = new Progress<int>(percent =>
             {
                 if (percent == lastPercent) return;
                 lastPercent = percent;
 
-                // NOTE: chỉ update 1 button để giảm lag UI
-                btnDown1.Text = $"Đang tải {percent}%";
+                btn.Text = $"Đang tải {percent}%";
             });
 
-            // =========================
-            // 4️⃣ DOWNLOAD + EXTRACT (SỬ DỤNG PATH TỪ API)
-            // NOTE: Đẩy toàn bộ await nặng sang background thread
-            // =========================
-            string? extractPath = null;
-
-            await Task.Run(async () =>
+            try
             {
-                extractPath = await LectureService
-                    .DownloadAndExtractZipAsync(offlineZip.url, lesson.id, progress);
-            });
+                string? extractPath = null;
 
-            // =========================
-            // 5️⃣ UPDATE UI SAU KHI XONG
-            // =========================
-            btnDown1.Text = btnDown2.Text = btnDown3.Text = "Đã tải";
-            btnDown1.ForeColor = btnDown2.ForeColor = btnDown3.ForeColor = Color.Green;
-            btnDown1.Enabled = btnDown2.Enabled = btnDown3.Enabled = false;
+                await Task.Run(async () =>
+                {
+                    extractPath = await LectureService
+                        .DownloadAndExtractZipAsync(offlineResource.url, lesson.id, progress);
+                });
 
-            if (string.IsNullOrEmpty(extractPath))
-            {
-                MessageBox.Show("Giải nén thất bại");
-                return;
+                if (string.IsNullOrEmpty(extractPath))
+                {
+                    MessageBox.Show("Tải hoặc giải nén thất bại");
+                    return;
+                }
             }
-
-            // =========================
-            // 6️⃣ MAP FILE VÀ LƯU CACHE
-            // =========================
-            LectureFiles files = _resourceService.MapLectureFiles(extractPath);
-
-            LectureOfflineCacheService.Save(
-                lesson.id,
-                files.PdfPath,
-                files.VideoPath,
-                files.ElearningPath
-            );
-
-            // =========================
-            // 7️⃣ ENABLE OFFLINE BUTTON
-            // =========================
-            void EnableOfflineButton(Button btn, Action clickAction)
+            catch (Exception ex)
             {
-                btn.Enabled = true;
-                btn.ForeColor = Color.Blue;
-                btn.FlatAppearance.BorderColor = Color.Blue;
-                btn.FlatAppearance.BorderSize = 1;
-
-                // NOTE: tránh gán click nhiều lần
-                btn.Click -= (s, e) => clickAction();
-                btn.Click += (s, e) => clickAction();
+                MessageBox.Show("Không thể tải tài nguyên offline\n" + ex.Message);
             }
-
-            // PDF OFFLINE
-            if (!string.IsNullOrEmpty(files.PdfPath))
+            finally
             {
-                EnableOfflineButton(
-                    btnPdfOff,
-                    () => OpenLocal(files.PdfPath, lesson.title)
-                );
-            }
+                var files = LoadLectureFiles(lesson.id);
 
-            // VIDEO OFFLINE
-            if (!string.IsNullOrEmpty(files.VideoPath))
+                if (HasAnyFile(files))
+                {
+                    LectureOfflineCacheService.Save(
+                        lesson.id,
+                        files.PdfPath,
+                        files.VideoPath,
+                        files.ElearningPath
+                    );
+                }
+
+                BindOfflineButton(btnPdfOff, files.PdfPath, lesson.title);
+                BindOfflineButton(btnVideoOff, files.VideoPath, lesson.title);
+                BindOfflineButton(btnLessonOff, files.ElearningPath, lesson.title);
+
+                UpdateDownloadButtonState(btnDown1, files.PdfPath);
+                UpdateDownloadButtonState(btnDown2, files.VideoPath);
+                UpdateDownloadButtonState(btnDown3, files.ElearningPath);
+            }
+        }
+
+        private static string GetRequestedResourceType(
+            Button clickedButton,
+            Button pdfDownloadButton,
+            Button videoDownloadButton)
+        {
+            if (clickedButton == pdfDownloadButton) return "PDF";
+            if (clickedButton == videoDownloadButton) return "VIDEO";
+            return "LESSON";
+        }
+
+        private static LectureResourceDto? ResolveOfflineResource(
+            LectureDto lesson,
+            string requestedType)
+        {
+            var offlineResources = lesson.resources?
+                .Where(r => string.Equals(r.source, "OFFLINE", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (offlineResources == null || offlineResources.Count == 0)
+                return null;
+
+            var exactMatch = offlineResources
+                .FirstOrDefault(r => string.Equals(r.type, requestedType, StringComparison.OrdinalIgnoreCase));
+
+            if (exactMatch != null)
+                return exactMatch;
+
+            return offlineResources.Count == 1 ? offlineResources[0] : null;
+        }
+
+        private LectureFiles LoadLectureFiles(string lectureId)
+        {
+            var extractPath = Path.Combine(AppConfig.LectureExtractFolder, lectureId);
+            return _resourceService.MapLectureFiles(extractPath);
+        }
+
+        private static bool HasAnyFile(LectureFiles files)
+        {
+            return !string.IsNullOrEmpty(files.PdfPath)
+                || !string.IsNullOrEmpty(files.VideoPath)
+                || !string.IsNullOrEmpty(files.ElearningPath);
+        }
+
+        private void BindOfflineButton(Button btn, string? filePath, string title)
+        {
+            bool exists = !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath);
+
+            btn.Enabled = exists;
+            btn.ForeColor = exists ? Color.Blue : Color.Red;
+            btn.FlatAppearance.BorderColor = exists ? Color.Blue : Color.Red;
+            btn.FlatAppearance.BorderSize = 1;
+
+            btn.Tag = exists
+                ? new object[] { filePath!, title }
+                : null;
+
+            btn.Click -= BtnOpenOfflineFile_Click;
+            if (exists)
             {
-                EnableOfflineButton(
-                    btnVideoOff,
-                    () => OpenLocal(files.VideoPath, lesson.title)
-                );
+                btn.Click += BtnOpenOfflineFile_Click;
             }
+        }
 
-            // E-LEARNING OFFLINE
-            if (!string.IsNullOrEmpty(files.ElearningPath))
-            {
-                EnableOfflineButton(
-                    btnLessonOff,
-                    () => OpenLocal(files.ElearningPath, lesson.title)
-                );
-            }
+        private void BtnOpenOfflineFile_Click(object? sender, EventArgs e)
+        {
+            if (sender is not Button btn) return;
+            if (btn.Tag is not object[] data || data.Length < 2) return;
+            if (data[0] is not string filePath) return;
 
+            var title = data[1] as string ?? string.Empty;
+            OpenLocal(filePath, title);
+        }
+
+        private static void UpdateDownloadButtonState(Button btn, string? filePath)
+        {
+            bool exists = !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath);
+
+            btn.Text = exists ? "Đã tải" : "Chưa tải";
+            btn.ForeColor = exists ? Color.Green : Color.Gray;
+            btn.Enabled = !exists;
         }
 
         private Button CreateSimpleButton(string text, Color color)
