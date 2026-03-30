@@ -463,26 +463,6 @@ namespace kido_teacher_app.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap logo_kido2 {
-            get {
-                object obj = ResourceManager.GetObject("logo_kido2", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap logo_kido3 {
-            get {
-                object obj = ResourceManager.GetObject("logo_kido3", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
         internal static System.Drawing.Bitmap logo4 {
             get {
                 object obj = ResourceManager.GetObject("logo4", resourceCulture);
@@ -516,66 +496,6 @@ namespace kido_teacher_app.Properties {
         internal static System.Drawing.Bitmap slide11 {
             get {
                 object obj = ResourceManager.GetObject("slide11", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap slide2 {
-            get {
-                object obj = ResourceManager.GetObject("slide2", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap slide3 {
-            get {
-                object obj = ResourceManager.GetObject("slide3", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap slide4 {
-            get {
-                object obj = ResourceManager.GetObject("slide4", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap slide5 {
-            get {
-                object obj = ResourceManager.GetObject("slide5", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap slide6 {
-            get {
-                object obj = ResourceManager.GetObject("slide6", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap slide7 {
-            get {
-                object obj = ResourceManager.GetObject("slide7", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

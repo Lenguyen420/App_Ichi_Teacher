@@ -148,12 +148,6 @@
   <data name="icon_back1" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_back1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="icon_baithi" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_baithi.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_baithi1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_baithi1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="icon_book" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_book.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -178,9 +172,6 @@
   <data name="icon_info" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_info.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="icon_LichSuBaiThi" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_LichSuBaiThi.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="icon_list" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_list.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -192,9 +183,6 @@
   </data>
   <data name="icon_pdf" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_pdf.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_phai" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_phai.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="icon_phone" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_phone.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -217,9 +205,6 @@
   <data name="icon_thongbao2" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_thongbao2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="icon_trai" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_trai.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="icon_user" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_user.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -232,41 +217,11 @@
   <data name="lessondefault" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\lessondefault.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="logo4" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\logo4.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="logo_ichi" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\image\logo_ichi.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="logo_kido" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\image\logo_kido.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="logo_kido2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\logo_kido2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="logo_kido3" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\logo_kido3.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide2.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide3" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide3.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide4" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide4.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide5" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide5.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide6" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide6.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="slide7" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\slide7.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="slide8" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\slide8.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -315,5 +270,26 @@
   </data>
   <data name="Thang12" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Thang12.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="logo4" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\logo4.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="icon_baithi" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\icon_baithi.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="icon_baithi1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\icon_baithi1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="icon_LichSuBaiThi" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\icon_LichSuBaiThi.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="icon_phai" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\icon_phai.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="icon_trai" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\icon_trai.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="slide1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\slide1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>
