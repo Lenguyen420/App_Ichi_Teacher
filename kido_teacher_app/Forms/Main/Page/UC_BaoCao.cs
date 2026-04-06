@@ -49,7 +49,7 @@ namespace kido_teacher_app.Forms.Main.Page
             BuildUi();
             BindGroups(Array.Empty<AttemptReportGroupDto>());
             BindStudents(Array.Empty<AttemptReportStudentDto>());
-            ResetReport("Chon nhom va hoc sinh de xem bao cao.");
+            ResetReport("Chọn nhóm và học sinh để xem báo cáo.");
             dtTo.Value = DateTime.Today;
             dtFrom.Value = DateTime.Today.AddDays(-30);
             WireEvents();
@@ -61,7 +61,7 @@ namespace kido_teacher_app.Forms.Main.Page
             var root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 6, Padding = new Padding(18) };
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 132));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 140));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 94));
             root.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -69,7 +69,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
             root.Controls.Add(new Label
             {
-                Text = "Chao Mung Ban Den Voi KIDO",
+                Text = "Chào Mừng Bạn Đến Với KIDO",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 BackColor = Color.FromArgb(230, 230, 230),
@@ -79,7 +79,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
             root.Controls.Add(new Label
             {
-                Text = "Bao cao hoc sinh",
+                Text = "Báo cáo học sinh",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 BackColor = Color.FromArgb(146, 208, 80),
@@ -87,28 +87,35 @@ namespace kido_teacher_app.Forms.Main.Page
                 TextAlign = ContentAlignment.MiddleLeft
             }, 0, 1);
 
-            var gb = new GroupBox { Text = "Bo loc bao cao", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 9.5f), Padding = new Padding(10, 8, 10, 10) };
-            var filters = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 5, RowCount = 2, Padding = new Padding(6, 12, 6, 6) };
+            var gb = new GroupBox
+            {
+                Text = "Bộ lọc báo cáo",
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9f),
+                Padding = new Padding(10, 14, 10, 10),
+                Margin = new Padding(0, 4, 0, 0)
+            };
+            var filters = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 5, RowCount = 2, Padding = new Padding(6, 16, 6, 6) };
             for (var i = 0; i < 5; i++) filters.ColumnStyles.Add(new ColumnStyle(i < 4 ? SizeType.Percent : SizeType.Absolute, i < 4 ? 25 : 240));
             filters.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
-            filters.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+            filters.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
             cboGroup = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f) };
             cboStudent = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f) };
             dtFrom = new DateTimePicker { Dock = DockStyle.Fill, Format = DateTimePickerFormat.Custom, CustomFormat = "dd/MM/yyyy", Font = new Font("Segoe UI", 10f) };
             dtTo = new DateTimePicker { Dock = DockStyle.Fill, Format = DateTimePickerFormat.Custom, CustomFormat = "dd/MM/yyyy", Font = new Font("Segoe UI", 10f) };
-            btnView = CreateButton("Xem bao cao", true);
-            btnExport = CreateButton("Xuat Excel", false);
-            filters.Controls.Add(MakeField("Nhom", cboGroup), 0, 0);
-            filters.Controls.Add(MakeField("Hoc sinh", cboStudent), 1, 0);
-            filters.Controls.Add(MakeField("Tu ngay", dtFrom), 2, 0);
-            filters.Controls.Add(MakeField("Den ngay", dtTo), 3, 0);
+            btnView = CreateButton("Xem báo cáo", true);
+            btnExport = CreateButton("Xuất Excel", false);
+            filters.Controls.Add(MakeField("Nhóm", cboGroup), 0, 0);
+            filters.Controls.Add(MakeField("Học sinh", cboStudent), 1, 0);
+            filters.Controls.Add(MakeField("Từ ngày", dtFrom), 2, 0);
+            filters.Controls.Add(MakeField("Đến ngày", dtTo), 3, 0);
             var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Margin = new Padding(6, 19, 0, 0) };
             actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             actions.Controls.Add(btnView, 0, 0);
             actions.Controls.Add(btnExport, 1, 0);
             filters.Controls.Add(actions, 4, 0);
-            var hint = new Label { Text = "Chi hien thi hoc sinh thuoc cac nhom ma giao vien dang quan ly.", Dock = DockStyle.Fill, ForeColor = Color.DimGray, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(6, 0, 0, 0) };
+            var hint = new Label { Text = "Chỉ hiển thị học sinh thuộc các nhóm mà giáo viên đang quản lý.", Dock = DockStyle.Fill, ForeColor = Color.DimGray, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(6, 0, 0, 0) };
             filters.SetColumnSpan(hint, 5);
             filters.Controls.Add(hint, 0, 1);
             gb.Controls.Add(filters);
@@ -116,18 +123,18 @@ namespace kido_teacher_app.Forms.Main.Page
 
             var summary = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4 };
             for (var i = 0; i < 4; i++) summary.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
-            lblTotal = MakeMetric(summary, 0, "Tong lan lam");
-            lblAverage = MakeMetric(summary, 1, "Diem trung binh");
-            lblHighest = MakeMetric(summary, 2, "Diem cao nhat");
-            lblLatest = MakeMetric(summary, 3, "Lan gan nhat");
+            lblTotal = MakeMetric(summary, 0, "Tổng lần làm");
+            lblAverage = MakeMetric(summary, 1, "Điểm trung bình");
+            lblHighest = MakeMetric(summary, 2, "Điểm cao nhất");
+            lblLatest = MakeMetric(summary, 3, "Lần gần nhất");
             root.Controls.Add(summary, 0, 3);
 
             lblStatus = new Label { Dock = DockStyle.Fill, BorderStyle = BorderStyle.FixedSingle, Padding = new Padding(10, 0, 0, 0), TextAlign = ContentAlignment.MiddleLeft };
             root.Controls.Add(lblStatus, 0, 4);
 
             var tabs = new TabControl { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10) };
-            var tabHistory = new TabPage("Lich su lam bai");
-            var tabTrend = new TabPage("Xu huong diem");
+            var tabHistory = new TabPage("Lịch sử làm bài");
+            var tabTrend = new TabPage("Xu hướng điểm");
             tabs.TabPages.Add(tabHistory);
             tabs.TabPages.Add(tabTrend);
             root.Controls.Add(tabs, 0, 5);
@@ -146,9 +153,9 @@ namespace kido_teacher_app.Forms.Main.Page
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect
             };
-            foreach (var c in new[] { "Thoi gian", "Bai hoc", "Diem", "Thoi luong", "Ket qua" }) dgvHistory.Columns.Add(Guid.NewGuid().ToString("N"), c);
+            foreach (var c in new[] { "Thời gian", "Bài học", "Điểm", "Thời lượng", "Kết quả" }) dgvHistory.Columns.Add(Guid.NewGuid().ToString("N"), c);
             var historyHost = new Panel { Dock = DockStyle.Fill, BorderStyle = BorderStyle.FixedSingle };
-            lblHistoryEmpty = new Label { Text = "Chua co du lieu lich su trong khoang thoi gian da chon.", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.DimGray };
+            lblHistoryEmpty = new Label { Text = "Chưa có dữ liệu lịch sử trong khoảng thời gian đã chọn.", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.DimGray };
             historyHost.Controls.Add(dgvHistory);
             historyHost.Controls.Add(lblHistoryEmpty);
             lblHistoryEmpty.BringToFront();
@@ -157,7 +164,7 @@ namespace kido_teacher_app.Forms.Main.Page
             pager.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
             pager.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             pager.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
-            btnPrev = CreateButton("Trang truoc", false);
+            btnPrev = CreateButton("Trang trước", false);
             btnNext = CreateButton("Trang sau", false);
             lblPage = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
             pager.Controls.Add(btnPrev, 0, 0);
@@ -168,7 +175,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
             pnlTrend = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
             pnlTrend.Paint += DrawTrend;
-            lblTrendEmpty = new Label { Text = "Chua co du lieu xu huong diem.", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.DimGray };
+            lblTrendEmpty = new Label { Text = "Chưa có dữ liệu xu hướng điểm.", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.DimGray };
             var trendHost = new Panel { Dock = DockStyle.Fill, Padding = new Padding(8) };
             var trendBorder = new Panel { Dock = DockStyle.Fill, BorderStyle = BorderStyle.FixedSingle };
             trendBorder.Controls.Add(pnlTrend);
@@ -187,24 +194,24 @@ namespace kido_teacher_app.Forms.Main.Page
             btnView.Click += async (_, __) => await ViewReportAsync();
             btnPrev.Click += async (_, __) => await ChangePageAsync(-1);
             btnNext.Click += async (_, __) => await ChangePageAsync(1);
-            btnExport.Click += (_, __) => MessageBox.Show("Backend chua ho tro xuat Excel cho man hinh bao cao nay.", "Thong bao", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            btnExport.Click += (_, __) => MessageBox.Show("Backend chưa hỗ trợ xuất Excel cho màn hình báo cáo này.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private async Task EnsureGroupsLoadedAsync()
         {
             if (!Visible || groupsLoaded || isBusy) return;
-            SetBusy(true, "Dang tai danh sach nhom...", Color.DarkOrange);
+            SetBusy(true, "Đang tải danh sách nhóm...", Color.DarkOrange);
             try
             {
                 BindGroups(await AttemptReportService.GetGroupsAsync());
                 groupsLoaded = true;
-                SetStatus(HasSelectedGroup() ? "Nhan chon hoc sinh de xem bao cao." : "Chon nhom va hoc sinh de xem bao cao.", Color.FromArgb(55, 55, 55));
+                SetStatus(HasSelectedGroup() ? "Hãy chọn học sinh để xem báo cáo." : "Chọn nhóm và học sinh để xem báo cáo.", Color.FromArgb(55, 55, 55));
             }
             catch (Exception ex)
             {
                 BindGroups(Array.Empty<AttemptReportGroupDto>());
                 BindStudents(Array.Empty<AttemptReportStudentDto>());
-                SetStatus(BuildErrorMessage(ex, "Khong tai duoc danh sach nhom."), Color.Firebrick);
+                SetStatus(BuildErrorMessage(ex, "Không tải được danh sách nhóm."), Color.Firebrick);
             }
             finally { SetBusy(false); }
         }
@@ -215,18 +222,18 @@ namespace kido_teacher_app.Forms.Main.Page
             activeGroupId = null;
             activeStudentId = null;
             BindStudents(Array.Empty<AttemptReportStudentDto>());
-            ResetReport("Chon hoc sinh de xem bao cao.");
+            ResetReport("Chọn học sinh để xem báo cáo.");
             if (!HasSelectedGroup()) { UpdateActions(); return; }
-            SetBusy(true, "Dang tai danh sach hoc sinh...", Color.DarkOrange);
+            SetBusy(true, "Đang tải danh sách học sinh...", Color.DarkOrange);
             try
             {
                 BindStudents(await AttemptReportService.GetStudentsByGroupAsync(GetSelectedValue(cboGroup)!));
-                SetStatus("Nhan 'Xem bao cao' sau khi chon hoc sinh.", Color.FromArgb(55, 55, 55));
+                SetStatus("Nhấn 'Xem báo cáo' sau khi chọn học sinh.", Color.FromArgb(55, 55, 55));
             }
             catch (Exception ex)
             {
                 BindStudents(Array.Empty<AttemptReportStudentDto>());
-                SetStatus(BuildErrorMessage(ex, "Khong tai duoc danh sach hoc sinh."), Color.Firebrick);
+                SetStatus(BuildErrorMessage(ex, "Không tải được danh sách học sinh."), Color.Firebrick);
             }
             finally { SetBusy(false); }
         }
@@ -235,7 +242,7 @@ namespace kido_teacher_app.Forms.Main.Page
         {
             if (suppressEvents) return;
             activeStudentId = null;
-            ResetReport(HasSelectedStudent() ? "Nhan 'Xem bao cao' de tai du lieu." : "Chon hoc sinh de xem bao cao.");
+            ResetReport(HasSelectedStudent() ? "Nhấn 'Xem báo cáo' để tải dữ liệu." : "Chọn học sinh để xem báo cáo.");
             UpdateActions();
         }
 
@@ -243,12 +250,12 @@ namespace kido_teacher_app.Forms.Main.Page
         {
             if (!HasSelectedGroup() || !HasSelectedStudent())
             {
-                SetStatus("Can chon day du nhom va hoc sinh.", Color.Firebrick);
+                SetStatus("Cần chọn đầy đủ nhóm và học sinh.", Color.Firebrick);
                 return;
             }
             if (dtFrom.Value.Date > dtTo.Value.Date)
             {
-                SetStatus("Khoang ngay khong hop le: 'Tu ngay' phai nho hon hoac bang 'Den ngay'.", Color.Firebrick);
+                SetStatus("Khoảng ngày không hợp lệ: 'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.", Color.Firebrick);
                 return;
             }
             activeGroupId = GetSelectedValue(cboGroup);
@@ -266,7 +273,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
         private async Task LoadReportAsync(int page)
         {
-            SetBusy(true, "Dang tai bao cao hoc sinh...", Color.DarkOrange);
+            SetBusy(true, "Đang tải báo cáo học sinh...", Color.DarkOrange);
             try
             {
                 ApplyReport(await AttemptReportService.GetStudentReportAsync(activeGroupId!, activeStudentId!, dtFrom.Value.Date, dtTo.Value.Date, page, pageSize));
@@ -274,7 +281,7 @@ namespace kido_teacher_app.Forms.Main.Page
             catch (Exception ex)
             {
                 reportLoaded = false;
-                SetStatus(BuildErrorMessage(ex, "Khong tai duoc bao cao hoc sinh."), Color.Firebrick);
+                SetStatus(BuildErrorMessage(ex, "Không tải được báo cáo học sinh."), Color.Firebrick);
             }
             finally { SetBusy(false); }
         }
@@ -300,7 +307,7 @@ namespace kido_teacher_app.Forms.Main.Page
             pnlTrend.Invalidate();
             lblPage.Text = $"Trang {currentPage}/{totalPages}";
             var hasData = (report.summary?.totalAttempts ?? 0) > 0 || dgvHistory.Rows.Count > 0 || trendPoints.Count > 0;
-            SetStatus(hasData ? $"Da tai bao cao cho {report.student?.fullName ?? "hoc sinh da chon"}." : "Khong co du lieu trong khoang thoi gian da chon.", hasData ? Color.FromArgb(55, 55, 55) : Color.DimGray);
+            SetStatus(hasData ? $"Đã tải báo cáo cho {report.student?.fullName ?? "học sinh đã chọn"}." : "Không có dữ liệu trong khoảng thời gian đã chọn.", hasData ? Color.FromArgb(55, 55, 55) : Color.DimGray);
             UpdateActions();
         }
 
@@ -353,7 +360,7 @@ namespace kido_teacher_app.Forms.Main.Page
         private void BindGroups(IEnumerable<AttemptReportGroupDto> groups)
         {
             suppressEvents = true;
-            cboGroup.DataSource = BuildOptions("Chon nhom", groups.OrderBy(x => x.name).Select(x => new ComboItem(x.id, x.name)).ToList());
+            cboGroup.DataSource = BuildOptions("Chọn nhóm", groups.OrderBy(x => x.name).Select(x => new ComboItem(x.id, x.name)).ToList());
             cboGroup.DisplayMember = nameof(ComboItem.Text);
             cboGroup.ValueMember = nameof(ComboItem.Value);
             cboGroup.SelectedIndex = 0;
@@ -363,7 +370,7 @@ namespace kido_teacher_app.Forms.Main.Page
         private void BindStudents(IEnumerable<AttemptReportStudentDto> students)
         {
             suppressEvents = true;
-            cboStudent.DataSource = BuildOptions("Chon hoc sinh", students.OrderBy(x => x.fullName).Select(x => new ComboItem(x.id, string.IsNullOrWhiteSpace(x.code) ? x.fullName : $"{x.fullName} ({x.code})")).ToList());
+            cboStudent.DataSource = BuildOptions("Chọn học sinh", students.OrderBy(x => x.fullName).Select(x => new ComboItem(x.id, string.IsNullOrWhiteSpace(x.code) ? x.fullName : $"{x.fullName} ({x.code})")).ToList());
             cboStudent.DisplayMember = nameof(ComboItem.Text);
             cboStudent.ValueMember = nameof(ComboItem.Value);
             cboStudent.SelectedIndex = 0;
@@ -390,7 +397,7 @@ namespace kido_teacher_app.Forms.Main.Page
         {
             input.Margin = new Padding(0);
             var panel = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new Padding(6, 0, 6, 0) };
-            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
+            panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
             panel.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
             panel.Controls.Add(new Label { Text = label, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 9.5f) }, 0, 0);
             panel.Controls.Add(input, 0, 1);
@@ -445,13 +452,13 @@ namespace kido_teacher_app.Forms.Main.Page
         private bool HasSelectedStudent() => !string.IsNullOrWhiteSpace(GetSelectedValue(cboStudent));
         private static string? GetSelectedValue(ComboBox combo) => (combo.SelectedItem as ComboItem)?.Value;
         private static string AttemptTitle(AttemptHistoryDto x) => !string.IsNullOrWhiteSpace(x.questionBankName) && !string.IsNullOrWhiteSpace(x.examSetName) ? $"{x.questionBankName} / {x.examSetName}" : (!string.IsNullOrWhiteSpace(x.questionBankName) ? x.questionBankName : (!string.IsNullOrWhiteSpace(x.examSetName) ? x.examSetName : "-"));
-        private static string AttemptStatus(string? status) => status?.ToUpperInvariant() switch { "SUBMITTED" => "Da nop", "IN_PROGRESS" => "Dang lam", "EXPIRED" => "Het han", _ => string.IsNullOrWhiteSpace(status) ? "-" : status };
+        private static string AttemptStatus(string? status) => status?.ToUpperInvariant() switch { "SUBMITTED" => "Đã nộp", "IN_PROGRESS" => "Đang làm", "EXPIRED" => "Hết hạn", _ => string.IsNullOrWhiteSpace(status) ? "-" : status };
         private static string FormatScore(double? score) => score.HasValue ? score.Value.ToString("0.0", CultureInfo.InvariantCulture) : "-";
         private static string FormatTrendDate(DateTime? value) => value.HasValue ? Normalize(value.Value).ToString("dd/MM", CultureInfo.InvariantCulture) : "-";
         private static string FormatDateTime(DateTime? value) => value.HasValue ? Normalize(value.Value).ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture) : "-";
         private static string FormatDuration(DateTime? startedAt, DateTime? submittedAt) { if (!startedAt.HasValue || !submittedAt.HasValue) return "-"; var span = Normalize(submittedAt.Value) - Normalize(startedAt.Value); return span.TotalHours >= 1 ? $"{(int)span.TotalHours}h {span.Minutes:D2}m" : (span.TotalSeconds < 0 ? "-" : $"{span.Minutes:D2}m {span.Seconds:D2}s"); }
         private static DateTime Normalize(DateTime value) => value.Kind == DateTimeKind.Utc ? value.ToLocalTime() : value;
-        private static string BuildErrorMessage(Exception ex, string fallback) => ex is UnauthorizedAccessException ? "Ban chua dang nhap hoac token khong hop le." : ex is AttemptReportApiException api ? api.StatusCode switch { HttpStatusCode.BadRequest => string.IsNullOrWhiteSpace(api.Message) ? "Bo loc bao cao khong hop le." : api.Message, HttpStatusCode.Forbidden => "Ban khong co quyen xem bao cao cho nhom nay.", HttpStatusCode.NotFound => "Khong tim thay nhom, hoc sinh hoac du lieu bao cao.", _ => string.IsNullOrWhiteSpace(api.Message) ? fallback : api.Message } : IsNetworkException(ex) ? "Khong the ket noi den may chu bao cao." : fallback;
+        private static string BuildErrorMessage(Exception ex, string fallback) => ex is UnauthorizedAccessException ? "Bạn chưa đăng nhập hoặc token không hợp lệ." : ex is AttemptReportApiException api ? api.StatusCode switch { HttpStatusCode.BadRequest => string.IsNullOrWhiteSpace(api.Message) ? "Bộ lọc báo cáo không hợp lệ." : api.Message, HttpStatusCode.Forbidden => "Bạn không có quyền xem báo cáo cho nhóm này.", HttpStatusCode.NotFound => "Không tìm thấy nhóm, học sinh hoặc dữ liệu báo cáo.", _ => string.IsNullOrWhiteSpace(api.Message) ? fallback : api.Message } : IsNetworkException(ex) ? "Không thể kết nối đến máy chủ báo cáo." : fallback;
         private static bool IsNetworkException(Exception ex) => ex is System.Net.Http.HttpRequestException || ex is TaskCanceledException || ex is System.Net.Sockets.SocketException || (ex.InnerException != null && IsNetworkException(ex.InnerException));
 
         private sealed record ComboItem(string? Value, string Text);

@@ -60,7 +60,7 @@
             menuGioiThieu = CreateMenu("Giới Thiệu", Properties.Resources.icon_info, ref y);
             menuTaiKhoan = CreateMenu("Tài Khoản", Properties.Resources.icon_user, ref y);
             menuGiaoAn = CreateMenu("Giáo Án", Properties.Resources.icon_book, ref y);
-            // menuBaoCao = CreateMenu("Báo Cáo", Properties.Resources.icon_elearning, ref y);
+            menuBaoCao = CreateMenu("Báo Cáo", Properties.Resources.icon_elearning, ref y);
             // ------------------------- PANEL MAIN -------------------------
             this.panelMain.Dock = DockStyle.Fill;
             this.panelMain.BackColor = Color.White;
