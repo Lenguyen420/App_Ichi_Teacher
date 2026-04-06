@@ -21,6 +21,7 @@ namespace kido_teacher_app
         private UC_GioiThieu? gioiThieuControl;
         private UC_TaiKhoan? taiKhoanControl;
         private UC_GiaoAn? giaoAnControl;
+        private UC_BaoCao? baoCaoControl;
 
         private readonly HashSet<UserControl> persistentControls = new HashSet<UserControl>();
 
@@ -61,6 +62,11 @@ namespace kido_teacher_app
             {
                 SelectMenu(menuGiaoAn);
                 await LoadGiaoAnAsync();
+            }
+            else if (clickedMenu == menuBaoCao)
+            {
+                SelectMenu(menuBaoCao);
+                LoadBaoCao();
             }
         }
 
@@ -112,6 +118,12 @@ namespace kido_teacher_app
             }
 
             ShowPersistentControl(giaoAnControl);
+        }
+
+        private void LoadBaoCao()
+        {
+            baoCaoControl ??= new UC_BaoCao();
+            ShowPersistentControl(baoCaoControl);
         }
 
         private void ReplaceMainControl(UserControl uc, bool keepAlive)

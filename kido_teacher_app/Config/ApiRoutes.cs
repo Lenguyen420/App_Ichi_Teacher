@@ -51,6 +51,14 @@ namespace kido_teacher_app.Config
         public static string GroupRemoveUser(string groupId, string userId) => $"/groups/{groupId}/users/{userId}";
 
         // =====================================================
+        // REPORT ATTEMPT
+        // =====================================================
+        public const string REPORT_ATTEMPT_BASE = "/report/attempt";
+        public const string REPORT_ATTEMPT_GROUPS = $"{REPORT_ATTEMPT_BASE}/groups";
+        public const string REPORT_ATTEMPT_STUDENT = $"{REPORT_ATTEMPT_BASE}/student";
+        public static string ReportAttemptStudents(string groupId) => $"{REPORT_ATTEMPT_GROUPS}/{groupId}/students";
+
+        // =====================================================
         // UPLOAD
         // =====================================================
         public const string UPLOAD_SINGLE = "/upload/single";
