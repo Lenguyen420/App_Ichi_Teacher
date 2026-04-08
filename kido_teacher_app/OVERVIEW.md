@@ -14,7 +14,7 @@
    mở `Form_Login`, login xong mới vào `Main_Form`, đồng thời cũng prefetch nền.
 
 ## Cấu hình và thư mục
-- `App.config`: `ApiBaseUrl`, `VersionJsonUrl`, `UpdateVersionApiUrl`, `UpdateVersionApiToken`.
+- `App.config`: `ApiBaseUrl`.
 - `AppConfig` cung cấp:
   - `AppDataRoot`, `AppDataRoaming`
   - `DownloadFolder`
@@ -116,8 +116,6 @@
   - prefetch class, course, lectures và ảnh sau khi login
 - `UserService`
   - lấy thông tin user để đổ vào `UC_TaiKhoan`
-- `VersionCheckService`
-  - check version app từ server
 
 ## Shared / Helper đáng chú ý
 - `LectureOfflineCacheService`
