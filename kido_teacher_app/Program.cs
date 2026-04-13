@@ -117,9 +117,18 @@ namespace kido_teacher_app
             var autoLoggedIn = AuthService.TryLoginWithSavedTokenAsync().GetAwaiter().GetResult();
             if (autoLoggedIn)
             {
-                StartPrefetchInBackground();
-                Application.Run(new Main_Form());
-                return;
+                var prefetched = OfflinePrefetchService
+                    .PrefetchTeacherOfflineAsync(prefetchImages: true)
+                    .GetAwaiter()
+                    .GetResult();
+
+                if (prefetched)
+                {
+                    Application.Run(new Main_Form());
+                    return;
+                }
+
+                AuthService.ClearRememberToken();
             }
 
             // ===== LOGIN FLOW =====
@@ -127,18 +136,9 @@ namespace kido_teacher_app
             {
                 if (login.ShowDialog() == DialogResult.OK)
                 {
-                    StartPrefetchInBackground();
                     Application.Run(new Main_Form());
                 }
             }
-        }
-
-        private static void StartPrefetchInBackground()
-        {
-            _ = Task.Run(async () =>
-            {
-                await OfflinePrefetchService.PrefetchTeacherOfflineAsync(prefetchImages: true);
-            });
         }
 
         private static void MigrateImageCacheToLocal()

@@ -192,6 +192,36 @@ namespace kido_teacher_app
                     deviceId
                 );
 
+                // AuthService đã set:
+                // AuthSession.AccessToken
+                // AuthSession.UserId
+                // AuthSession.Role = TEACHER
+                statusLabel.Text = "Đang chuẩn bị cache...";
+                statusLabel.Visible = true;
+
+                var progress = new Progress<string>(message =>
+                {
+                    statusLabel.Text = message;
+                });
+
+                var prefetched = await OfflinePrefetchService.PrefetchTeacherOfflineAsync(
+                    prefetchImages: true,
+                    statusProgress: progress
+                );
+
+                if (!prefetched)
+                {
+                    AuthService.ClearRememberToken();
+                    MessageBox.Show(
+                        "Không tải được cache ban đầu (danh sách và hình ảnh). Vui lòng kiểm tra mạng rồi đăng nhập lại.",
+                        "Đăng nhập thất bại",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                    return;
+                }
+
+                statusLabel.Text = "Đang lưu phiên đăng nhập...";
                 if (rememberCheck.Checked)
                 {
                     AuthService.SaveRememberToken(AuthSession.AccessToken);
@@ -200,12 +230,6 @@ namespace kido_teacher_app
                 {
                     AuthService.ClearRememberToken();
                 }
-
-                // AuthService đã set:
-                // AuthSession.AccessToken
-                // AuthSession.UserId
-                // AuthSession.Role = TEACHER
-                await OfflinePrefetchService.PrefetchTeacherOfflineAsync();
 
                 DialogResult = DialogResult.OK;
                 Close();

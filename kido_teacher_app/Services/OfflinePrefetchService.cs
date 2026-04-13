@@ -9,33 +9,62 @@ namespace kido_teacher_app.Services
 {
     public static class OfflinePrefetchService
     {
-        public static async Task PrefetchTeacherOfflineAsync(bool prefetchImages = true)
+        public static async Task<bool> PrefetchTeacherOfflineAsync(
+            bool prefetchImages = true,
+            IProgress<string>? statusProgress = null)
         {
             if (OfflineState.IsOffline())
-                return;
+                return false;
 
             try
             {
+                statusProgress?.Report("Đang tải cache lớp...");
                 var classes = await ClassService.GetAllAsync();
+                if (classes == null || classes.Count == 0)
+                    return false;
+
+                var cachedClassCount = 0;
+                var cachedCourseCount = 0;
+                var cachedLectureCount = 0;
+
                 foreach (var cls in classes)
                 {
                     if (string.IsNullOrWhiteSpace(cls?.id))
                         continue;
 
-                    if (prefetchImages)
-                        await TryPrefetchClassImageAsync(cls);
+                    cachedClassCount++;
 
+                    if (prefetchImages)
+                    {
+                        statusProgress?.Report("Đang tải cache hình ảnh lớp...");
+                        await TryPrefetchClassImageAsync(cls);
+                    }
+
+                    statusProgress?.Report("Đang tải cache khóa học...");
                     var courses = await CourseService.GetByClassIdAsync(cls.id);
+                    if (courses == null || courses.Count == 0)
+                        continue;
+
                     foreach (var course in courses)
                     {
                         if (string.IsNullOrWhiteSpace(course?.id))
                             continue;
 
-                        if (prefetchImages)
-                            await TryPrefetchCourseImageAsync(course, cls.id);
+                        cachedCourseCount++;
 
-                        // Lectures + resources are cached by GetByClassCourseAsync
-                        var lectures = await LectureService.GetByClassCourseAsync(cls.id, course.id);
+                        if (prefetchImages)
+                        {
+                            statusProgress?.Report("Đang tải cache hình ảnh khóa học...");
+                            await TryPrefetchCourseImageAsync(course, cls.id);
+                        }
+
+                        statusProgress?.Report("Đang tải cache bài giảng...");
+                        // Chỉ prefetch danh sách lecture + ảnh, không kéo tài nguyên giáo án
+                        var lectures = await CourseService.GetByClassCourseAsync(cls.id, course.id);
+                        if (lectures == null || lectures.Count == 0)
+                            continue;
+
+                        cachedLectureCount += lectures.Count;
 
                         if (prefetchImages && lectures != null)
                         {
@@ -44,16 +73,23 @@ namespace kido_teacher_app.Services
                                 if (string.IsNullOrWhiteSpace(lecture?.id))
                                     continue;
 
+                                statusProgress?.Report("Đang tải cache hình ảnh bài giảng...");
                                 await TryPrefetchLectureImageAsync(lecture);
                             }
                         }
                     }
                 }
+
+                return cachedClassCount > 0
+                    && cachedCourseCount > 0
+                    && cachedLectureCount > 0;
             }
             catch (Exception ex)
             {
                 if (IsNetworkException(ex))
                     OfflineState.SetOffline(true);
+
+                return false;
             }
         }
 
