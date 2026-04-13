@@ -25,12 +25,6 @@ namespace kido_teacher_app.Services
 
             try
             {
-                if (OfflineState.IsOffline())
-                {
-                    var cached = await DbCacheService.GetAsync<List<CourseDto>>(cacheKey);
-                    return cached ?? new();
-                }
-
                 var res = await client.GetAsync($"{AppConfig.ApiBaseUrl}/courses?classId={classId}");
                 if (!res.IsSuccessStatusCode) throw new Exception();
 
@@ -42,6 +36,7 @@ namespace kido_teacher_app.Services
                 var data = api?.data?.data ?? new();
                 var normalized = CacheImagePathNormalizer.NormalizeCoursesForCache(data);
                 await DbCacheService.SaveAsync(cacheKey, JsonConvert.SerializeObject(normalized));
+                OfflineState.SetOffline(false);
 
                 return data;
             }
@@ -61,12 +56,6 @@ namespace kido_teacher_app.Services
 
             try
             {
-                if (OfflineState.IsOffline())
-                {
-                    var cached = await DbCacheService.GetAsync<List<CourseDto>>(cacheKey);
-                    return cached ?? new();
-                }
-
                 var res = await client.GetAsync($"{AppConfig.ApiBaseUrl}/courses");
                 if (!res.IsSuccessStatusCode) throw new Exception();
 
@@ -78,6 +67,7 @@ namespace kido_teacher_app.Services
                 var data = api?.data?.data ?? new();
                 var normalized = CacheImagePathNormalizer.NormalizeCoursesForCache(data);
                 await DbCacheService.SaveAsync(cacheKey, JsonConvert.SerializeObject(normalized));
+                OfflineState.SetOffline(false);
 
                 return data;
             }
@@ -135,12 +125,6 @@ namespace kido_teacher_app.Services
 
             try
             {
-                if (OfflineState.IsOffline())
-                {
-                    var cached = await DbCacheService.GetAsync<List<LectureDto>>(cacheKey);
-                    return cached ?? new();
-                }
-
                 var res = await client.GetAsync(url);
                 if (!res.IsSuccessStatusCode) throw new Exception();
 
@@ -152,6 +136,7 @@ namespace kido_teacher_app.Services
                 var data = api?.data?.data ?? new();
                 var normalized = CacheImagePathNormalizer.NormalizeLecturesForCache(data);
                 await DbCacheService.SaveAsync(cacheKey, JsonConvert.SerializeObject(normalized));
+                OfflineState.SetOffline(false);
 
                 return data;
             }

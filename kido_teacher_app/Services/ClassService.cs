@@ -22,12 +22,6 @@ namespace kido_teacher_app.Services
         // ======================================
         public static async Task<List<ClassDto>> GetAllAsync()
         {
-            if (OfflineState.IsOffline())
-            {
-                var cached = await DbCacheService.GetAsync<List<ClassDto>>(CacheKeyAll);
-                return cached ?? new List<ClassDto>();
-            }
-
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", AuthSession.AccessToken);
 
@@ -52,6 +46,7 @@ namespace kido_teacher_app.Services
 
                 var normalized = CacheImagePathNormalizer.NormalizeClassesForCache(data);
                 await DbCacheService.SaveAsync(CacheKeyAll, JsonConvert.SerializeObject(normalized));
+                OfflineState.SetOffline(false);
 
                 return data;
             }
