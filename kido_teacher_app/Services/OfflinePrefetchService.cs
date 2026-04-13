@@ -13,9 +13,6 @@ namespace kido_teacher_app.Services
             bool prefetchImages = true,
             IProgress<string>? statusProgress = null)
         {
-            if (OfflineState.IsOffline())
-                return (false, "Không có kết nối mạng hoặc API đang không phản hồi.");
-
             try
             {
                 statusProgress?.Report("Đang tải cache lớp...");
