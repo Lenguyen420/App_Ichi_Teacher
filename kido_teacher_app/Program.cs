@@ -122,7 +122,7 @@ namespace kido_teacher_app
                     .GetAwaiter()
                     .GetResult();
 
-                if (prefetched)
+                if (prefetched.Success)
                 {
                     Application.Run(new Main_Form());
                     return;

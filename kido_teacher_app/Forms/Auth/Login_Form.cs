@@ -209,11 +209,11 @@ namespace kido_teacher_app
                     statusProgress: progress
                 );
 
-                if (!prefetched)
+                if (!prefetched.Success)
                 {
                     AuthService.ClearRememberToken();
                     MessageBox.Show(
-                        "Không tải được cache ban đầu (danh sách và hình ảnh). Vui lòng kiểm tra mạng rồi đăng nhập lại.",
+                        prefetched.Message,
                         "Đăng nhập thất bại",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error

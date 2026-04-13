@@ -9,19 +9,19 @@ namespace kido_teacher_app.Services
 {
     public static class OfflinePrefetchService
     {
-        public static async Task<bool> PrefetchTeacherOfflineAsync(
+        public static async Task<(bool Success, string Message)> PrefetchTeacherOfflineAsync(
             bool prefetchImages = true,
             IProgress<string>? statusProgress = null)
         {
             if (OfflineState.IsOffline())
-                return false;
+                return (false, "Không có kết nối mạng hoặc API đang không phản hồi.");
 
             try
             {
                 statusProgress?.Report("Đang tải cache lớp...");
                 var classes = await ClassService.GetAllAsync();
                 if (classes == null || classes.Count == 0)
-                    return false;
+                    return (false, "Không lấy được danh sách lớp để cache.");
 
                 var cachedClassCount = 0;
                 var cachedCourseCount = 0;
@@ -80,16 +80,23 @@ namespace kido_teacher_app.Services
                     }
                 }
 
-                return cachedClassCount > 0
-                    && cachedCourseCount > 0
-                    && cachedLectureCount > 0;
+                if (cachedClassCount <= 0)
+                    return (false, "Không cache được lớp nào.");
+
+                if (cachedCourseCount <= 0)
+                    return (false, "Không cache được khóa học nào.");
+
+                if (cachedLectureCount <= 0)
+                    return (false, "Không cache được bài giảng nào.");
+
+                return (true, "Đã cache xong dữ liệu ban đầu.");
             }
             catch (Exception ex)
             {
                 if (IsNetworkException(ex))
                     OfflineState.SetOffline(true);
 
-                return false;
+                return (false, $"Lỗi khi tải cache ban đầu: {ex.Message}");
             }
         }
 
