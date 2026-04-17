@@ -50,11 +50,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\**\*">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="..\version.json">
       <Link>version.json</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
