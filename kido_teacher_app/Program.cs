@@ -63,6 +63,7 @@
 //}
 using kido_teacher_app.Config;
 using kido_teacher_app.Services;
+using kido_teacher_app.Shared.Logging;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -122,13 +123,11 @@ namespace kido_teacher_app
                     .GetAwaiter()
                     .GetResult();
 
-                if (prefetched.Success)
-                {
-                    Application.Run(new Main_Form());
-                    return;
-                }
+                if (!prefetched.Success)
+                    FileLog.Error($"Prefetch khi auto-login thất bại, bỏ qua: {prefetched.Message}");
 
-                AuthService.ClearRememberToken();
+                Application.Run(new Main_Form());
+                return;
             }
 
             // ===== LOGIN FLOW =====

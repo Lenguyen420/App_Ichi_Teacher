@@ -1,6 +1,7 @@
 ﻿//using kido_teacher_app.Config;
 using kido_teacher_app.Model;
 using kido_teacher_app.Services;
+using kido_teacher_app.Shared.Logging;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -210,16 +211,7 @@ namespace kido_teacher_app
                 );
 
                 if (!prefetched.Success)
-                {
-                    AuthService.ClearRememberToken();
-                    MessageBox.Show(
-                        prefetched.Message,
-                        "Đăng nhập thất bại",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
-                    return;
-                }
+                    FileLog.Error($"Prefetch sau đăng nhập thất bại, bỏ qua: {prefetched.Message}");
 
                 statusLabel.Text = "Đang lưu phiên đăng nhập...";
                 if (rememberCheck.Checked)

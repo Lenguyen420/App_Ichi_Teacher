@@ -49,7 +49,7 @@ namespace kido_teacher_app.Services
 
         public static Task<StudentAttemptReportDto> GetStudentReportAsync(
             string groupId,
-            string studentId,
+            string? studentId,
             DateTime? fromDate,
             DateTime? toDate,
             int page = 1,
@@ -58,8 +58,9 @@ namespace kido_teacher_app.Services
             if (string.IsNullOrWhiteSpace(groupId))
                 throw new ArgumentException("groupId is required.", nameof(groupId));
 
+            // If no student selected, get group report; otherwise get individual student report
             if (string.IsNullOrWhiteSpace(studentId))
-                throw new ArgumentException("studentId is required.", nameof(studentId));
+                return GetGroupReportAsync(groupId, fromDate, toDate, page, limit);
 
             var query = new List<string>
             {
@@ -76,6 +77,32 @@ namespace kido_teacher_app.Services
                 query.Add($"toDate={toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
 
             return ExecuteAsync<StudentAttemptReportDto>($"{ApiRoutes.REPORT_ATTEMPT_STUDENT}?{string.Join("&", query)}");
+        }
+
+        public static Task<StudentAttemptReportDto> GetGroupReportAsync(
+            string groupId,
+            DateTime? fromDate,
+            DateTime? toDate,
+            int page = 1,
+            int limit = 10)
+        {
+            if (string.IsNullOrWhiteSpace(groupId))
+                throw new ArgumentException("groupId is required.", nameof(groupId));
+
+            var query = new List<string>
+            {
+                $"groupId={Uri.EscapeDataString(groupId)}",
+                $"page={Math.Max(1, page).ToString(CultureInfo.InvariantCulture)}",
+                $"limit={Math.Max(1, limit).ToString(CultureInfo.InvariantCulture)}"
+            };
+
+            if (fromDate.HasValue)
+                query.Add($"fromDate={fromDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+
+            if (toDate.HasValue)
+                query.Add($"toDate={toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+
+            return ExecuteAsync<StudentAttemptReportDto>($"{ApiRoutes.REPORT_ATTEMPT_GROUPS}?{string.Join("&", query)}");
         }
 
         private static async Task<T> ExecuteAsync<T>(string requestUri)
@@ -161,6 +188,49 @@ namespace kido_teacher_app.Services
                 return true;
 
             return ex.InnerException != null && IsNetworkException(ex.InnerException);
+        }
+
+        public static async Task<byte[]> ExportGroupReportAsync(
+            string groupId,
+            DateTime? fromDate,
+            DateTime? toDate)
+        {
+            if (string.IsNullOrWhiteSpace(groupId))
+                throw new ArgumentException("groupId is required.", nameof(groupId));
+
+            EnsureAuthorized();
+
+            try
+            {
+                var query = new List<string>();
+                if (fromDate.HasValue)
+                    query.Add($"fromDate={fromDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+                if (toDate.HasValue)
+                    query.Add($"toDate={toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+
+                var url = $"/report/attempt/classes/export-excel?groupIds={Uri.EscapeDataString(groupId)}";
+                if (query.Count > 0)
+                    url += $"&{string.Join("&", query)}";
+
+                using var response = await client.PostAsync(url, new StringContent("{\"groupIds\": [\"" + Uri.EscapeDataString(groupId) + "\"]}", System.Text.Encoding.UTF8, "application/json"));
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    throw new AttemptReportApiException(
+                        response.StatusCode,
+                        ExtractErrorMessage(responseBody),
+                        responseBody);
+                }
+
+                OfflineState.SetOffline(false);
+                return await response.Content.ReadAsByteArrayAsync();
+            }
+            catch (Exception ex) when (IsNetworkException(ex))
+            {
+                OfflineState.SetOffline(true);
+                throw;
+            }
         }
     }
 }

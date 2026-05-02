@@ -49,7 +49,7 @@ namespace kido_teacher_app.Forms.Main.Page
             BuildUi();
             BindGroups(Array.Empty<AttemptReportGroupDto>());
             BindStudents(Array.Empty<AttemptReportStudentDto>());
-            ResetReport("Chọn nhóm và học sinh để xem báo cáo.");
+            ResetReport("Chọn nhóm để xem báo cáo.");
             dtTo.Value = DateTime.Today;
             dtFrom.Value = DateTime.Today.AddDays(-30);
             WireEvents();
@@ -194,7 +194,58 @@ namespace kido_teacher_app.Forms.Main.Page
             btnView.Click += async (_, __) => await ViewReportAsync();
             btnPrev.Click += async (_, __) => await ChangePageAsync(-1);
             btnNext.Click += async (_, __) => await ChangePageAsync(1);
-            btnExport.Click += (_, __) => MessageBox.Show("Backend chưa hỗ trợ xuất Excel cho màn hình báo cáo này.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            btnExport.Click += async (_, __) => await ExportReportAsync();
+        }
+
+        private async Task ExportReportAsync()
+        {
+            if (!HasSelectedGroup())
+            {
+                SetStatus("Cần chọn nhóm để xuất báo cáo.", Color.Firebrick);
+                return;
+            }
+            if (dtFrom.Value.Date > dtTo.Value.Date)
+            {
+                SetStatus("Khoảng ngày không hợp lệ: 'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.", Color.Firebrick);
+                return;
+            }
+            SetBusy(true, "Đang tạo file Excel...", Color.DarkOrange);
+            try
+            {
+                var groupId = GetSelectedValue(cboGroup)!;
+                var excelData = await AttemptReportService.ExportGroupReportAsync(groupId, dtFrom.Value.Date, dtTo.Value.Date);
+                SaveExcelFile(excelData, groupId);
+            }
+            catch (Exception ex)
+            {
+                SetStatus(BuildErrorMessage(ex, "Không thể xuất báo cáo."), Color.Firebrick);
+            }
+            finally { SetBusy(false); }
+        }
+
+        private void SaveExcelFile(byte[] excelData, string groupId)
+        {
+            using var saveDialog = new SaveFileDialog
+            {
+                Filter = "Excel Files (*.xlsx)|*.xlsx|All Files (*.*)|*.*",
+                DefaultExt = ".xlsx",
+                FileName = $"BaoCao_{groupId}_{DateTime.Today:yyyyMMdd}.xlsx"
+            };
+
+            if (saveDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    System.IO.File.WriteAllBytes(saveDialog.FileName, excelData);
+                    SetStatus($"Xuất báo cáo thành công: {saveDialog.FileName}", Color.Green);
+                    MessageBox.Show($"File báo cáo đã được lưu:\n{saveDialog.FileName}", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    SetStatus($"Lỗi khi lưu file: {ex.Message}", Color.Firebrick);
+                    MessageBox.Show($"Không thể lưu file:\n{ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
 
         private async Task EnsureGroupsLoadedAsync()
@@ -205,7 +256,7 @@ namespace kido_teacher_app.Forms.Main.Page
             {
                 BindGroups(await AttemptReportService.GetGroupsAsync());
                 groupsLoaded = true;
-                SetStatus(HasSelectedGroup() ? "Hãy chọn học sinh để xem báo cáo." : "Chọn nhóm và học sinh để xem báo cáo.", Color.FromArgb(55, 55, 55));
+                SetStatus(HasSelectedGroup() ? "Nhấn 'Xem báo cáo' để xem báo cáo nhóm hoặc chọn học sinh để xem báo cáo cá nhân." : "Chọn nhóm để xem báo cáo.", Color.FromArgb(55, 55, 55));
             }
             catch (Exception ex)
             {
@@ -222,13 +273,13 @@ namespace kido_teacher_app.Forms.Main.Page
             activeGroupId = null;
             activeStudentId = null;
             BindStudents(Array.Empty<AttemptReportStudentDto>());
-            ResetReport("Chọn học sinh để xem báo cáo.");
+            ResetReport("Nhấn 'Xem báo cáo' để xem báo cáo nhóm hoặc chọn học sinh để xem báo cáo cá nhân.");
             if (!HasSelectedGroup()) { UpdateActions(); return; }
             SetBusy(true, "Đang tải danh sách học sinh...", Color.DarkOrange);
             try
             {
                 BindStudents(await AttemptReportService.GetStudentsByGroupAsync(GetSelectedValue(cboGroup)!));
-                SetStatus("Nhấn 'Xem báo cáo' sau khi chọn học sinh.", Color.FromArgb(55, 55, 55));
+                SetStatus("Nhấn 'Xem báo cáo' để xem báo cáo nhóm hoặc chọn học sinh để xem báo cáo cá nhân.", Color.FromArgb(55, 55, 55));
             }
             catch (Exception ex)
             {
@@ -242,15 +293,15 @@ namespace kido_teacher_app.Forms.Main.Page
         {
             if (suppressEvents) return;
             activeStudentId = null;
-            ResetReport(HasSelectedStudent() ? "Nhấn 'Xem báo cáo' để tải dữ liệu." : "Chọn học sinh để xem báo cáo.");
+            ResetReport(HasSelectedStudent() ? "Nhấn 'Xem báo cáo' để tải dữ liệu." : "Nhấn 'Xem báo cáo' để xem báo cáo nhóm hoặc chọn học sinh để xem báo cáo cá nhân.");
             UpdateActions();
         }
 
         private async Task ViewReportAsync()
         {
-            if (!HasSelectedGroup() || !HasSelectedStudent())
+            if (!HasSelectedGroup())
             {
-                SetStatus("Cần chọn đầy đủ nhóm và học sinh.", Color.Firebrick);
+                SetStatus("Cần chọn nhóm để xem báo cáo.", Color.Firebrick);
                 return;
             }
             if (dtFrom.Value.Date > dtTo.Value.Date)
@@ -265,7 +316,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
         private async Task ChangePageAsync(int delta)
         {
-            if (!reportLoaded || string.IsNullOrWhiteSpace(activeGroupId) || string.IsNullOrWhiteSpace(activeStudentId)) return;
+            if (!reportLoaded || string.IsNullOrWhiteSpace(activeGroupId)) return;
             var next = currentPage + delta;
             if (next < 1 || next > totalPages) return;
             await LoadReportAsync(next);
@@ -345,7 +396,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
         private void UpdateActions()
         {
-            btnView.Enabled = !isBusy && HasSelectedGroup() && HasSelectedStudent();
+            btnView.Enabled = !isBusy && HasSelectedGroup();
             btnExport.Enabled = !isBusy;
             btnPrev.Enabled = !isBusy && reportLoaded && currentPage > 1;
             btnNext.Enabled = !isBusy && reportLoaded && currentPage < totalPages;
