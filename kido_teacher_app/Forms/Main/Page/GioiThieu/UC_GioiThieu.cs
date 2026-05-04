@@ -123,7 +123,7 @@ namespace kido_teacher_app.Forms.Main.Page
                     //LoadAndResizeSlide("slide12.png", targetSize.Width, targetSize.Height, Properties.Resources.slide12),
                     //LoadAndResizeSlide("slide13.png", targetSize.Width, targetSize.Height, Properties.Resources.slide13),
                     LoadAndResizeSlide("slide14.png", targetSize.Width, targetSize.Height, Properties.Resources.slide14),
-                    LoadAndResizeSlide("slide15.jpg", targetSize.Width, targetSize.Height, Properties.Resources.slide15),
+                    //LoadAndResizeSlide("slide15.jpg", targetSize.Width, targetSize.Height, Properties.Resources.slide15),
                     //LoadAndResizeSlide("slide16.jpg", targetSize.Width, targetSize.Height, Properties.Resources.slide16),
                 };
 
