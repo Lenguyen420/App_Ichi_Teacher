@@ -232,5 +232,57 @@ namespace kido_teacher_app.Services
                 throw;
             }
         }
+
+        /// <summary>
+        /// Xuất file Excel sheet "KET QUA LOP" cho một lớp/nhóm học sinh.
+        /// </summary>
+        public static async Task<byte[]> ExportClassSheetAsync(
+            string groupId,
+            string? examSetId = null,
+            string? questionBankId = null,
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
+        {
+            if (string.IsNullOrWhiteSpace(groupId))
+                throw new ArgumentException("groupId is required.", nameof(groupId));
+
+            EnsureAuthorized();
+
+            try
+            {
+                var query = new List<string>();
+                if (!string.IsNullOrWhiteSpace(examSetId))
+                    query.Add($"examSetId={Uri.EscapeDataString(examSetId)}");
+                if (!string.IsNullOrWhiteSpace(questionBankId))
+                    query.Add($"questionBankId={Uri.EscapeDataString(questionBankId)}");
+                if (fromDate.HasValue)
+                    query.Add($"fromDate={fromDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+                if (toDate.HasValue)
+                    query.Add($"toDate={toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+
+                var url = $"/report/attempt/groups/{Uri.EscapeDataString(groupId)}/export-class-sheet";
+                if (query.Count > 0)
+                    url += $"?{string.Join("&", query)}";
+
+                using var response = await client.GetAsync(url);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    throw new AttemptReportApiException(
+                        response.StatusCode,
+                        ExtractErrorMessage(responseBody),
+                        responseBody);
+                }
+
+                OfflineState.SetOffline(false);
+                return await response.Content.ReadAsByteArrayAsync();
+            }
+            catch (Exception ex) when (IsNetworkException(ex))
+            {
+                OfflineState.SetOffline(true);
+                throw;
+            }
+        }
     }
 }

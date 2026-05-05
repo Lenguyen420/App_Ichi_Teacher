@@ -20,6 +20,7 @@ namespace kido_teacher_app.Forms.Main.Page
         private DateTimePicker dtTo = null!;
         private Button btnView = null!;
         private Button btnExport = null!;
+        private Button btnSelectAll = null!;
         private Label lblStatus = null!;
         private Label lblTotal = null!;
         private Label lblAverage = null!;
@@ -105,15 +106,18 @@ namespace kido_teacher_app.Forms.Main.Page
             dtTo = new DateTimePicker { Dock = DockStyle.Fill, Format = DateTimePickerFormat.Custom, CustomFormat = "dd/MM/yyyy", Font = new Font("Segoe UI", 10f) };
             btnView = CreateButton("Xem báo cáo", true);
             btnExport = CreateButton("Xuất Excel", false);
+            btnSelectAll = CreateButton("Tất cả", false);
             filters.Controls.Add(MakeField("Nhóm", cboGroup), 0, 0);
             filters.Controls.Add(MakeField("Học sinh", cboStudent), 1, 0);
             filters.Controls.Add(MakeField("Từ ngày", dtFrom), 2, 0);
             filters.Controls.Add(MakeField("Đến ngày", dtTo), 3, 0);
-            var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Margin = new Padding(6, 19, 0, 0) };
-            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, Margin = new Padding(6, 19, 0, 0) };
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
             actions.Controls.Add(btnView, 0, 0);
             actions.Controls.Add(btnExport, 1, 0);
+            actions.Controls.Add(btnSelectAll, 2, 0);
             filters.Controls.Add(actions, 4, 0);
             var hint = new Label { Text = "Chỉ hiển thị học sinh thuộc các nhóm mà giáo viên đang quản lý.", Dock = DockStyle.Fill, ForeColor = Color.DimGray, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(6, 0, 0, 0) };
             filters.SetColumnSpan(hint, 5);
@@ -195,6 +199,7 @@ namespace kido_teacher_app.Forms.Main.Page
             btnPrev.Click += async (_, __) => await ChangePageAsync(-1);
             btnNext.Click += async (_, __) => await ChangePageAsync(1);
             btnExport.Click += async (_, __) => await ExportReportAsync();
+            btnSelectAll.Click += (_, __) => SelectAllStudents();
         }
 
         private async Task ExportReportAsync()
@@ -213,7 +218,12 @@ namespace kido_teacher_app.Forms.Main.Page
             try
             {
                 var groupId = GetSelectedValue(cboGroup)!;
-                var excelData = await AttemptReportService.ExportGroupReportAsync(groupId, dtFrom.Value.Date, dtTo.Value.Date);
+                var excelData = await AttemptReportService.ExportClassSheetAsync(
+                    groupId,
+                    examSetId: null,  // Optional filters
+                    questionBankId: null,
+                    fromDate: dtFrom.Value.Date,
+                    toDate: dtTo.Value.Date);
                 SaveExcelFile(excelData, groupId);
             }
             catch (Exception ex)
@@ -421,7 +431,7 @@ namespace kido_teacher_app.Forms.Main.Page
         private void BindStudents(IEnumerable<AttemptReportStudentDto> students)
         {
             suppressEvents = true;
-            cboStudent.DataSource = BuildOptions("Chọn học sinh", students.OrderBy(x => x.fullName).Select(x => new ComboItem(x.id, string.IsNullOrWhiteSpace(x.code) ? x.fullName : $"{x.fullName} ({x.code})")).ToList());
+            cboStudent.DataSource = BuildOptions("All", students.OrderBy(x => x.fullName).Select(x => new ComboItem(x.id, string.IsNullOrWhiteSpace(x.code) ? x.fullName : $"{x.fullName} ({x.code})")).ToList());
             cboStudent.DisplayMember = nameof(ComboItem.Text);
             cboStudent.ValueMember = nameof(ComboItem.Value);
             cboStudent.SelectedIndex = 0;
@@ -497,6 +507,31 @@ namespace kido_teacher_app.Forms.Main.Page
             foreach (var p in points) g.FillEllipse(pointBrush, p.X - 3.5f, p.Y - 3.5f, 7, 7);
             g.DrawString(trendPoints[0].Label, font, labelBrush, points[0].X - 12, plot.Bottom + 6);
             if (trendPoints.Count > 1) g.DrawString(trendPoints[^1].Label, font, labelBrush, points[^1].X - 12, plot.Bottom + 6);
+        }
+
+        private void SelectAllStudents()
+        {
+            if (!HasSelectedGroup())
+            {
+                SetStatus("Cần chọn nhóm trước khi chọn tất cả học sinh.", Color.Firebrick);
+                return;
+            }
+
+            if (cboStudent.Items.Count == 0)
+            {
+                SetStatus("Không có học sinh trong nhóm này.", Color.Firebrick);
+                return;
+            }
+
+            // Select the first item in the combobox (representing all students)
+            suppressEvents = true;
+            if (cboStudent.Items.Count > 0)
+            {
+                cboStudent.SelectedIndex = 0;
+            }
+            suppressEvents = false;
+            OnStudentChanged();
+            SetStatus("Đã chọn tất cả học sinh trong nhóm.", Color.Green);
         }
 
         private bool HasSelectedGroup() => !string.IsNullOrWhiteSpace(GetSelectedValue(cboGroup));
