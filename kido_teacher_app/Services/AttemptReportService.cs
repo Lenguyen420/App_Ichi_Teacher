@@ -47,6 +47,56 @@ namespace kido_teacher_app.Services
             return ExecuteAsync<List<AttemptReportStudentDto>>(ApiRoutes.ReportAttemptStudents(groupId));
         }
 
+        /// <summary>
+        /// Get student report with advanced filtering by zone, school, group, and student
+        /// Supports studentId=all for viewing all students in selected scope
+        /// </summary>
+        public static Task<StudentAttemptReportDto> GetStudentReportAsync(
+            string? zoneId = null,
+            string? schoolId = null,
+            string? groupId = null,
+            string? studentId = null,
+            DateTime? fromDate = null,
+            DateTime? toDate = null,
+            int page = 1,
+            int limit = 10)
+        {
+            // At least one of zoneId, schoolId, or groupId is required
+            if (string.IsNullOrWhiteSpace(zoneId) && string.IsNullOrWhiteSpace(schoolId) && string.IsNullOrWhiteSpace(groupId))
+                throw new ArgumentException("At least one of zoneId, schoolId, or groupId is required.");
+
+            var query = new List<string>
+            {
+                $"page={Math.Max(1, page).ToString(CultureInfo.InvariantCulture)}",
+                $"limit={Math.Max(1, limit).ToString(CultureInfo.InvariantCulture)}"
+            };
+
+            if (!string.IsNullOrWhiteSpace(zoneId))
+                query.Add($"zoneId={Uri.EscapeDataString(zoneId)}");
+
+            if (!string.IsNullOrWhiteSpace(schoolId))
+                query.Add($"schoolId={Uri.EscapeDataString(schoolId)}");
+
+            if (!string.IsNullOrWhiteSpace(groupId))
+                query.Add($"groupId={Uri.EscapeDataString(groupId)}");
+
+            // If studentId is not specified, default to "all" for group scope
+            var studentParam = string.IsNullOrWhiteSpace(studentId) ? "all" : studentId;
+            query.Add($"studentId={Uri.EscapeDataString(studentParam)}");
+
+            if (fromDate.HasValue)
+                query.Add($"fromDate={fromDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+
+            if (toDate.HasValue)
+                query.Add($"toDate={toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+
+            return ExecuteAsync<StudentAttemptReportDto>($"{ApiRoutes.REPORT_ATTEMPT_STUDENT}?{string.Join("&", query)}");
+        }
+
+        /// <summary>
+        /// Legacy method - Get student report (kept for backward compatibility)
+        /// </summary>
+        [Obsolete("Use GetStudentReportAsync with named parameters instead")]
         public static Task<StudentAttemptReportDto> GetStudentReportAsync(
             string groupId,
             string? studentId,
@@ -62,21 +112,7 @@ namespace kido_teacher_app.Services
             if (string.IsNullOrWhiteSpace(studentId))
                 return GetGroupReportAsync(groupId, fromDate, toDate, page, limit);
 
-            var query = new List<string>
-            {
-                $"groupId={Uri.EscapeDataString(groupId)}",
-                $"studentId={Uri.EscapeDataString(studentId)}",
-                $"page={Math.Max(1, page).ToString(CultureInfo.InvariantCulture)}",
-                $"limit={Math.Max(1, limit).ToString(CultureInfo.InvariantCulture)}"
-            };
-
-            if (fromDate.HasValue)
-                query.Add($"fromDate={fromDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
-
-            if (toDate.HasValue)
-                query.Add($"toDate={toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
-
-            return ExecuteAsync<StudentAttemptReportDto>($"{ApiRoutes.REPORT_ATTEMPT_STUDENT}?{string.Join("&", query)}");
+            return GetStudentReportAsync(zoneId: null, schoolId: null, groupId: groupId, studentId: studentId, fromDate: fromDate, toDate: toDate, page: page, limit: limit);
         }
 
         public static Task<StudentAttemptReportDto> GetGroupReportAsync(
@@ -103,6 +139,24 @@ namespace kido_teacher_app.Services
                 query.Add($"toDate={toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
 
             return ExecuteAsync<StudentAttemptReportDto>($"{ApiRoutes.REPORT_ATTEMPT_GROUPS}?{string.Join("&", query)}");
+        }
+
+        /// <summary>
+        /// Get zone details with schools and student groups hierarchy
+        /// </summary>
+        public static Task<ZoneDetailPayload> GetZoneDetailAsync(int page = 1, int size = 10, string? search = null)
+        {
+            var query = new List<string>
+            {
+                "isGetAllDetail=true",
+                $"page={Math.Max(1, page).ToString(CultureInfo.InvariantCulture)}",
+                $"size={Math.Max(1, size).ToString(CultureInfo.InvariantCulture)}"
+            };
+
+            if (!string.IsNullOrWhiteSpace(search))
+                query.Add($"search={Uri.EscapeDataString(search)}");
+
+            return ExecuteAsync<ZoneDetailPayload>($"{ApiRoutes.ZONE}?{string.Join("&", query)}");
         }
 
         private static async Task<T> ExecuteAsync<T>(string requestUri)
@@ -261,6 +315,59 @@ namespace kido_teacher_app.Services
                     query.Add($"toDate={toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
 
                 var url = $"/report/attempt/groups/{Uri.EscapeDataString(groupId)}/export-class-sheet";
+                if (query.Count > 0)
+                    url += $"?{string.Join("&", query)}";
+
+                using var response = await client.GetAsync(url);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    throw new AttemptReportApiException(
+                        response.StatusCode,
+                        ExtractErrorMessage(responseBody),
+                        responseBody);
+                }
+
+                OfflineState.SetOffline(false);
+                return await response.Content.ReadAsByteArrayAsync();
+            }
+            catch (Exception ex) when (IsNetworkException(ex))
+            {
+                OfflineState.SetOffline(true);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Xuất file Excel sheet thống kê điểm toàn trường theo lớp/nhóm.
+        /// Endpoint: GET /report/attempt/schools/{schoolId}/export-school-stat-sheet
+        /// </summary>
+        public static async Task<byte[]> ExportSchoolStatSheetAsync(
+            string schoolId,
+            string? examSetId = null,
+            string? questionBankId = null,
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
+        {
+            if (string.IsNullOrWhiteSpace(schoolId))
+                throw new ArgumentException("schoolId is required.", nameof(schoolId));
+
+            EnsureAuthorized();
+
+            try
+            {
+                var query = new List<string>();
+                if (!string.IsNullOrWhiteSpace(examSetId))
+                    query.Add($"examSetId={Uri.EscapeDataString(examSetId)}");
+                if (!string.IsNullOrWhiteSpace(questionBankId))
+                    query.Add($"questionBankId={Uri.EscapeDataString(questionBankId)}");
+                if (fromDate.HasValue)
+                    query.Add($"fromDate={fromDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+                if (toDate.HasValue)
+                    query.Add($"toDate={toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+
+                var url = $"/report/attempt/schools/{Uri.EscapeDataString(schoolId)}/export-school-stat-sheet";
                 if (query.Count > 0)
                     url += $"?{string.Join("&", query)}";
 

@@ -14,6 +14,8 @@ namespace kido_teacher_app.Forms.Main.Page
 {
     public class UC_BaoCao : UserControl
     {
+        private ComboBox cboZone = null!;
+        private ComboBox cboSchool = null!;
         private ComboBox cboGroup = null!;
         private ComboBox cboStudent = null!;
         private DateTimePicker dtFrom = null!;
@@ -41,14 +43,16 @@ namespace kido_teacher_app.Forms.Main.Page
         private bool reportLoaded;
         private int currentPage = 1;
         private int totalPages = 1;
-        private int pageSize = 10;
+        private int pageSize = 100;
+        private string? activeZoneId;
+        private string? activeSchoolId;
         private string? activeGroupId;
         private string? activeStudentId;
 
         public UC_BaoCao()
         {
             BuildUi();
-            BindGroups(Array.Empty<AttemptReportGroupDto>());
+            BindGroups(Array.Empty<StudentGroupNode>());
             BindStudents(Array.Empty<AttemptReportStudentDto>());
             ResetReport("Chọn nhóm để xem báo cáo.");
             dtTo.Value = DateTime.Today;
@@ -96,10 +100,12 @@ namespace kido_teacher_app.Forms.Main.Page
                 Padding = new Padding(10, 14, 10, 10),
                 Margin = new Padding(0, 4, 0, 0)
             };
-            var filters = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 5, RowCount = 2, Padding = new Padding(6, 16, 6, 6) };
-            for (var i = 0; i < 5; i++) filters.ColumnStyles.Add(new ColumnStyle(i < 4 ? SizeType.Percent : SizeType.Absolute, i < 4 ? 25 : 240));
+            var filters = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 7, RowCount = 2, Padding = new Padding(6, 16, 6, 6) };
+            for (var i = 0; i < 7; i++) filters.ColumnStyles.Add(new ColumnStyle(i < 6 ? SizeType.Percent : SizeType.Absolute, i < 6 ? (100f / 6f) : 240));
             filters.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
             filters.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+            cboZone = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f) };
+            cboSchool = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f) };
             cboGroup = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f) };
             cboStudent = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f) };
             dtFrom = new DateTimePicker { Dock = DockStyle.Fill, Format = DateTimePickerFormat.Custom, CustomFormat = "dd/MM/yyyy", Font = new Font("Segoe UI", 10f) };
@@ -107,10 +113,12 @@ namespace kido_teacher_app.Forms.Main.Page
             btnView = CreateButton("Xem báo cáo", true);
             btnExport = CreateButton("Xuất Excel", false);
             btnSelectAll = CreateButton("Tất cả", false);
-            filters.Controls.Add(MakeField("Nhóm", cboGroup), 0, 0);
-            filters.Controls.Add(MakeField("Học sinh", cboStudent), 1, 0);
-            filters.Controls.Add(MakeField("Từ ngày", dtFrom), 2, 0);
-            filters.Controls.Add(MakeField("Đến ngày", dtTo), 3, 0);
+            filters.Controls.Add(MakeField("Khu vực", cboZone), 0, 0);
+            filters.Controls.Add(MakeField("Trường", cboSchool), 1, 0);
+            filters.Controls.Add(MakeField("Nhóm/Lớp", cboGroup), 2, 0);
+            filters.Controls.Add(MakeField("Học sinh", cboStudent), 3, 0);
+            filters.Controls.Add(MakeField("Từ ngày", dtFrom), 4, 0);
+            filters.Controls.Add(MakeField("Đến ngày", dtTo), 5, 0);
             var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, Margin = new Padding(6, 19, 0, 0) };
             actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
             actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
@@ -118,9 +126,9 @@ namespace kido_teacher_app.Forms.Main.Page
             actions.Controls.Add(btnView, 0, 0);
             actions.Controls.Add(btnExport, 1, 0);
             actions.Controls.Add(btnSelectAll, 2, 0);
-            filters.Controls.Add(actions, 4, 0);
+            filters.Controls.Add(actions, 6, 0);
             var hint = new Label { Text = "Chỉ hiển thị học sinh thuộc các nhóm mà giáo viên đang quản lý.", Dock = DockStyle.Fill, ForeColor = Color.DimGray, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(6, 0, 0, 0) };
-            filters.SetColumnSpan(hint, 5);
+            filters.SetColumnSpan(hint, 7);
             filters.Controls.Add(hint, 0, 1);
             gb.Controls.Add(filters);
             root.Controls.Add(gb, 0, 2);
@@ -193,13 +201,15 @@ namespace kido_teacher_app.Forms.Main.Page
         {
             Load += async (_, __) => await EnsureGroupsLoadedAsync();
             VisibleChanged += async (_, __) => await EnsureGroupsLoadedAsync();
+            cboZone.SelectedIndexChanged += async (_, __) => await OnZoneChangedAsync();
+            cboSchool.SelectedIndexChanged += async (_, __) => await OnSchoolChangedAsync();
             cboGroup.SelectedIndexChanged += async (_, __) => await OnGroupChangedAsync();
             cboStudent.SelectedIndexChanged += (_, __) => OnStudentChanged();
             btnView.Click += async (_, __) => await ViewReportAsync();
             btnPrev.Click += async (_, __) => await ChangePageAsync(-1);
             btnNext.Click += async (_, __) => await ChangePageAsync(1);
             btnExport.Click += async (_, __) => await ExportReportAsync();
-            btnSelectAll.Click += (_, __) => SelectAllStudents();
+            btnSelectAll.Click += async (_, __) => await ExportSchoolStatSheetAsync();
         }
 
         private async Task ExportReportAsync()
@@ -261,26 +271,86 @@ namespace kido_teacher_app.Forms.Main.Page
         private async Task EnsureGroupsLoadedAsync()
         {
             if (!Visible || groupsLoaded || isBusy) return;
-            SetBusy(true, "Đang tải danh sách nhóm...", Color.DarkOrange);
+            SetBusy(true, "Đang tải danh sách khu vực, trường và nhóm...", Color.DarkOrange);
             try
             {
-                BindGroups(await AttemptReportService.GetGroupsAsync());
+                var zonePayload = await AttemptReportService.GetZoneDetailAsync();
+                BindZonesFromDetail(zonePayload);
                 groupsLoaded = true;
-                SetStatus(HasSelectedGroup() ? "Nhấn 'Xem báo cáo' để xem báo cáo nhóm hoặc chọn học sinh để xem báo cáo cá nhân." : "Chọn nhóm để xem báo cáo.", Color.FromArgb(55, 55, 55));
+                SetStatus("Chọn khu vực, trường và nhóm để xem báo cáo.", Color.FromArgb(55, 55, 55));
             }
             catch (Exception ex)
             {
-                BindGroups(Array.Empty<AttemptReportGroupDto>());
+                BindZones(Array.Empty<ZoneDetailItem>());
+                BindSchools(Array.Empty<SchoolNode>());
+                BindGroups(Array.Empty<StudentGroupNode>());
                 BindStudents(Array.Empty<AttemptReportStudentDto>());
-                SetStatus(BuildErrorMessage(ex, "Không tải được danh sách nhóm."), Color.Firebrick);
+                SetStatus(BuildErrorMessage(ex, "Không tải được danh sách khu vực, trường và nhóm."), Color.Firebrick);
             }
             finally { SetBusy(false); }
+        }
+
+        private async Task OnZoneChangedAsync()
+        {
+            if (suppressEvents || isBusy) return;
+            activeZoneId = GetSelectedValue(cboZone);
+            activeSchoolId = null;
+            activeGroupId = null;
+            activeStudentId = null;
+            
+            if (!HasSelectedZone())
+            {
+                BindSchools(Array.Empty<SchoolNode>());
+                BindGroups(Array.Empty<StudentGroupNode>());
+                BindStudents(Array.Empty<AttemptReportStudentDto>());
+                ResetReport("Chọn khu vực, trường và nhóm để xem báo cáo.");
+                UpdateActions();
+                return;
+            }
+
+            // Filter schools by selected zone
+            var zonePayload = await AttemptReportService.GetZoneDetailAsync();
+            var selectedZone = zonePayload.data.FirstOrDefault(z => z.zone.id == activeZoneId);
+            var schools = selectedZone?.schools ?? new List<SchoolNode>();
+            BindSchools(schools);
+            BindGroups(Array.Empty<StudentGroupNode>());
+            BindStudents(Array.Empty<AttemptReportStudentDto>());
+            ResetReport("Chọn trường và nhóm để xem báo cáo.");
+            UpdateActions();
+        }
+
+        private async Task OnSchoolChangedAsync()
+        {
+            if (suppressEvents || isBusy) return;
+            activeSchoolId = GetSelectedValue(cboSchool);
+            activeGroupId = null;
+            activeStudentId = null;
+            
+            if (!HasSelectedSchool())
+            {
+                BindGroups(Array.Empty<StudentGroupNode>());
+                BindStudents(Array.Empty<AttemptReportStudentDto>());
+                ResetReport("Chọn trường và nhóm để xem báo cáo.");
+                UpdateActions();
+                return;
+            }
+
+            // Filter groups by selected school
+            var zonePayload = await AttemptReportService.GetZoneDetailAsync();
+            var selectedSchool = zonePayload.data
+                .SelectMany(z => z.schools)
+                .FirstOrDefault(s => s.id == activeSchoolId);
+            var studentGroups = selectedSchool?.studentGroups ?? new List<StudentGroupNode>();
+            BindGroups(studentGroups);
+            BindStudents(Array.Empty<AttemptReportStudentDto>());
+            ResetReport("Chọn nhóm để xem báo cáo hoặc học sinh để xem báo cáo cá nhân.");
+            UpdateActions();
         }
 
         private async Task OnGroupChangedAsync()
         {
             if (suppressEvents || isBusy) return;
-            activeGroupId = null;
+            activeGroupId = GetSelectedValue(cboGroup);
             activeStudentId = null;
             BindStudents(Array.Empty<AttemptReportStudentDto>());
             ResetReport("Nhấn 'Xem báo cáo' để xem báo cáo nhóm hoặc chọn học sinh để xem báo cáo cá nhân.");
@@ -288,7 +358,7 @@ namespace kido_teacher_app.Forms.Main.Page
             SetBusy(true, "Đang tải danh sách học sinh...", Color.DarkOrange);
             try
             {
-                BindStudents(await AttemptReportService.GetStudentsByGroupAsync(GetSelectedValue(cboGroup)!));
+                BindStudents(await AttemptReportService.GetStudentsByGroupAsync(activeGroupId!));
                 SetStatus("Nhấn 'Xem báo cáo' để xem báo cáo nhóm hoặc chọn học sinh để xem báo cáo cá nhân.", Color.FromArgb(55, 55, 55));
             }
             catch (Exception ex)
@@ -337,7 +407,15 @@ namespace kido_teacher_app.Forms.Main.Page
             SetBusy(true, "Đang tải báo cáo học sinh...", Color.DarkOrange);
             try
             {
-                ApplyReport(await AttemptReportService.GetStudentReportAsync(activeGroupId!, activeStudentId!, dtFrom.Value.Date, dtTo.Value.Date, page, pageSize));
+                ApplyReport(await AttemptReportService.GetStudentReportAsync(
+                    zoneId: activeZoneId,
+                    schoolId: activeSchoolId,
+                    groupId: activeGroupId,
+                    studentId: activeStudentId,
+                    fromDate: dtFrom.Value.Date,
+                    toDate: dtTo.Value.Date,
+                    page: page,
+                    limit: pageSize));
             }
             catch (Exception ex)
             {
@@ -407,7 +485,8 @@ namespace kido_teacher_app.Forms.Main.Page
         private void UpdateActions()
         {
             btnView.Enabled = !isBusy && HasSelectedGroup();
-            btnExport.Enabled = !isBusy;
+            btnExport.Enabled = !isBusy && HasSelectedGroup();
+            btnSelectAll.Enabled = !isBusy && HasSelectedSchool();
             btnPrev.Enabled = !isBusy && reportLoaded && currentPage > 1;
             btnNext.Enabled = !isBusy && reportLoaded && currentPage < totalPages;
         }
@@ -418,7 +497,7 @@ namespace kido_teacher_app.Forms.Main.Page
             lblStatus.ForeColor = color;
         }
 
-        private void BindGroups(IEnumerable<AttemptReportGroupDto> groups)
+        private void BindGroups(IEnumerable<StudentGroupNode> groups)
         {
             suppressEvents = true;
             cboGroup.DataSource = BuildOptions("Chọn nhóm", groups.OrderBy(x => x.name).Select(x => new ComboItem(x.id, x.name)).ToList());
@@ -509,33 +588,92 @@ namespace kido_teacher_app.Forms.Main.Page
             if (trendPoints.Count > 1) g.DrawString(trendPoints[^1].Label, font, labelBrush, points[^1].X - 12, plot.Bottom + 6);
         }
 
-        private void SelectAllStudents()
+        /// <summary>
+        /// Xuất file Excel thống kê điểm toàn trường theo lớp/nhóm.
+        /// </summary>
+        private async Task ExportSchoolStatSheetAsync()
         {
-            if (!HasSelectedGroup())
+            if (!HasSelectedSchool())
             {
-                SetStatus("Cần chọn nhóm trước khi chọn tất cả học sinh.", Color.Firebrick);
+                SetStatus("Cần chọn trường để xuất báo cáo toàn trường.", Color.Firebrick);
                 return;
             }
 
-            if (cboStudent.Items.Count == 0)
+            if (dtFrom.Value.Date > dtTo.Value.Date)
             {
-                SetStatus("Không có học sinh trong nhóm này.", Color.Firebrick);
+                SetStatus("Khoảng ngày không hợp lệ: 'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.", Color.Firebrick);
                 return;
             }
 
-            // Select the first item in the combobox (representing all students)
+            var schoolId = GetSelectedValue(cboSchool)!;
+            var schoolName = (cboSchool.SelectedItem as ComboItem)?.Text ?? "Trường";
+            var fromDate = dtFrom.Value.Date;
+            var toDate = dtTo.Value.Date;
+
+            SetBusy(true, $"Đang tạo file Excel thống kê cho {schoolName}...", Color.DarkOrange);
+            try
+            {
+                var excelData = await AttemptReportService.ExportSchoolStatSheetAsync(
+                    schoolId,
+                    examSetId: null,
+                    questionBankId: null,
+                    fromDate: fromDate,
+                    toDate: toDate);
+                SaveExcelFile(excelData, $"school-{schoolName}");
+            }
+            catch (Exception ex)
+            {
+                SetStatus(BuildErrorMessage(ex, "Không thể xuất báo cáo toàn trường."), Color.Firebrick);
+            }
+            finally { SetBusy(false); }
+        }
+
+        private void BindZonesFromDetail(ZoneDetailPayload payload)
+        {
             suppressEvents = true;
-            if (cboStudent.Items.Count > 0)
-            {
-                cboStudent.SelectedIndex = 0;
-            }
+            var zones = payload.data
+                .Select(z => new ComboItem(z.zone.id, z.zone.name))
+                .OrderBy(x => x.Text)
+                .ToList();
+            cboZone.DataSource = BuildOptions("Chọn khu vực", zones);
+            cboZone.DisplayMember = nameof(ComboItem.Text);
+            cboZone.ValueMember = nameof(ComboItem.Value);
+            cboZone.SelectedIndex = 0;
             suppressEvents = false;
-            OnStudentChanged();
-            SetStatus("Đã chọn tất cả học sinh trong nhóm.", Color.Green);
+        }
+
+        private void BindZones(IEnumerable<ZoneDetailItem> zones)
+        {
+            suppressEvents = true;
+            var zoneItems = zones
+                .Select(z => new ComboItem(z.zone.id, z.zone.name))
+                .OrderBy(x => x.Text)
+                .ToList();
+            cboZone.DataSource = BuildOptions("Chọn khu vực", zoneItems);
+            cboZone.DisplayMember = nameof(ComboItem.Text);
+            cboZone.ValueMember = nameof(ComboItem.Value);
+            cboZone.SelectedIndex = 0;
+            suppressEvents = false;
+        }
+
+        private void BindSchools(IEnumerable<SchoolNode> schools)
+        {
+            suppressEvents = true;
+            var schoolItems = schools
+                .Select(s => new ComboItem(s.id, s.name))
+                .OrderBy(x => x.Text)
+                .ToList();
+            cboSchool.DataSource = BuildOptions("Chọn trường", schoolItems);
+            cboSchool.DisplayMember = nameof(ComboItem.Text);
+            cboSchool.ValueMember = nameof(ComboItem.Value);
+            cboSchool.SelectedIndex = 0;
+            suppressEvents = false;
         }
 
         private bool HasSelectedGroup() => !string.IsNullOrWhiteSpace(GetSelectedValue(cboGroup));
         private bool HasSelectedStudent() => !string.IsNullOrWhiteSpace(GetSelectedValue(cboStudent));
+        private bool HasSelectedSchool() => !string.IsNullOrWhiteSpace(GetSelectedValue(cboSchool));
+        private bool HasSelectedZone() => !string.IsNullOrWhiteSpace(GetSelectedValue(cboZone));
         private static string? GetSelectedValue(ComboBox combo) => (combo.SelectedItem as ComboItem)?.Value;
         private static string AttemptTitle(AttemptHistoryDto x) => !string.IsNullOrWhiteSpace(x.questionBankName) && !string.IsNullOrWhiteSpace(x.examSetName) ? $"{x.questionBankName} / {x.examSetName}" : (!string.IsNullOrWhiteSpace(x.questionBankName) ? x.questionBankName : (!string.IsNullOrWhiteSpace(x.examSetName) ? x.examSetName : "-"));
         private static string AttemptStatus(string? status) => status?.ToUpperInvariant() switch { "SUBMITTED" => "Đã nộp", "IN_PROGRESS" => "Đang làm", "EXPIRED" => "Hết hạn", _ => string.IsNullOrWhiteSpace(status) ? "-" : status };

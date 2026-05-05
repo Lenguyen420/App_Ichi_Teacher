@@ -8,6 +8,10 @@ namespace kido_teacher_app.Model
         public string id { get; set; } = string.Empty;
         public string name { get; set; } = string.Empty;
         public string type { get; set; } = string.Empty;
+        public string? zoneId { get; set; }
+        public string? zoneName { get; set; }
+        public string? schoolId { get; set; }
+        public string? schoolName { get; set; }
     }
 
     public class AttemptReportStudentDto
