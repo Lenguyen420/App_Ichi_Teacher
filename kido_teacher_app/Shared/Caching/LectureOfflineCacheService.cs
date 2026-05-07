@@ -117,6 +117,16 @@ namespace kido_teacher_app.Shared.Caching
         {
             EnsureInitialized();
 
+            // Validate file paths - only save if file exists
+            if (!string.IsNullOrEmpty(pdfPath) && !File.Exists(pdfPath))
+                pdfPath = null;
+            if (!string.IsNullOrEmpty(videoPath) && !File.Exists(videoPath))
+                videoPath = null;
+            if (!string.IsNullOrEmpty(elearningPath) && !File.Exists(elearningPath))
+                elearningPath = null;
+            if (!string.IsNullOrEmpty(powerpointPath) && !File.Exists(powerpointPath))
+                powerpointPath = null;
+
             using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
             conn.Open();
 
@@ -163,7 +173,7 @@ namespace kido_teacher_app.Shared.Caching
             if (!reader.Read())
                 return null;
 
-            return new LectureOfflineCache
+            var cache = new LectureOfflineCache
             {
                 LectureId = reader.GetString(0),
                 PdfPath = reader.IsDBNull(1) ? null : reader.GetString(1),
@@ -172,6 +182,64 @@ namespace kido_teacher_app.Shared.Caching
                 PowerPointPath = reader.IsDBNull(4) ? null : reader.GetString(4),
                 OfflineZipUrl = reader.IsDBNull(5) ? null : reader.GetString(5)
             };
+
+            // Validate file existence and clean up dead entries
+            bool hasDeadFiles = ValidateAndCleanDeadFiles(cache);
+            if (hasDeadFiles)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Cache] Cleaned up dead file references for lecture: {lectureId}");
+            }
+
+            return cache;
+        }
+
+        // =========================
+        // VALIDATE FILE EXISTENCE
+        // =========================
+        private static bool ValidateAndCleanDeadFiles(LectureOfflineCache cache)
+        {
+            bool hasDeadFiles = false;
+            var validatedCache = new LectureOfflineCache { LectureId = cache.LectureId };
+
+            // Check each file path
+            if (!string.IsNullOrEmpty(cache.PdfPath) && File.Exists(cache.PdfPath))
+                validatedCache.PdfPath = cache.PdfPath;
+            else if (!string.IsNullOrEmpty(cache.PdfPath))
+                hasDeadFiles = true;
+
+            if (!string.IsNullOrEmpty(cache.VideoPath) && File.Exists(cache.VideoPath))
+                validatedCache.VideoPath = cache.VideoPath;
+            else if (!string.IsNullOrEmpty(cache.VideoPath))
+                hasDeadFiles = true;
+
+            if (!string.IsNullOrEmpty(cache.ElearningPath) && File.Exists(cache.ElearningPath))
+                validatedCache.ElearningPath = cache.ElearningPath;
+            else if (!string.IsNullOrEmpty(cache.ElearningPath))
+                hasDeadFiles = true;
+
+            if (!string.IsNullOrEmpty(cache.PowerPointPath) && File.Exists(cache.PowerPointPath))
+                validatedCache.PowerPointPath = cache.PowerPointPath;
+            else if (!string.IsNullOrEmpty(cache.PowerPointPath))
+                hasDeadFiles = true;
+
+            validatedCache.OfflineZipUrl = cache.OfflineZipUrl;
+
+            // If there were dead files, update the database
+            if (hasDeadFiles)
+            {
+                Save(validatedCache.LectureId, validatedCache.PdfPath, validatedCache.VideoPath,
+                    validatedCache.ElearningPath, validatedCache.PowerPointPath, validatedCache.OfflineZipUrl);
+
+                System.Diagnostics.Debug.WriteLine($"[Cache] Removed dead file references for lecture: {cache.LectureId}");
+            }
+
+            // Update cache object with validated paths
+            cache.PdfPath = validatedCache.PdfPath;
+            cache.VideoPath = validatedCache.VideoPath;
+            cache.ElearningPath = validatedCache.ElearningPath;
+            cache.PowerPointPath = validatedCache.PowerPointPath;
+
+            return hasDeadFiles;
         }
 
         // =========================

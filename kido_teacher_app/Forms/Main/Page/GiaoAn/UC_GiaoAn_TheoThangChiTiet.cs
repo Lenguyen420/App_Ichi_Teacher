@@ -167,7 +167,8 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
                     if (cache != null)
                     {
-                        if (!string.IsNullOrEmpty(cache.PdfPath))
+                        // Only add resources if file actually exists
+                        if (!string.IsNullOrEmpty(cache.PdfPath) && File.Exists(cache.PdfPath))
                         {
                             detail.resources.Add(new LectureResourceDto
                             {
@@ -177,7 +178,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                             });
                         }
 
-                        if (!string.IsNullOrEmpty(cache.VideoPath))
+                        if (!string.IsNullOrEmpty(cache.VideoPath) && File.Exists(cache.VideoPath))
                         {
                             detail.resources.Add(new LectureResourceDto
                             {
@@ -187,7 +188,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                             });
                         }
 
-                        if (!string.IsNullOrEmpty(cache.ElearningPath))
+                        if (!string.IsNullOrEmpty(cache.ElearningPath) && File.Exists(cache.ElearningPath))
                         {
                             detail.resources.Add(new LectureResourceDto
                             {
@@ -197,7 +198,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                             });
                         }
 
-                        if (!string.IsNullOrEmpty(cache.PowerPointPath))
+                        if (!string.IsNullOrEmpty(cache.PowerPointPath) && File.Exists(cache.PowerPointPath))
                         {
                             detail.resources.Add(new LectureResourceDto
                             {
@@ -816,21 +817,37 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             }
 
             // =========================
-            // 6️⃣ MAP FILE VÀ LƯU CACHE
+            // 6️⃣ MAP FILE VÀ VALIDATE
             // =========================
             LectureFiles files = _resourceService.MapLectureFiles(extractPath);
 
+            // Validate: Chỉ lưu cache nếu file thực sự tồn tại
+            string? validPdfPath = !string.IsNullOrEmpty(files.PdfPath) && File.Exists(files.PdfPath) ? files.PdfPath : null;
+            string? validVideoPath = !string.IsNullOrEmpty(files.VideoPath) && File.Exists(files.VideoPath) ? files.VideoPath : null;
+            string? validElearningPath = !string.IsNullOrEmpty(files.ElearningPath) && File.Exists(files.ElearningPath) ? files.ElearningPath : null;
+            string? validPowerPointPath = !string.IsNullOrEmpty(files.PowerPointPath) && File.Exists(files.PowerPointPath) ? files.PowerPointPath : null;
+
+            // Cảnh báo nếu không tìm thấy bất kỳ file nào
+            if (string.IsNullOrEmpty(validPdfPath) && string.IsNullOrEmpty(validVideoPath) && 
+                string.IsNullOrEmpty(validElearningPath) && string.IsNullOrEmpty(validPowerPointPath))
+            {
+                System.Diagnostics.Debug.WriteLine($"[Download] Warning: No valid files found in extracted path: {extractPath}");
+            }
+
+            // =========================
+            // 7️⃣ LƯU CACHE
+            // =========================
             LectureOfflineCacheService.Save(
                 lesson.id,
-                files.PdfPath,
-                files.VideoPath,
-                files.ElearningPath,
-                files.PowerPointPath,
+                validPdfPath,
+                validVideoPath,
+                validElearningPath,
+                validPowerPointPath,
                 offlineZip.url
             );
 
             // =========================
-            // 7️⃣ ENABLE OFFLINE BUTTON
+            // 8️⃣ ENABLE OFFLINE BUTTON
             // =========================
             void EnableOfflineButton(Button btn, Action clickAction)
             {
