@@ -23,7 +23,7 @@ namespace kido_teacher_app.Debug
             Console.WriteLine(reportText);
 
             // Log to debug window
-            Debug.WriteLine(reportText);
+            System.Diagnostics.Debug.WriteLine(reportText);
 
             // Save to file
             var logPath = System.IO.Path.Combine(

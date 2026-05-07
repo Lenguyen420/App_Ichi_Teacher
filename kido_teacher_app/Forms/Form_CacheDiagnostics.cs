@@ -8,7 +8,6 @@ namespace kido_teacher_app.Forms
     {
         public Form_CacheDiagnostics()
         {
-            InitializeComponent();
             this.Text = "Cache Diagnostics";
             this.Width = 800;
             this.Height = 600;

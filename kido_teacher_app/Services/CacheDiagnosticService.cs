@@ -1,21 +1,16 @@
-using Microsoft.Data.Sqlite;
 using kido_teacher_app.Config;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Text;
 
 namespace kido_teacher_app.Services
 {
-    /// <summary>
-    /// Diagnostic service để kiểm tra và fix database cache bị lỗi encoding
-    /// </summary>
     public static class CacheDiagnosticService
     {
-        // ======================
-        // SCAN DATABASE FOR ISSUES
-        // ======================
         public static DiagnosticReport ScanDatabase()
         {
             var report = new DiagnosticReport();
@@ -24,87 +19,22 @@ namespace kido_teacher_app.Services
             {
                 if (!File.Exists(AppConfig.DbPath))
                 {
-                    report.AddInfo("Database không tồn tại");
+                    report.AddInfo("Database does not exist.");
+                    report.Success = true;
                     return report;
                 }
 
                 var fileInfo = new FileInfo(AppConfig.DbPath);
+                report.AddInfo($"Database path: {AppConfig.DbPath}");
                 report.AddInfo($"Database size: {fileInfo.Length} bytes");
 
                 using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
                 conn.Open();
 
-                // Check encoding
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = "PRAGMA encoding;";
-                var encoding = cmd.ExecuteScalar();
-                report.AddInfo($"Database encoding: {encoding}");
+                report.AddInfo($"Database encoding: {ExecuteScalar(conn, "PRAGMA encoding;")}");
 
-                // Scan cache table
-                cmd.CommandText = @"SELECT COUNT(*) FROM offline_lecture_cache;";
-                var cacheCount = (long)cmd.ExecuteScalar();
-                report.AddInfo($"Cache entries: {cacheCount}");
-
-                // Check each entry
-                cmd.CommandText = @"SELECT lecture_id, pdf_path, video_path, elearning_path, powerpoint_path, offline_zip_url
-                                   FROM offline_lecture_cache;";
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        var lectureId = reader.GetString(0);
-                        var pdfPath = SafeGetString(reader, 1);
-                        var videoPath = SafeGetString(reader, 2);
-                        var elearningPath = SafeGetString(reader, 3);
-                        var powerpointPath = SafeGetString(reader, 4);
-                        var zipUrl = SafeGetString(reader, 5);
-
-                        // Check for corruption
-                        var issues = new List<string>();
-
-                        if (HasEncodingIssue(pdfPath))
-                            issues.Add($"PDF has encoding issue: {pdfPath}");
-                        if (HasEncodingIssue(videoPath))
-                            issues.Add($"Video has encoding issue: {videoPath}");
-                        if (HasEncodingIssue(elearningPath))
-                            issues.Add($"Elearning has encoding issue: {elearningPath}");
-                        if (HasEncodingIssue(powerpointPath))
-                            issues.Add($"PowerPoint has encoding issue: {powerpointPath}");
-
-                        if (ContainsInvalidChars(pdfPath))
-                            issues.Add($"PDF has invalid chars: {pdfPath}");
-                        if (ContainsInvalidChars(videoPath))
-                            issues.Add($"Video has invalid chars: {videoPath}");
-                        if (ContainsInvalidChars(elearningPath))
-                            issues.Add($"Elearning has invalid chars: {elearningPath}");
-                        if (ContainsInvalidChars(powerpointPath))
-                            issues.Add($"PowerPoint has invalid chars: {powerpointPath}");
-
-                        // Check if files actually exist
-                        if (!string.IsNullOrEmpty(pdfPath) && !File.Exists(pdfPath))
-                            issues.Add($"PDF file missing: {pdfPath}");
-                        if (!string.IsNullOrEmpty(videoPath) && !File.Exists(videoPath))
-                            issues.Add($"Video file missing: {videoPath}");
-                        if (!string.IsNullOrEmpty(elearningPath) && !File.Exists(elearningPath))
-                            issues.Add($"Elearning file missing: {elearningPath}");
-                        if (!string.IsNullOrEmpty(powerpointPath) && !File.Exists(powerpointPath))
-                            issues.Add($"PowerPoint file missing: {powerpointPath}");
-
-                        if (issues.Count > 0)
-                        {
-                            report.CorruptedEntries.Add(new CacheEntryIssue
-                            {
-                                LectureId = lectureId,
-                                Issues = issues
-                            });
-                        }
-                        else
-                        {
-                            report.ValidEntries++;
-                        }
-                    }
-                }
+                ScanApiCache(conn, report);
+                ScanOfflineLectureCache(conn, report);
 
                 report.Success = true;
             }
@@ -116,9 +46,6 @@ namespace kido_teacher_app.Services
             return report;
         }
 
-        // ======================
-        // BACKUP AND RESET DATABASE
-        // ======================
         public static bool BackupAndResetDatabase()
         {
             try
@@ -130,9 +57,8 @@ namespace kido_teacher_app.Services
                 File.Copy(AppConfig.DbPath, backupPath);
                 System.Diagnostics.Debug.WriteLine($"[Diagnostic] Backed up database to: {backupPath}");
 
-                // Delete old database
                 File.Delete(AppConfig.DbPath);
-                System.Diagnostics.Debug.WriteLine($"[Diagnostic] Deleted corrupted database");
+                System.Diagnostics.Debug.WriteLine("[Diagnostic] Deleted database");
 
                 return true;
             }
@@ -143,9 +69,6 @@ namespace kido_teacher_app.Services
             }
         }
 
-        // ======================
-        // EXPORT DIAGNOSTIC REPORT
-        // ======================
         public static string GetReportText(DiagnosticReport report)
         {
             var sb = new StringBuilder();
@@ -159,7 +82,7 @@ namespace kido_teacher_app.Services
             {
                 sb.AppendLine("ERRORS:");
                 foreach (var err in report.Errors)
-                    sb.AppendLine($"  ✗ {err}");
+                    sb.AppendLine($"  - {err}");
                 sb.AppendLine();
             }
 
@@ -167,7 +90,7 @@ namespace kido_teacher_app.Services
             {
                 sb.AppendLine("INFORMATION:");
                 foreach (var info in report.Infos)
-                    sb.AppendLine($"  ℹ {info}");
+                    sb.AppendLine($"  - {info}");
                 sb.AppendLine();
             }
 
@@ -180,32 +103,134 @@ namespace kido_teacher_app.Services
                 sb.AppendLine("CORRUPTED ENTRIES:");
                 foreach (var entry in report.CorruptedEntries)
                 {
-                    sb.AppendLine($"  - Lecture: {entry.LectureId}");
+                    sb.AppendLine($"  - Entry: {entry.LectureId}");
                     foreach (var issue in entry.Issues)
-                        sb.AppendLine($"    • {issue}");
+                        sb.AppendLine($"    * {issue}");
                 }
                 sb.AppendLine();
             }
 
             sb.AppendLine("RECOMMENDATION:");
-            if (report.CorruptedEntries.Count > 0)
-                sb.AppendLine("  → Call BackupAndResetDatabase() to fix corrupted entries");
-            else
-                sb.AppendLine("  → Database is healthy");
+            sb.AppendLine(report.CorruptedEntries.Count > 0
+                ? "  Backup and reset the database if these entries affect app behavior."
+                : "  Database is healthy.");
 
             sb.AppendLine("========================================");
             return sb.ToString();
         }
 
-        // ======================
-        // HELPERS
-        // ======================
-        private static string? SafeGetString(System.Data.Common.DbDataReader reader, int ordinal)
+        private static void ScanApiCache(SqliteConnection conn, DiagnosticReport report)
+        {
+            if (!TableExists(conn, "api_cache"))
+            {
+                report.AddInfo("api_cache table does not exist.");
+                return;
+            }
+
+            var count = Convert.ToInt64(ExecuteScalar(conn, "SELECT COUNT(*) FROM api_cache;"));
+            report.AddInfo($"api_cache entries: {count}");
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT cache_key, json FROM api_cache;";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                var key = SafeGetString(reader, 0) ?? "";
+                var json = SafeGetString(reader, 1) ?? "";
+                var issues = new List<string>();
+
+                AddTextIssues(issues, "cache_key", key);
+                AddTextIssues(issues, "json", json);
+
+                if (issues.Count > 0)
+                    report.CorruptedEntries.Add(new CacheEntryIssue { LectureId = key, Issues = issues });
+                else
+                    report.ValidEntries++;
+            }
+        }
+
+        private static void ScanOfflineLectureCache(SqliteConnection conn, DiagnosticReport report)
+        {
+            if (!TableExists(conn, "offline_lecture_cache"))
+            {
+                report.AddInfo("offline_lecture_cache table does not exist.");
+                return;
+            }
+
+            var count = Convert.ToInt64(ExecuteScalar(conn, "SELECT COUNT(*) FROM offline_lecture_cache;"));
+            report.AddInfo($"offline_lecture_cache entries: {count}");
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"SELECT lecture_id, pdf_path, video_path, elearning_path, powerpoint_path, offline_zip_url
+                                FROM offline_lecture_cache;";
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                var lectureId = SafeGetString(reader, 0) ?? "";
+                var paths = new Dictionary<string, string?>
+                {
+                    ["pdf_path"] = SafeGetString(reader, 1),
+                    ["video_path"] = SafeGetString(reader, 2),
+                    ["elearning_path"] = SafeGetString(reader, 3),
+                    ["powerpoint_path"] = SafeGetString(reader, 4),
+                    ["offline_zip_url"] = SafeGetString(reader, 5)
+                };
+
+                var issues = new List<string>();
+                foreach (var item in paths)
+                {
+                    AddTextIssues(issues, item.Key, item.Value);
+
+                    if (item.Key != "offline_zip_url" &&
+                        !string.IsNullOrEmpty(item.Value) &&
+                        !File.Exists(item.Value))
+                    {
+                        issues.Add($"{item.Key} file missing: {item.Value}");
+                    }
+                }
+
+                if (issues.Count > 0)
+                    report.CorruptedEntries.Add(new CacheEntryIssue { LectureId = lectureId, Issues = issues });
+                else
+                    report.ValidEntries++;
+            }
+        }
+
+        private static void AddTextIssues(List<string> issues, string field, string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return;
+
+            if (HasEncodingIssue(value))
+                issues.Add($"{field} has encoding issue: {TrimForReport(value)}");
+
+            if (ContainsInvalidChars(value))
+                issues.Add($"{field} has invalid characters: {TrimForReport(value)}");
+        }
+
+        private static object? ExecuteScalar(SqliteConnection conn, string commandText)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = commandText;
+            return cmd.ExecuteScalar();
+        }
+
+        private static bool TableExists(SqliteConnection conn, string tableName)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = $name LIMIT 1;";
+            cmd.Parameters.AddWithValue("$name", tableName);
+            return cmd.ExecuteScalar() != null;
+        }
+
+        private static string? SafeGetString(DbDataReader reader, int ordinal)
         {
             try
             {
                 if (reader.IsDBNull(ordinal))
                     return null;
+
                 var value = reader.GetString(ordinal);
                 return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
             }
@@ -215,30 +240,31 @@ namespace kido_teacher_app.Services
             }
         }
 
-        private static bool HasEncodingIssue(string? path)
+        private static bool HasEncodingIssue(string value)
         {
-            if (string.IsNullOrEmpty(path))
-                return false;
-
-            return path.Contains("Ã") || path.Contains("â") || path.Contains("ï") ||
-                   path.Contains("Â") || path.Contains("º") || path.Contains("ß") ||
-                   path.Contains("ƒ") || path.Contains("€") || path.Contains("'") ||
-                   path.Contains("'") || path.Contains(""") || path.Contains(""");
+            return value.Contains('\uFFFD') ||
+                   value.Contains("ï¿½") ||
+                   value.Contains("Ã") ||
+                   value.Contains("Â") ||
+                   value.Contains("â€") ||
+                   value.Contains("â„") ||
+                   value.Contains("âœ");
         }
 
-        private static bool ContainsInvalidChars(string? path)
+        private static bool ContainsInvalidChars(string value)
         {
-            if (string.IsNullOrEmpty(path))
-                return false;
+            return value.Contains('\0') ||
+                   value.Contains('\x1A') ||
+                   value.Length > 260 ||
+                   value.Any(c => char.IsControl(c) && c != '\n' && c != '\r' && c != '\t');
+        }
 
-            return path.Contains('\0') || path.Contains('\x1A') ||
-                   (path.Length > 260) || path.Any(c => char.IsControl(c) && c != '\n' && c != '\r' && c != '\t');
+        private static string TrimForReport(string value)
+        {
+            return value.Length <= 300 ? value : value.Substring(0, 300) + "...";
         }
     }
 
-    // ======================
-    // MODELS
-    // ======================
     public class DiagnosticReport
     {
         public bool Success { get; set; }
@@ -253,7 +279,7 @@ namespace kido_teacher_app.Services
 
     public class CacheEntryIssue
     {
-        public string LectureId { get; set; }
+        public string LectureId { get; set; } = string.Empty;
         public List<string> Issues { get; set; } = new();
     }
 }
