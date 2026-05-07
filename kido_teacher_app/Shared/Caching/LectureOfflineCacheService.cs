@@ -29,7 +29,11 @@ namespace kido_teacher_app.Shared.Caching
                 using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
                 conn.Open();
 
+                // Set UTF-8 encoding for the connection
                 using var cmd = conn.CreateCommand();
+                cmd.CommandText = "PRAGMA encoding = 'UTF-8';";
+                cmd.ExecuteNonQuery();
+
                 cmd.CommandText =
                     @"CREATE TABLE IF NOT EXISTS offline_lecture_cache (
                         lecture_id TEXT PRIMARY KEY,
@@ -48,6 +52,16 @@ namespace kido_teacher_app.Shared.Caching
             }
 
             MigrateFromJsonIfExists();
+            
+            // Clean corrupted entries on first initialization
+            try
+            {
+                CleanCorruptedEntries();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Cache] Error during cleanup: {ex.Message}");
+            }
         }
 
         private static void MigrateFromJsonIfExists()
@@ -117,6 +131,19 @@ namespace kido_teacher_app.Shared.Caching
         {
             EnsureInitialized();
 
+            // Log what we're about to save
+            System.Diagnostics.Debug.WriteLine($"[Cache] Saving cache for lecture: {lectureId}");
+            if (!string.IsNullOrEmpty(pdfPath))
+                System.Diagnostics.Debug.WriteLine($"[Cache]   PDF: {pdfPath}");
+            if (!string.IsNullOrEmpty(videoPath))
+                System.Diagnostics.Debug.WriteLine($"[Cache]   Video: {videoPath}");
+            if (!string.IsNullOrEmpty(elearningPath))
+                System.Diagnostics.Debug.WriteLine($"[Cache]   Elearning: {elearningPath}");
+            if (!string.IsNullOrEmpty(powerpointPath))
+                System.Diagnostics.Debug.WriteLine($"[Cache]   PowerPoint: {powerpointPath}");
+            if (!string.IsNullOrEmpty(offlineZipUrl))
+                System.Diagnostics.Debug.WriteLine($"[Cache]   ZipUrl: {offlineZipUrl}");
+
             // Validate file paths - only save if file exists
             // Wrap in try-catch to handle invalid paths safely
             pdfPath = ValidatePath(pdfPath);
@@ -146,6 +173,8 @@ namespace kido_teacher_app.Shared.Caching
             cmd.Parameters.AddWithValue("@zip", (object?)offlineZipUrl ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
             cmd.ExecuteNonQuery();
+
+            System.Diagnostics.Debug.WriteLine($"[Cache] ✓ Saved cache for lecture: {lectureId}");
         }
 
         // =========================
@@ -188,6 +217,12 @@ namespace kido_teacher_app.Shared.Caching
             using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
             conn.Open();
 
+            // Ensure UTF-8 encoding
+            using var pragmaCmd = conn.CreateCommand();
+            pragmaCmd.CommandText = "PRAGMA encoding;";
+            var encoding = pragmaCmd.ExecuteScalar();
+            System.Diagnostics.Debug.WriteLine($"[Cache] Database encoding: {encoding}");
+
             using var cmd = conn.CreateCommand();
             cmd.CommandText =
                 @"SELECT lecture_id, pdf_path, video_path, elearning_path, powerpoint_path, offline_zip_url
@@ -202,13 +237,23 @@ namespace kido_teacher_app.Shared.Caching
 
             var cache = new LectureOfflineCache
             {
-                LectureId = reader.GetString(0),
-                PdfPath = reader.IsDBNull(1) ? null : reader.GetString(1),
-                VideoPath = reader.IsDBNull(2) ? null : reader.GetString(2),
-                ElearningPath = reader.IsDBNull(3) ? null : reader.GetString(3),
-                PowerPointPath = reader.IsDBNull(4) ? null : reader.GetString(4),
-                OfflineZipUrl = reader.IsDBNull(5) ? null : reader.GetString(5)
+                LectureId = SafeGetString(reader, 0),
+                PdfPath = SafeGetString(reader, 1),
+                VideoPath = SafeGetString(reader, 2),
+                ElearningPath = SafeGetString(reader, 3),
+                PowerPointPath = SafeGetString(reader, 4),
+                OfflineZipUrl = SafeGetString(reader, 5)
             };
+
+            // Log paths for debugging
+            if (!string.IsNullOrEmpty(cache.PdfPath))
+                System.Diagnostics.Debug.WriteLine($"[Cache] Loaded PDF: {cache.PdfPath}");
+            if (!string.IsNullOrEmpty(cache.VideoPath))
+                System.Diagnostics.Debug.WriteLine($"[Cache] Loaded Video: {cache.VideoPath}");
+            if (!string.IsNullOrEmpty(cache.ElearningPath))
+                System.Diagnostics.Debug.WriteLine($"[Cache] Loaded Elearning: {cache.ElearningPath}");
+            if (!string.IsNullOrEmpty(cache.PowerPointPath))
+                System.Diagnostics.Debug.WriteLine($"[Cache] Loaded PowerPoint: {cache.PowerPointPath}");
 
             // Validate file existence and clean up dead entries
             bool hasDeadFiles = ValidateAndCleanDeadFiles(cache);
@@ -218,6 +263,27 @@ namespace kido_teacher_app.Shared.Caching
             }
 
             return cache;
+        }
+
+        // =========================
+        // HELPER: Safe Get String
+        // =========================
+        private static string? SafeGetString(System.Data.Common.DbDataReader reader, int ordinal)
+        {
+            if (reader.IsDBNull(ordinal))
+                return null;
+
+            try
+            {
+                var value = reader.GetString(ordinal);
+                // Trim any accidental whitespace
+                return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Cache] Error reading string at ordinal {ordinal}: {ex.Message}");
+                return null;
+            }
         }
 
         // =========================
@@ -307,6 +373,109 @@ namespace kido_teacher_app.Shared.Caching
             cmd.ExecuteNonQuery();
 
             System.Diagnostics.Debug.WriteLine($"[Cache] Deleted offline cache for lecture: {lectureId}");
+        }
+
+        // =========================
+        // CLEAN CORRUPTED CACHE ENTRIES
+        // =========================
+        public static void CleanCorruptedEntries()
+        {
+            EnsureInitialized();
+
+            System.Diagnostics.Debug.WriteLine("[Cache] Scanning for corrupted cache entries...");
+
+            using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
+            conn.Open();
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"SELECT lecture_id, pdf_path, video_path, elearning_path, powerpoint_path 
+                               FROM offline_lecture_cache;";
+
+            var corruptedIds = new List<string>();
+
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    try
+                    {
+                        var lectureId = reader.GetString(0);
+                        var pdfPath = reader.IsDBNull(1) ? null : reader.GetString(1);
+                        var videoPath = reader.IsDBNull(2) ? null : reader.GetString(2);
+                        var elearningPath = reader.IsDBNull(3) ? null : reader.GetString(3);
+                        var powerpointPath = reader.IsDBNull(4) ? null : reader.GetString(4);
+
+                        // Check for encoding corruption (invalid UTF-8 patterns)
+                        bool isCorrupted = false;
+                        if (HasEncodingIssue(pdfPath) || HasEncodingIssue(videoPath) || 
+                            HasEncodingIssue(elearningPath) || HasEncodingIssue(powerpointPath))
+                        {
+                            isCorrupted = true;
+                            System.Diagnostics.Debug.WriteLine($"[Cache] Found corrupted entry: {lectureId}");
+                        }
+
+                        // Check if any path is invalid (contains null chars, etc)
+                        if (ContainsInvalidChars(pdfPath) || ContainsInvalidChars(videoPath) || 
+                            ContainsInvalidChars(elearningPath) || ContainsInvalidChars(powerpointPath))
+                        {
+                            isCorrupted = true;
+                            System.Diagnostics.Debug.WriteLine($"[Cache] Found invalid chars in: {lectureId}");
+                        }
+
+                        if (isCorrupted)
+                        {
+                            corruptedIds.Add(lectureId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[Cache] Error reading record: {ex.Message}");
+                    }
+                }
+            }
+
+            // Delete corrupted entries
+            foreach (var id in corruptedIds)
+            {
+                Delete(id);
+                System.Diagnostics.Debug.WriteLine($"[Cache] Deleted corrupted entry: {id}");
+            }
+
+            if (corruptedIds.Count > 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Cache] Cleaned {corruptedIds.Count} corrupted cache entries");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("[Cache] No corrupted entries found");
+            }
+        }
+
+        // =========================
+        // HELPER: Check Encoding Issue
+        // =========================
+        private static bool HasEncodingIssue(string? path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return false;
+
+            // Check for common UTF-8 encoding corruption patterns
+            return path.Contains("Ã") || path.Contains("â") || path.Contains("ï") || 
+                   path.Contains("Â") || path.Contains("Äº") || path.Contains("Â") ||
+                   path.Contains("\u00A0") || path.Contains("\u00AD");
+        }
+
+        // =========================
+        // HELPER: Check Invalid Chars
+        // =========================
+        private static bool ContainsInvalidChars(string? path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return false;
+
+            // Check for null chars and other invalid filesystem chars
+            return path.Contains('\0') || path.Contains('\x1A') || 
+                   (path.Length > 260) || path.Any(c => char.IsControl(c) && c != '\n' && c != '\r' && c != '\t');
         }
 
         // =========================
