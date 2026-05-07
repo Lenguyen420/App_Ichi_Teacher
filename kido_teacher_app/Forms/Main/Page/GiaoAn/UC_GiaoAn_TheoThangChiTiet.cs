@@ -822,10 +822,10 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             LectureFiles files = _resourceService.MapLectureFiles(extractPath);
 
             // Validate: Chỉ lưu cache nếu file thực sự tồn tại
-            string? validPdfPath = !string.IsNullOrEmpty(files.PdfPath) && File.Exists(files.PdfPath) ? files.PdfPath : null;
-            string? validVideoPath = !string.IsNullOrEmpty(files.VideoPath) && File.Exists(files.VideoPath) ? files.VideoPath : null;
-            string? validElearningPath = !string.IsNullOrEmpty(files.ElearningPath) && File.Exists(files.ElearningPath) ? files.ElearningPath : null;
-            string? validPowerPointPath = !string.IsNullOrEmpty(files.PowerPointPath) && File.Exists(files.PowerPointPath) ? files.PowerPointPath : null;
+            string? validPdfPath = SafeCheckFile(files.PdfPath);
+            string? validVideoPath = SafeCheckFile(files.VideoPath);
+            string? validElearningPath = SafeCheckFile(files.ElearningPath);
+            string? validPowerPointPath = SafeCheckFile(files.PowerPointPath);
 
             // Cảnh báo nếu không tìm thấy bất kỳ file nào
             if (string.IsNullOrEmpty(validPdfPath) && string.IsNullOrEmpty(validVideoPath) && 
@@ -1083,6 +1083,33 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl
             );
             lblTitle.Height = Math.Min(availableHeight, size.Height);
+        }
+
+        // =========================
+        // HELPER: Safe File Check
+        // =========================
+        private string? SafeCheckFile(string? filePath)
+        {
+            if (string.IsNullOrEmpty(filePath))
+                return null;
+
+            try
+            {
+                // Check path length (Windows limit is 260)
+                if (filePath.Length > 260)
+                    return null;
+
+                // Check if file exists
+                if (File.Exists(filePath))
+                    return filePath;
+                else
+                    return null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Download] Invalid path '{filePath}': {ex.Message}");
+                return null;
+            }
         }
     }
 }

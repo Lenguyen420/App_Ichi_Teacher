@@ -118,14 +118,11 @@ namespace kido_teacher_app.Shared.Caching
             EnsureInitialized();
 
             // Validate file paths - only save if file exists
-            if (!string.IsNullOrEmpty(pdfPath) && !File.Exists(pdfPath))
-                pdfPath = null;
-            if (!string.IsNullOrEmpty(videoPath) && !File.Exists(videoPath))
-                videoPath = null;
-            if (!string.IsNullOrEmpty(elearningPath) && !File.Exists(elearningPath))
-                elearningPath = null;
-            if (!string.IsNullOrEmpty(powerpointPath) && !File.Exists(powerpointPath))
-                powerpointPath = null;
+            // Wrap in try-catch to handle invalid paths safely
+            pdfPath = ValidatePath(pdfPath);
+            videoPath = ValidatePath(videoPath);
+            elearningPath = ValidatePath(elearningPath);
+            powerpointPath = ValidatePath(powerpointPath);
 
             using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
             conn.Open();
@@ -149,6 +146,36 @@ namespace kido_teacher_app.Shared.Caching
             cmd.Parameters.AddWithValue("@zip", (object?)offlineZipUrl ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("o"));
             cmd.ExecuteNonQuery();
+        }
+
+        // =========================
+        // HELPER: Validate Path Safely
+        // =========================
+        private static string? ValidatePath(string? path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return null;
+
+            try
+            {
+                // Check if path is too long
+                if (path.Length > 260)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Cache] Path too long (>260): {path}");
+                    return null;
+                }
+
+                // Try to access file - if throws, path is invalid
+                if (File.Exists(path))
+                    return path;
+                else
+                    return null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Cache] Invalid path '{path}': {ex.Message}");
+                return null;
+            }
         }
 
         // =========================
@@ -201,27 +228,26 @@ namespace kido_teacher_app.Shared.Caching
             bool hasDeadFiles = false;
             var validatedCache = new LectureOfflineCache { LectureId = cache.LectureId };
 
-            // Check each file path
-            if (!string.IsNullOrEmpty(cache.PdfPath) && File.Exists(cache.PdfPath))
-                validatedCache.PdfPath = cache.PdfPath;
-            else if (!string.IsNullOrEmpty(cache.PdfPath))
+            // Use ValidatePath helper for safe checking
+            string? pdfPath = ValidatePath(cache.PdfPath);
+            string? videoPath = ValidatePath(cache.VideoPath);
+            string? elearningPath = ValidatePath(cache.ElearningPath);
+            string? powerpointPath = ValidatePath(cache.PowerPointPath);
+
+            // Track if any files were lost
+            if (!string.IsNullOrEmpty(cache.PdfPath) && pdfPath == null)
+                hasDeadFiles = true;
+            if (!string.IsNullOrEmpty(cache.VideoPath) && videoPath == null)
+                hasDeadFiles = true;
+            if (!string.IsNullOrEmpty(cache.ElearningPath) && elearningPath == null)
+                hasDeadFiles = true;
+            if (!string.IsNullOrEmpty(cache.PowerPointPath) && powerpointPath == null)
                 hasDeadFiles = true;
 
-            if (!string.IsNullOrEmpty(cache.VideoPath) && File.Exists(cache.VideoPath))
-                validatedCache.VideoPath = cache.VideoPath;
-            else if (!string.IsNullOrEmpty(cache.VideoPath))
-                hasDeadFiles = true;
-
-            if (!string.IsNullOrEmpty(cache.ElearningPath) && File.Exists(cache.ElearningPath))
-                validatedCache.ElearningPath = cache.ElearningPath;
-            else if (!string.IsNullOrEmpty(cache.ElearningPath))
-                hasDeadFiles = true;
-
-            if (!string.IsNullOrEmpty(cache.PowerPointPath) && File.Exists(cache.PowerPointPath))
-                validatedCache.PowerPointPath = cache.PowerPointPath;
-            else if (!string.IsNullOrEmpty(cache.PowerPointPath))
-                hasDeadFiles = true;
-
+            validatedCache.PdfPath = pdfPath;
+            validatedCache.VideoPath = videoPath;
+            validatedCache.ElearningPath = elearningPath;
+            validatedCache.PowerPointPath = powerpointPath;
             validatedCache.OfflineZipUrl = cache.OfflineZipUrl;
 
             // If there were dead files, update the database
@@ -234,10 +260,10 @@ namespace kido_teacher_app.Shared.Caching
             }
 
             // Update cache object with validated paths
-            cache.PdfPath = validatedCache.PdfPath;
-            cache.VideoPath = validatedCache.VideoPath;
-            cache.ElearningPath = validatedCache.ElearningPath;
-            cache.PowerPointPath = validatedCache.PowerPointPath;
+            cache.PdfPath = pdfPath;
+            cache.VideoPath = videoPath;
+            cache.ElearningPath = elearningPath;
+            cache.PowerPointPath = powerpointPath;
 
             return hasDeadFiles;
         }
