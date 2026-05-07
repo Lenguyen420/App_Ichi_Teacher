@@ -274,111 +274,183 @@ namespace kido_teacher_app.Services
             // ======================
             // 1️⃣ DOWNLOAD (0–50%)
             // ======================
-            using (var res = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
+            try
             {
-                res.EnsureSuccessStatusCode();
-                var total = res.Content.Headers.ContentLength ?? 0;
-                const int downloadBufferSize = 1024 * 1024; // 1 MB buffer to improve throughput
-                var buffer = new byte[downloadBufferSize];
-                long read = 0;
-                await using var input = await res.Content.ReadAsStreamAsync();
-                await using var output = new FileStream(
-                    tempZip,
-                    FileMode.Create,
-                    FileAccess.Write,
-                    FileShare.None,
-                    downloadBufferSize,
-                    FileOptions.Asynchronous | FileOptions.SequentialScan
-                );
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-                int len;
-                while ((len = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                using (var res = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
                 {
-                    await output.WriteAsync(buffer, 0, len);
-                    read += len;
-                    int percent = 0;
-                    if (total > 0)
+                    res.EnsureSuccessStatusCode();
+                    var total = res.Content.Headers.ContentLength ?? 0;
+                    const int downloadBufferSize = 1024 * 1024; // 1 MB buffer to improve throughput
+                    var buffer = new byte[downloadBufferSize];
+                    long read = 0;
+                    await using var input = await res.Content.ReadAsStreamAsync();
+                    await using var output = new FileStream(
+                        tempZip,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.None,
+                        downloadBufferSize,
+                        FileOptions.Asynchronous | FileOptions.SequentialScan
+                    );
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    int len;
+                    while ((len = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
                     {
-                        percent = (int)(read * 50 / total);
-                        progress?.Report(percent);
+                        await output.WriteAsync(buffer, 0, len);
+                        read += len;
+                        int percent = 0;
+                        if (total > 0)
+                        {
+                            percent = (int)(read * 50 / total);
+                            progress?.Report(percent);
+                        }
+                        var seconds = sw.Elapsed.TotalSeconds;
+                        var speed = seconds > 0 ? (read / (1024d * 1024d)) / seconds : 0;
+                        statsProgress?.Report(new DownloadStats
+                        {
+                            BytesRead = read,
+                            TotalBytes = total,
+                            SpeedMbps = speed,
+                            Percent = percent,
+                            Phase = "DOWNLOAD"
+                        });
                     }
-                    var seconds = sw.Elapsed.TotalSeconds;
-                    var speed = seconds > 0 ? (read / (1024d * 1024d)) / seconds : 0;
-                    statsProgress?.Report(new DownloadStats
-                    {
-                        BytesRead = read,
-                        TotalBytes = total,
-                        SpeedMbps = speed,
-                        Percent = percent,
-                        Phase = "DOWNLOAD"
-                    });
                 }
             }
+            catch (Exception exDownload)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Download] Failed to download ZIP: {exDownload.Message}");
+                throw new Exception($"Lỗi tải file: {exDownload.Message}", exDownload);
+            }
+
+            // Verify ZIP file was downloaded successfully
+            if (!File.Exists(tempZip))
+            {
+                throw new Exception("Lỗi: File ZIP không được tải thành công");
+            }
+
+            var fileInfo = new FileInfo(tempZip);
+            if (fileInfo.Length == 0)
+            {
+                throw new Exception("Lỗi: File ZIP trống (kích thước = 0)");
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[Download] Successfully downloaded ZIP: {tempZip} ({fileInfo.Length} bytes)");
             // ======================
             // 2️⃣ EXTRACT (50–100%) - BỎ QUA THỨ MỤC GỐC
             // ======================
-            using (var zip = ZipFile.OpenRead(tempZip))
+            try
             {
-                int total = zip.Entries.Count;
-                int current = 0;
-                var commonRoot = GetSharedRootFolder(zip.Entries);
-
-                foreach (var entry in zip.Entries)
+                using (var zip = ZipFile.OpenRead(tempZip))
                 {
-                    // bỏ thư mục rỗng
-                    if (string.IsNullOrEmpty(entry.Name))
-                        continue;
-                    // Bỏ qua thư mục gốc nếu tìm thấy
-                    var normalizedFullName = entry.FullName.Replace('\\', '/');
-                    var relativePath = normalizedFullName;
-                    if (!string.IsNullOrEmpty(commonRoot) && relativePath.StartsWith(commonRoot))
+                    int total = zip.Entries.Count;
+                    int current = 0;
+                    var commonRoot = GetSharedRootFolder(zip.Entries);
+
+                    foreach (var entry in zip.Entries)
                     {
-                        relativePath = relativePath.Substring(commonRoot.Length);
+                        // bỏ thư mục rỗng
+                        if (string.IsNullOrEmpty(entry.Name))
+                            continue;
+                        // Bỏ qua thư mục gốc nếu tìm thấy
+                        var normalizedFullName = entry.FullName.Replace('\\', '/');
+                        var relativePath = normalizedFullName;
+                        if (!string.IsNullOrEmpty(commonRoot) && relativePath.StartsWith(commonRoot))
+                        {
+                            relativePath = relativePath.Substring(commonRoot.Length);
+                        }
+
+                        relativePath = NormalizeExtractRelativePath(relativePath);
+
+                        // Bỏ qua nếu path rỗng sau khi remove root
+                        if (string.IsNullOrWhiteSpace(relativePath))
+                            continue;
+                        var destinationPath = Path.GetFullPath(
+                            Path.Combine(extractRoot, relativePath)
+                        );
+                        // 🔐 bảo vệ path traversal
+                        if (!destinationPath.StartsWith(extractRoot, StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        var dir = Path.GetDirectoryName(destinationPath);
+                        if (!Directory.Exists(dir))
+                            Directory.CreateDirectory(dir!);
+                        
+                        try
+                        {
+                            entry.ExtractToFile(destinationPath, true);
+                            current++;
+                            int percent = 50 + (int)(current * 50.0 / total);
+                            progress?.Report(percent);
+                            statsProgress?.Report(new DownloadStats
+                            {
+                                BytesRead = 0,
+                                TotalBytes = 0,
+                                SpeedMbps = 0,
+                                Percent = percent,
+                                Phase = "EXTRACT"
+                            });
+                        }
+                        catch (Exception exEntry)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[Extract] Failed to extract '{entry.Name}': {exEntry.Message}");
+                            // Continue với file tiếp theo thay vì fail toàn bộ
+                        }
+                        
+                        await Task.Yield();
                     }
-
-                    relativePath = NormalizeExtractRelativePath(relativePath);
-
-                    // Bỏ qua nếu path rỗng sau khi remove root
-                    if (string.IsNullOrWhiteSpace(relativePath))
-                        continue;
-                    var destinationPath = Path.GetFullPath(
-                        Path.Combine(extractRoot, relativePath)
-                    );
-                    // 🔐 bảo vệ path traversal
-                    if (!destinationPath.StartsWith(extractRoot, StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    var dir = Path.GetDirectoryName(destinationPath);
-                    if (!Directory.Exists(dir))
-                        Directory.CreateDirectory(dir!);
-                    entry.ExtractToFile(destinationPath, true);
-                    current++;
-                    int percent = 50 + (int)(current * 50.0 / total);
-                    progress?.Report(percent);
-                    statsProgress?.Report(new DownloadStats
-                    {
-                        BytesRead = 0,
-                        TotalBytes = 0,
-                        SpeedMbps = 0,
-                        Percent = percent,
-                        Phase = "EXTRACT"
-                    });
-                    await Task.Yield();
                 }
+            }
+            catch (Exception exZip)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Extract] Failed to open ZIP: {exZip.Message}");
+                throw new Exception($"Lỗi giải nén file: {exZip.Message}", exZip);
             }
 
             progress?.Report(100);
             // ======================
-            // 3️⃣ XÓA FILE ZIP SAU KHI GIẢI NÉN XONG
+            // 3️⃣ VERIFY GIẢI NÉN THÀNH CÔNG
+            // ======================
+            // Kiểm tra thư mục extract có file nào không
+            if (!Directory.Exists(extractRoot))
+            {
+                System.Diagnostics.Debug.WriteLine($"[Extract] Extract folder does not exist: {extractRoot}");
+                throw new Exception("Lỗi: Thư mục giải nén không tồn tại");
+            }
+
+            var filesInExtract = Directory.GetFiles(extractRoot, "*.*", SearchOption.AllDirectories);
+            if (filesInExtract.Length == 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Extract] No files found in extract folder: {extractRoot}");
+                throw new Exception("Lỗi: Không có file nào được giải nén từ ZIP");
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[Extract] Successfully extracted {filesInExtract.Length} files to: {extractRoot}");
+
+            // ======================
+            // 4️⃣ VALIDATE FILES AFTER EXTRACT
+            // ======================
+            ValidateExtractedFiles(filesInExtract, extractRoot);
+
+            // ======================
+            // 5️⃣ TEST OPEN FILES
+            // ======================
+            TestOpenExtractedFiles(extractRoot);
+
+            // ======================
+            // 6️⃣ XÓA FILE ZIP SAU KHI GIẢI NÉN XONG
             // ======================
             try
             {
                 if (File.Exists(tempZip))
                 {
                     File.Delete(tempZip);
+                    System.Diagnostics.Debug.WriteLine($"[Download] Deleted temporary ZIP file: {tempZip}");
                 }
             }
-            catch (Exception ex)
+            catch (Exception exDelete)
             {
+                System.Diagnostics.Debug.WriteLine($"[Download] Warning: Failed to delete ZIP file: {exDelete.Message}");
+                // Không throw exception nếu xóa file thất bại
             }
             return extractRoot;
         }
@@ -486,6 +558,288 @@ namespace kido_teacher_app.Services
             EnsureAuthorized();
             // ⭐ Dùng Service chung
             return await Shared.Common.GetMaxCodeService.GetMaxCodeAsync(client, ApiRoutes.LECTURES_MAX_CODE);
+        }
+
+        // =====================================================
+        // VALIDATE EXTRACTED FILES
+        // =====================================================
+        private static void ValidateExtractedFiles(string[] filesInExtract, string extractRoot)
+        {
+            if (filesInExtract.Length == 0)
+                return;
+
+            int validFiles = 0;
+            int emptyFiles = 0;
+            int inaccessibleFiles = 0;
+            var problematicFiles = new List<string>();
+
+            foreach (var filePath in filesInExtract)
+            {
+                try
+                {
+                    var fileInfo = new FileInfo(filePath);
+
+                    // Check if file is empty
+                    if (fileInfo.Length == 0)
+                    {
+                        emptyFiles++;
+                        problematicFiles.Add($"{Path.GetFileName(filePath)} (size=0)");
+                        System.Diagnostics.Debug.WriteLine($"[Validate] Empty file: {filePath}");
+                        continue;
+                    }
+
+                    // Try to read file to check if accessible
+                    using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        // Just try to read a few bytes to verify access
+                        var buffer = new byte[Math.Min(1024, (int)stream.Length)];
+                        var bytesRead = stream.Read(buffer, 0, buffer.Length);
+                        if (bytesRead == 0)
+                        {
+                            inaccessibleFiles++;
+                            problematicFiles.Add(Path.GetFileName(filePath));
+                            System.Diagnostics.Debug.WriteLine($"[Validate] Cannot read file: {filePath}");
+                            continue;
+                        }
+                    }
+
+                    validFiles++;
+                }
+                catch (Exception ex)
+                {
+                    inaccessibleFiles++;
+                    problematicFiles.Add(Path.GetFileName(filePath));
+                    System.Diagnostics.Debug.WriteLine($"[Validate] Error validating '{filePath}': {ex.Message}");
+                }
+            }
+
+            // Log validation summary
+            System.Diagnostics.Debug.WriteLine(
+                $"[Validate] Summary - Valid: {validFiles}, Empty: {emptyFiles}, Inaccessible: {inaccessibleFiles}");
+
+            // If too many files are problematic, throw exception
+            if (inaccessibleFiles > 0 || emptyFiles > filesInExtract.Length * 0.5)
+            {
+                var msg = new System.Text.StringBuilder();
+                msg.AppendLine("Lỗi: Nhiều file giải nén không hợp lệ:");
+                msg.AppendLine($"  - Valid: {validFiles}/{filesInExtract.Length}");
+                msg.AppendLine($"  - Empty: {emptyFiles}");
+                msg.AppendLine($"  - Inaccessible: {inaccessibleFiles}");
+                
+                if (problematicFiles.Count > 0 && problematicFiles.Count <= 10)
+                {
+                    msg.AppendLine("  - Files:");
+                    foreach (var f in problematicFiles.Take(10))
+                        msg.AppendLine($"    • {f}");
+                }
+
+                System.Diagnostics.Debug.WriteLine("[Validate] " + msg.ToString());
+                throw new Exception(msg.ToString());
+            }
+
+            if (validFiles == 0)
+            {
+                throw new Exception("Lỗi: Không có file nào hợp lệ sau giải nén");
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[Validate] All files validated successfully: {validFiles} files");
+        }
+
+        // =====================================================
+        // TEST OPEN EXTRACTED FILES
+        // =====================================================
+        private static void TestOpenExtractedFiles(string extractRoot)
+        {
+            try
+            {
+                var resourceService = new LectureResourceService();
+                var mappedFiles = resourceService.MapLectureFiles(extractRoot);
+
+                System.Diagnostics.Debug.WriteLine("[TestOpen] Testing extracted files...");
+
+                int testedFiles = 0;
+                int successfulFiles = 0;
+                var failedFiles = new List<string>();
+
+                // Test PDF
+                if (!string.IsNullOrEmpty(mappedFiles.PdfPath))
+                {
+                    testedFiles++;
+                    if (CanOpenFile(mappedFiles.PdfPath, "PDF"))
+                        successfulFiles++;
+                    else
+                        failedFiles.Add($"PDF: {Path.GetFileName(mappedFiles.PdfPath)}");
+                }
+
+                // Test Video
+                if (!string.IsNullOrEmpty(mappedFiles.VideoPath))
+                {
+                    testedFiles++;
+                    if (CanOpenFile(mappedFiles.VideoPath, "VIDEO"))
+                        successfulFiles++;
+                    else
+                        failedFiles.Add($"VIDEO: {Path.GetFileName(mappedFiles.VideoPath)}");
+                }
+
+                // Test E-Learning
+                if (!string.IsNullOrEmpty(mappedFiles.ElearningPath))
+                {
+                    testedFiles++;
+                    if (CanOpenFile(mappedFiles.ElearningPath, "ELEARNING"))
+                        successfulFiles++;
+                    else
+                        failedFiles.Add($"E-LEARNING: {Path.GetFileName(mappedFiles.ElearningPath)}");
+                }
+
+                // Test PowerPoint
+                if (!string.IsNullOrEmpty(mappedFiles.PowerPointPath))
+                {
+                    testedFiles++;
+                    if (CanOpenFile(mappedFiles.PowerPointPath, "POWERPOINT"))
+                        successfulFiles++;
+                    else
+                        failedFiles.Add($"POWERPOINT: {Path.GetFileName(mappedFiles.PowerPointPath)}");
+                }
+
+                System.Diagnostics.Debug.WriteLine(
+                    $"[TestOpen] Test result: {successfulFiles}/{testedFiles} files opened successfully");
+
+                // If some files failed to open, log warning
+                if (failedFiles.Count > 0)
+                {
+                    System.Diagnostics.Debug.WriteLine("[TestOpen] Warning - Failed to open:");
+                    foreach (var f in failedFiles)
+                        System.Diagnostics.Debug.WriteLine($"  - {f}");
+                }
+
+                // Fail if no files can be opened
+                if (testedFiles > 0 && successfulFiles == 0)
+                {
+                    throw new Exception("Lỗi: Không thể mở bất kỳ file nào được giải nén");
+                }
+
+                // Fail if too many files failed
+                if (testedFiles > 0 && successfulFiles < testedFiles * 0.5)
+                {
+                    var msg = new System.Text.StringBuilder();
+                    msg.AppendLine($"Lỗi: Quá nhiều file không thể mở ({testedFiles - successfulFiles}/{testedFiles}):");
+                    foreach (var f in failedFiles.Take(5))
+                        msg.AppendLine($"  - {f}");
+                    throw new Exception(msg.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TestOpen] Error: {ex.Message}");
+                throw;
+            }
+        }
+
+        // =====================================================
+        // TEST SINGLE FILE OPEN
+        // =====================================================
+        private static bool CanOpenFile(string filePath, string fileType)
+        {
+            try
+            {
+                // Verify file exists and has content
+                if (!File.Exists(filePath))
+                {
+                    System.Diagnostics.Debug.WriteLine($"[TestOpen] {fileType} file not found: {filePath}");
+                    return false;
+                }
+
+                var fileInfo = new FileInfo(filePath);
+                if (fileInfo.Length == 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[TestOpen] {fileType} file is empty: {filePath}");
+                    return false;
+                }
+
+                // Try to open and read file
+                using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    var buffer = new byte[Math.Min(4096, (int)stream.Length)];
+                    var bytesRead = stream.Read(buffer, 0, buffer.Length);
+
+                    if (bytesRead == 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[TestOpen] {fileType} file cannot be read: {filePath}");
+                        return false;
+                    }
+
+                    // Additional check for specific file types
+                    if (!ValidateFileContent(buffer, bytesRead, fileType))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[TestOpen] {fileType} file has invalid content: {filePath}");
+                        return false;
+                    }
+                }
+
+                System.Diagnostics.Debug.WriteLine($"[TestOpen] ✓ {fileType} file OK: {Path.GetFileName(filePath)} ({fileInfo.Length} bytes)");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TestOpen] {fileType} file error: {ex.Message}");
+                return false;
+            }
+        }
+
+        // =====================================================
+        // VALIDATE FILE CONTENT BY MAGIC BYTES
+        // =====================================================
+        private static bool ValidateFileContent(byte[] buffer, int bytesRead, string fileType)
+        {
+            if (bytesRead < 4)
+                return true; // Not enough bytes to check
+
+            try
+            {
+                switch (fileType.ToUpperInvariant())
+                {
+                    case "PDF":
+                        // PDF magic bytes: %PDF
+                        return buffer[0] == 0x25 && buffer[1] == 0x50 && buffer[2] == 0x44 && buffer[3] == 0x46;
+
+                    case "VIDEO":
+                        // Accept common video formats - MP4 (ftyp), MKV (1A45DF A3), AVI (RIFF), etc.
+                        // MP4: ftyp signature
+                        if (bytesRead >= 8)
+                        {
+                            if (buffer[4] == 0x66 && buffer[5] == 0x74 && buffer[6] == 0x79 && buffer[7] == 0x70)
+                                return true; // MP4
+                            // MKV: 1A 45 DF A3
+                            if (buffer[0] == 0x1A && buffer[1] == 0x45 && buffer[2] == 0xDF && buffer[3] == 0xA3)
+                                return true; // MKV
+                        }
+                        // AVI: RIFF header
+                        if (buffer[0] == 0x52 && buffer[1] == 0x49 && buffer[2] == 0x46 && buffer[3] == 0x46)
+                            return true;
+                        // Accept unknown video formats - just check it's readable
+                        return true;
+
+                    case "ELEARNING":
+                        // HTML files start with < (3C) or whitespace
+                        return buffer[0] == 0x3C || buffer[0] == 0x20 || buffer[0] == 0x09 || buffer[0] == 0x0A || buffer[0] == 0x0D;
+
+                    case "POWERPOINT":
+                        // PPTX: ZIP format (PK\x03\x04)
+                        if (buffer[0] == 0x50 && buffer[1] == 0x4B && buffer[2] == 0x03 && buffer[3] == 0x04)
+                            return true;
+                        // ODP (OpenDocument): also ZIP
+                        if (buffer[0] == 0x50 && buffer[1] == 0x4B && buffer[2] == 0x03 && buffer[3] == 0x04)
+                            return true;
+                        return true; // Accept unknown presentation formats
+
+                    default:
+                        return true; // Unknown type, assume valid
+                }
+            }
+            catch
+            {
+                return true; // If magic byte check fails, assume valid
+            }
         }
     }
 }

@@ -266,33 +266,129 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
         private void OpenLocal(string filePath, string title)
         {
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            if (string.IsNullOrWhiteSpace(filePath))
             {
-                MessageBox.Show("File không tồn tại");
+                MessageBox.Show("Đường dẫn file không hợp lệ");
                 return;
             }
 
-            // PDF local
-            if (filePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            // Validate file exists and is accessible
+            if (!ValidateAndOpenFile(filePath, title))
             {
-                new Form_PdfViewer(filePath, title).Show();
+                MessageBox.Show("Không thể mở file. File có thể bị xóa hoặc đang được sử dụng bởi chương trình khác.");
                 return;
             }
+        }
 
-            // E-Learning local
-            if (filePath.EndsWith("story.html", StringComparison.OrdinalIgnoreCase))
+        // =========================
+        // VALIDATE AND OPEN FILE
+        // =========================
+        private bool ValidateAndOpenFile(string filePath, string title)
+        {
+            try
             {
-                new Form_ElearningViewer(filePath, title).Show();
-                return;
-            }
+                // Step 1: Verify file exists
+                if (!File.Exists(filePath))
+                {
+                    System.Diagnostics.Debug.WriteLine($"[OpenLocal] File not found: {filePath}");
+                    return false;
+                }
 
-            if (
-                filePath.EndsWith(".pptx", StringComparison.OrdinalIgnoreCase)
-                || filePath.EndsWith(".ppsx", StringComparison.OrdinalIgnoreCase)
-                || filePath.EndsWith(".ppt", StringComparison.OrdinalIgnoreCase)
-                || filePath.EndsWith(".pps", StringComparison.OrdinalIgnoreCase)
-            )
-            {
+                // Step 2: Verify file is readable (try to open and close)
+                try
+                {
+                    using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        // Just verify we can open and read a few bytes
+                        var buffer = new byte[Math.Min(1024, (int)stream.Length)];
+                        var bytesRead = stream.Read(buffer, 0, buffer.Length);
+                        if (bytesRead == 0)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[OpenLocal] File is empty: {filePath}");
+                            return false;
+                        }
+                    }
+                }
+                catch (Exception exAccess)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[OpenLocal] Cannot read file '{filePath}': {exAccess.Message}");
+                    return false;
+                }
+
+                // Step 3: Get file extension
+                var extension = Path.GetExtension(filePath).ToLowerInvariant();
+                var fileInfo = new FileInfo(filePath);
+                System.Diagnostics.Debug.WriteLine($"[OpenLocal] Opening file: {Path.GetFileName(filePath)} ({fileInfo.Length} bytes, ext: {extension})");
+
+                // Step 4: Open file based on type
+                if (extension == ".pdf")
+                {
+                    try
+                    {
+                        new Form_PdfViewer(filePath, title).Show();
+                        return true;
+                    }
+                    catch (Exception exPdf)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[OpenLocal] Failed to open PDF: {exPdf.Message}");
+                        return false;
+                    }
+                }
+
+                if (extension == ".html" && Path.GetFileName(filePath) == "story.html")
+                {
+                    try
+                    {
+                        new Form_ElearningViewer(filePath, title).Show();
+                        return true;
+                    }
+                    catch (Exception exElearn)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[OpenLocal] Failed to open E-Learning: {exElearn.Message}");
+                        return false;
+                    }
+                }
+
+                // PowerPoint files
+                if (extension == ".pptx" || extension == ".ppsx" || extension == ".ppt" || extension == ".pps")
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = filePath,
+                            UseShellExecute = true
+                        });
+                        return true;
+                    }
+                    catch (Exception exPpt)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[OpenLocal] Failed to open PowerPoint: {exPpt.Message}");
+                        return false;
+                    }
+                }
+
+                // Video files (mp4, avi, mkv, etc.)
+                if (extension == ".mp4" || extension == ".avi" || extension == ".mkv" || 
+                    extension == ".mov" || extension == ".flv" || extension == ".wmv")
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = filePath,
+                            UseShellExecute = true
+                        });
+                        return true;
+                    }
+                    catch (Exception exVideo)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[OpenLocal] Failed to open video: {exVideo.Message}");
+                        return false;
+                    }
+                }
+
+                // Default: try to open with associated application
                 try
                 {
                     System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -300,24 +396,18 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                         FileName = filePath,
                         UseShellExecute = true
                     });
+                    return true;
                 }
-                catch (Exception ex)
+                catch (Exception exDefault)
                 {
+                    System.Diagnostics.Debug.WriteLine($"[OpenLocal] Failed to open file with default app: {exDefault.Message}");
+                    return false;
                 }
-                return;
             }
-
-            // VIDEO local
-            try
+            catch (Exception exMain)
             {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = filePath,
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception ex)
-            {
+                System.Diagnostics.Debug.WriteLine($"[OpenLocal] Unexpected error: {exMain.Message}");
+                return false;
             }
         }
 
