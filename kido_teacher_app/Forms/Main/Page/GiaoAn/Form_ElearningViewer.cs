@@ -1,5 +1,6 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
+using kido_teacher_app.Shared.Logging;
 using System;
 using System.Drawing;
 using System.IO;
@@ -46,11 +47,14 @@ namespace kido_teacher_app.Forms.GiaoAn
         {
             try
             {
+                WebViewLog.Info($"E-LEARNING init input='{_urlOrPath}' title='{_title}'");
                 await webView.EnsureCoreWebView2Async();
+                webView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
                 LoadStory();
             }
             catch (Exception ex)
             {
+                WebViewLog.Error($"E-LEARNING init failed input='{_urlOrPath}' error='{ex}'");
                 ShowError("Không khởi tạo được WebView2", ex.Message);
             }
         }
@@ -67,6 +71,7 @@ namespace kido_teacher_app.Forms.GiaoAn
             // ===== ONLINE URL =====
             if (_urlOrPath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
+                WebViewLog.Info($"E-LEARNING navigate online url='{_urlOrPath}'");
                 webView.CoreWebView2.Navigate(_urlOrPath);
                 return;
             }
@@ -77,8 +82,11 @@ namespace kido_teacher_app.Forms.GiaoAn
             if (!Path.IsPathRooted(fullPath))
                 fullPath = Path.Combine(Application.StartupPath, fullPath);
 
+            WebViewLog.Info($"E-LEARNING resolved input='{_urlOrPath}' fullPath='{fullPath}' exists='{File.Exists(fullPath)}'");
+
             if (!File.Exists(fullPath))
             {
+                WebViewLog.Error($"E-LEARNING file missing fullPath='{fullPath}'");
                 ShowError("Không tìm thấy bài học", fullPath);
                 return;
             }
@@ -89,6 +97,7 @@ namespace kido_teacher_app.Forms.GiaoAn
                 var storyFolder = storyFile.DirectoryName;
                 if (string.IsNullOrWhiteSpace(storyFolder))
                 {
+                    WebViewLog.Error($"E-LEARNING invalid story folder fullPath='{fullPath}'");
                     ShowError("Đường dẫn bài học không hợp lệ", fullPath);
                     return;
                 }
@@ -99,10 +108,12 @@ namespace kido_teacher_app.Forms.GiaoAn
                     CoreWebView2HostResourceAccessKind.Allow);
 
                 var localUrl = $"https://{LocalElearningHost}/{EncodePathSegment(storyFile.Name)}";
+                WebViewLog.Info($"E-LEARNING navigate localUrl='{localUrl}' folder='{storyFolder}' file='{storyFile.Name}'");
                 webView.CoreWebView2.Navigate(localUrl);
             }
             catch (Exception ex)
             {
+                WebViewLog.Error($"E-LEARNING open failed fullPath='{fullPath}' error='{ex}'");
                 ShowError("Không mở được bài học", ex.Message);
             }
         }
@@ -112,6 +123,18 @@ namespace kido_teacher_app.Forms.GiaoAn
             return string.Join("/", value.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                 .Where(part => !string.IsNullOrEmpty(part))
                 .Select(WebUtility.UrlEncode));
+        }
+
+        private void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+        {
+            if (e.IsSuccess)
+            {
+                WebViewLog.Info($"E-LEARNING navigation success source='{webView.Source}'");
+                return;
+            }
+
+            WebViewLog.Error($"E-LEARNING navigation failed source='{webView.Source}' status='{e.WebErrorStatus}' http='{e.HttpStatusCode}'");
+            ShowError("WebView2 không tải được bài học", $"{e.WebErrorStatus} ({e.HttpStatusCode})");
         }
 
         private void ShowError(string message, string detail = "")
