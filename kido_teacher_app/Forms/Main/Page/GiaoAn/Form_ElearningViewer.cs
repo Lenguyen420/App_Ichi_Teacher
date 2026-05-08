@@ -2,6 +2,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using kido_teacher_app.Shared.Logging;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -54,6 +55,13 @@ namespace kido_teacher_app.Forms.GiaoAn
             }
             catch (Exception ex)
             {
+                if (ex is WebView2RuntimeNotFoundException)
+                {
+                    WebViewLog.Error($"E-LEARNING WebView2 runtime missing input='{_urlOrPath}'");
+                    OpenWithDefaultBrowser("Máy chưa cài WebView2 Runtime nên app không thể mở e-learning bên trong ứng dụng.");
+                    return;
+                }
+
                 WebViewLog.Error($"E-LEARNING init failed input='{_urlOrPath}' error='{ex}'");
                 ShowError("Không khởi tạo được WebView2", ex.Message);
             }
@@ -135,6 +143,39 @@ namespace kido_teacher_app.Forms.GiaoAn
 
             WebViewLog.Error($"E-LEARNING navigation failed source='{webView.Source}' status='{e.WebErrorStatus}' http='{e.HttpStatusCode}'");
             ShowError("WebView2 không tải được bài học", $"{e.WebErrorStatus} ({e.HttpStatusCode})");
+        }
+
+        private void OpenWithDefaultBrowser(string reason)
+        {
+            try
+            {
+                var fullPath = _urlOrPath;
+                if (!Path.IsPathRooted(fullPath))
+                    fullPath = Path.Combine(Application.StartupPath, fullPath);
+
+                WebViewLog.Info($"E-LEARNING fallback external reason='{reason}' fullPath='{fullPath}' exists='{File.Exists(fullPath)}'");
+
+                if (File.Exists(fullPath))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = fullPath,
+                        UseShellExecute = true
+                    });
+
+                    ShowError(
+                        "Thiếu WebView2 Runtime",
+                        $"{reason} Bài học đã được mở bằng trình duyệt mặc định. Cài Microsoft Edge WebView2 Runtime để mở trực tiếp trong app.");
+                    return;
+                }
+
+                ShowError("Thiếu WebView2 Runtime và không tìm thấy bài học", fullPath);
+            }
+            catch (Exception fallbackEx)
+            {
+                WebViewLog.Error($"E-LEARNING fallback external failed input='{_urlOrPath}' error='{fallbackEx}'");
+                ShowError("Thiếu WebView2 Runtime", $"{reason} Không mở được bằng trình duyệt mặc định: {fallbackEx.Message}");
+            }
         }
 
         private void ShowError(string message, string detail = "")

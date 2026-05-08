@@ -46,6 +46,30 @@ function Bump-Version {
     }
 }
 
+function Find-MSBuild {
+    $candidates = @(
+        "${env:ProgramFiles}\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin\MSBuild.exe",
+        "${env:ProgramFiles}\Microsoft Visual Studio\18\Professional\MSBuild\Current\Bin\MSBuild.exe",
+        "${env:ProgramFiles}\Microsoft Visual Studio\18\Enterprise\MSBuild\Current\Bin\MSBuild.exe",
+        "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe",
+        "${env:ProgramFiles}\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\MSBuild.exe",
+        "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+    )
+
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path $candidate)) {
+            return $candidate
+        }
+    }
+
+    $cmd = Get-Command msbuild.exe -ErrorAction SilentlyContinue
+    if ($cmd) {
+        return $cmd.Source
+    }
+
+    throw "MSBuild.exe not found. ClickOnce bootstrapper prerequisites require Visual Studio MSBuild, not dotnet publish."
+}
+
 $configFullPath = Resolve-FromRoot $ConfigPath
 if (-not (Test-Path $configFullPath)) {
     throw "Missing config file: $configFullPath"
@@ -114,13 +138,18 @@ if (-not (Test-Path $publishDir)) {
 
 Write-Host "Publishing version $newVersionDisplay ..."
 if ($publishProfile) {
-    dotnet publish $projectPath -c $configuration `
+    $msbuild = Find-MSBuild
+    & $msbuild $projectPath /t:Restore,Publish `
+        /p:Configuration=$configuration `
         /p:PublishProfile=$publishProfile `
         /p:ApplicationVersion=$assemblyVersion `
         /p:PublishVersion=$publishVersion `
         /p:Version=$assemblyVersion `
         /p:AssemblyVersion=$assemblyVersion `
         /p:FileVersion=$assemblyVersion
+    if ($LASTEXITCODE -ne 0) {
+        throw "MSBuild publish failed with exit code $LASTEXITCODE"
+    }
 }
 else {
     dotnet publish $projectPath -c $configuration -o $publishDir `
@@ -128,6 +157,9 @@ else {
         /p:Version=$assemblyVersion `
         /p:AssemblyVersion=$assemblyVersion `
         /p:FileVersion=$assemblyVersion
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet publish failed with exit code $LASTEXITCODE"
+    }
 }
 
 $publishVersionPath = Join-Path $publishDir (Split-Path $versionFile -Leaf)
