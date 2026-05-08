@@ -14,7 +14,8 @@ namespace kido_teacher_app.Shared.Caching
             Path.Combine(AppConfig.CacheFolder, "resource-map.json");
         private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
         {
-            WriteIndented = true
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true
         };
         private static readonly object InitLock = new object();
         private static bool _initialized;

@@ -1,7 +1,10 @@
-﻿using Microsoft.Web.WebView2.WinForms;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.WinForms;
 using System;
 using System.Drawing;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Windows.Forms;
 
 namespace kido_teacher_app.Forms.GiaoAn
@@ -11,6 +14,7 @@ namespace kido_teacher_app.Forms.GiaoAn
         private WebView2 webView;
         private readonly string _urlOrPath;
         private readonly string _title;
+        private const string LocalElearningHost = "kido-elearning.local";
 
         public Form_ElearningViewer(string urlOrPath, string title)
         {
@@ -40,8 +44,15 @@ namespace kido_teacher_app.Forms.GiaoAn
         // ================= WEBVIEW INIT =================
         private async System.Threading.Tasks.Task InitWebViewAsync()
         {
-            await webView.EnsureCoreWebView2Async();
-            LoadStory();
+            try
+            {
+                await webView.EnsureCoreWebView2Async();
+                LoadStory();
+            }
+            catch (Exception ex)
+            {
+                ShowError("Không khởi tạo được WebView2", ex.Message);
+            }
         }
 
         // ================= LOAD STORY =================
@@ -56,7 +67,7 @@ namespace kido_teacher_app.Forms.GiaoAn
             // ===== ONLINE URL =====
             if (_urlOrPath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
-                webView.Source = new Uri(_urlOrPath);
+                webView.CoreWebView2.Navigate(_urlOrPath);
                 return;
             }
 
@@ -72,7 +83,35 @@ namespace kido_teacher_app.Forms.GiaoAn
                 return;
             }
 
-            webView.Source = new Uri(fullPath);
+            try
+            {
+                var storyFile = new FileInfo(fullPath);
+                var storyFolder = storyFile.DirectoryName;
+                if (string.IsNullOrWhiteSpace(storyFolder))
+                {
+                    ShowError("Đường dẫn bài học không hợp lệ", fullPath);
+                    return;
+                }
+
+                webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                    LocalElearningHost,
+                    storyFolder,
+                    CoreWebView2HostResourceAccessKind.Allow);
+
+                var localUrl = $"https://{LocalElearningHost}/{EncodePathSegment(storyFile.Name)}";
+                webView.CoreWebView2.Navigate(localUrl);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Không mở được bài học", ex.Message);
+            }
+        }
+
+        private static string EncodePathSegment(string value)
+        {
+            return string.Join("/", value.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .Where(part => !string.IsNullOrEmpty(part))
+                .Select(WebUtility.UrlEncode));
         }
 
         private void ShowError(string message, string detail = "")
@@ -83,8 +122,8 @@ namespace kido_teacher_app.Forms.GiaoAn
                     color:red;
                     font-size:18px;
                     padding:30px'>
-                    <b>{message}</b><br/>
-                    <small>{detail}</small>
+                    <b>{WebUtility.HtmlEncode(message)}</b><br/>
+                    <small>{WebUtility.HtmlEncode(detail)}</small>
                 </div>");
         }
     }

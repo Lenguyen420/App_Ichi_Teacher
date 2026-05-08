@@ -955,37 +955,37 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             }
 
             // PDF OFFLINE
-            if (!string.IsNullOrEmpty(files.PdfPath))
+            if (!string.IsNullOrEmpty(validPdfPath))
             {
                 EnableOfflineButton(
                     btnPdfOff,
-                    () => OpenLocal(files.PdfPath, lesson.title)
+                    () => OpenLocal(validPdfPath, lesson.title)
                 );
             }
 
             // VIDEO OFFLINE
-            if (!string.IsNullOrEmpty(files.VideoPath))
+            if (!string.IsNullOrEmpty(validVideoPath))
             {
                 EnableOfflineButton(
                     btnVideoOff,
-                    () => OpenLocal(files.VideoPath, lesson.title)
+                    () => OpenLocal(validVideoPath, lesson.title)
                 );
             }
 
             // E-LEARNING OFFLINE
-            if (!string.IsNullOrEmpty(files.ElearningPath))
+            if (!string.IsNullOrEmpty(validElearningPath))
             {
                 EnableOfflineButton(
                     btnLessonOff,
-                    () => OpenLocal(files.ElearningPath, lesson.title)
+                    () => OpenLocal(validElearningPath, lesson.title)
                 );
             }
 
-            if (!string.IsNullOrEmpty(files.PowerPointPath))
+            if (!string.IsNullOrEmpty(validPowerPointPath))
             {
                 EnableOfflineButton(
                     btnPowerPointOff,
-                    () => OpenLocal(files.PowerPointPath, lesson.title)
+                    () => OpenLocal(validPowerPointPath, lesson.title)
                 );
             }
 
