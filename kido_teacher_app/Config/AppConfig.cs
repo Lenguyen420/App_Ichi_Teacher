@@ -67,6 +67,10 @@ namespace kido_teacher_app.Config
         // ⭐ SQLite DB file path
         public static string DbPath =
             Path.Combine(DbFolder, "app_cache.db");
+
+        // JSON fallback for offline lecture absolute paths
+        public static string OfflineLecturePathJson =
+            Path.Combine(DbFolder, "app_cache.json");
     }
 
 }
