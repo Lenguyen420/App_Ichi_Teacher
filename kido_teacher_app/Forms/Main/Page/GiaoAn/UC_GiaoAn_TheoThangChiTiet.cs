@@ -325,7 +325,11 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 {
                     try
                     {
-                        new Form_PdfViewer(filePath, title).Show();
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = filePath,
+                            UseShellExecute = true
+                        });
                         return true;
                     }
                     catch (Exception exPdf)
