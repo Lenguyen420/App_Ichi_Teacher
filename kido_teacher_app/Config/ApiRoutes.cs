@@ -62,6 +62,7 @@ namespace kido_teacher_app.Config
         public const string REPORT_ATTEMPT_GROUPS = $"{REPORT_ATTEMPT_BASE}/groups";
         public const string REPORT_ATTEMPT_STUDENT = $"{REPORT_ATTEMPT_BASE}/student";
         public static string ReportAttemptStudents(string groupId) => $"{REPORT_ATTEMPT_GROUPS}/{groupId}/students";
+        public static string ReportAttemptZoneStatSheet(string zoneId) => $"{REPORT_ATTEMPT_BASE}/zones/{zoneId}/export-zone-stat-sheet";
 
         // =====================================================
         // UPLOAD

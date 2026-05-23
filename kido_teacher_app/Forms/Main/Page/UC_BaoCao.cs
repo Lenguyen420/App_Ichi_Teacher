@@ -23,6 +23,7 @@ namespace kido_teacher_app.Forms.Main.Page
         private Button btnView = null!;
         private Button btnExport = null!;
         private Button btnSelectAll = null!;
+        private Button btnExportZone = null!;
         private Label lblStatus = null!;
         private Label lblTotal = null!;
         private Label lblAverage = null!;
@@ -101,7 +102,7 @@ namespace kido_teacher_app.Forms.Main.Page
                 Margin = new Padding(0, 4, 0, 0)
             };
             var filters = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 7, RowCount = 2, Padding = new Padding(6, 16, 6, 6) };
-            for (var i = 0; i < 7; i++) filters.ColumnStyles.Add(new ColumnStyle(i < 6 ? SizeType.Percent : SizeType.Absolute, i < 6 ? (100f / 6f) : 240));
+            for (var i = 0; i < 7; i++) filters.ColumnStyles.Add(new ColumnStyle(i < 6 ? SizeType.Percent : SizeType.Absolute, i < 6 ? (100f / 6f) : 360));
             filters.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
             filters.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
             cboZone = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 10f) };
@@ -119,13 +120,16 @@ namespace kido_teacher_app.Forms.Main.Page
             filters.Controls.Add(MakeField("Học sinh", cboStudent), 3, 0);
             filters.Controls.Add(MakeField("Từ ngày", dtFrom), 4, 0);
             filters.Controls.Add(MakeField("Đến ngày", dtTo), 5, 0);
-            var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, Margin = new Padding(6, 19, 0, 0) };
-            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
-            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
-            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
+            btnExportZone = CreateButton("Xuất khu vực", false);
+            var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4, Margin = new Padding(6, 19, 0, 0) };
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
             actions.Controls.Add(btnView, 0, 0);
             actions.Controls.Add(btnExport, 1, 0);
             actions.Controls.Add(btnSelectAll, 2, 0);
+            actions.Controls.Add(btnExportZone, 3, 0);
             filters.Controls.Add(actions, 6, 0);
             var hint = new Label { Text = "Chỉ hiển thị học sinh thuộc các nhóm mà giáo viên đang quản lý.", Dock = DockStyle.Fill, ForeColor = Color.DimGray, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(6, 0, 0, 0) };
             filters.SetColumnSpan(hint, 7);
@@ -165,7 +169,7 @@ namespace kido_teacher_app.Forms.Main.Page
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect
             };
-            foreach (var c in new[] { "Thời gian", "Bài học", "Điểm", "Thời lượng", "Kết quả" }) dgvHistory.Columns.Add(Guid.NewGuid().ToString("N"), c);
+            foreach (var c in new[] { "Trường", "Nhóm/Lớp", "Học sinh", "Thời gian", "Bộ đề", "Đề thi", "Điểm", "Thời lượng", "Kết quả" }) dgvHistory.Columns.Add(Guid.NewGuid().ToString("N"), c);
             var historyHost = new Panel { Dock = DockStyle.Fill, BorderStyle = BorderStyle.FixedSingle };
             lblHistoryEmpty = new Label { Text = "Chưa có dữ liệu lịch sử trong khoảng thời gian đã chọn.", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.DimGray };
             historyHost.Controls.Add(dgvHistory);
@@ -210,6 +214,7 @@ namespace kido_teacher_app.Forms.Main.Page
             btnNext.Click += async (_, __) => await ChangePageAsync(1);
             btnExport.Click += async (_, __) => await ExportReportAsync();
             btnSelectAll.Click += async (_, __) => await ExportSchoolStatSheetAsync();
+            btnExportZone.Click += async (_, __) => await ExportZoneStatSheetAsync();
         }
 
         private async Task ExportReportAsync()
@@ -350,6 +355,8 @@ namespace kido_teacher_app.Forms.Main.Page
         private async Task OnGroupChangedAsync()
         {
             if (suppressEvents || isBusy) return;
+            activeZoneId = GetSelectedValue(cboZone);
+            activeSchoolId = GetSelectedValue(cboSchool);
             activeGroupId = GetSelectedValue(cboGroup);
             activeStudentId = null;
             BindStudents(Array.Empty<AttemptReportStudentDto>());
@@ -379,7 +386,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
         private async Task ViewReportAsync()
         {
-            if (!HasSelectedGroup())
+            if (!HasSelectedReportScope())
             {
                 SetStatus("Cần chọn nhóm để xem báo cáo.", Color.Firebrick);
                 return;
@@ -389,6 +396,8 @@ namespace kido_teacher_app.Forms.Main.Page
                 SetStatus("Khoảng ngày không hợp lệ: 'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.", Color.Firebrick);
                 return;
             }
+            activeZoneId = GetSelectedValue(cboZone);
+            activeSchoolId = GetSelectedValue(cboSchool);
             activeGroupId = GetSelectedValue(cboGroup);
             activeStudentId = GetSelectedValue(cboStudent);
             await LoadReportAsync(1);
@@ -396,7 +405,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
         private async Task ChangePageAsync(int delta)
         {
-            if (!reportLoaded || string.IsNullOrWhiteSpace(activeGroupId)) return;
+            if (!reportLoaded || !HasActiveReportScope()) return;
             var next = currentPage + delta;
             if (next < 1 || next > totalPages) return;
             await LoadReportAsync(next);
@@ -437,7 +446,16 @@ namespace kido_teacher_app.Forms.Main.Page
             lblLatest.Text = FormatDateTime(report.summary?.latestAttemptAt);
             dgvHistory.Rows.Clear();
             foreach (var x in report.attempts ?? new List<AttemptHistoryDto>())
-                dgvHistory.Rows.Add(FormatDateTime(x.submittedAt ?? x.startedAt), AttemptTitle(x), FormatScore(x.score), FormatDuration(x.startedAt, x.submittedAt), AttemptStatus(x.status));
+                dgvHistory.Rows.Add(
+                    DisplayOrDash(x.schoolName),
+                    DisplayOrDash(ClassName(x)),
+                    DisplayOrDash(StudentName(x)),
+                    FormatDateTime(x.submittedAt ?? x.startedAt),
+                    DisplayOrDash(x.examSetName),
+                    DisplayOrDash(x.questionBankName),
+                    FormatScore(x.score),
+                    FormatDuration(x.startedAt, x.submittedAt),
+                    AttemptStatus(x.status));
             lblHistoryEmpty.Visible = dgvHistory.Rows.Count == 0;
             trendPoints.Clear();
             foreach (var x in (report.trend ?? new List<AttemptReportTrendDto>()).Where(x => x.averageScore.HasValue || x.highestScore.HasValue).OrderBy(x => x.date ?? DateTime.MinValue))
@@ -484,9 +502,10 @@ namespace kido_teacher_app.Forms.Main.Page
 
         private void UpdateActions()
         {
-            btnView.Enabled = !isBusy && HasSelectedGroup();
+            btnView.Enabled = !isBusy && HasSelectedReportScope();
             btnExport.Enabled = !isBusy && HasSelectedGroup();
             btnSelectAll.Enabled = !isBusy && HasSelectedSchool();
+            btnExportZone.Enabled = !isBusy && HasSelectedZone();
             btnPrev.Enabled = !isBusy && reportLoaded && currentPage > 1;
             btnNext.Enabled = !isBusy && reportLoaded && currentPage < totalPages;
         }
@@ -628,6 +647,46 @@ namespace kido_teacher_app.Forms.Main.Page
             finally { SetBusy(false); }
         }
 
+        /// <summary>
+        /// Xuat file Excel thong ke diem theo khu vuc.
+        /// </summary>
+        private async Task ExportZoneStatSheetAsync()
+        {
+            if (!HasSelectedZone())
+            {
+                SetStatus("Cần chọn khu vực để xuất báo cáo theo khu vực.", Color.Firebrick);
+                return;
+            }
+
+            if (dtFrom.Value.Date > dtTo.Value.Date)
+            {
+                SetStatus("Khoảng ngày không hợp lệ: 'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.", Color.Firebrick);
+                return;
+            }
+
+            var zoneId = GetSelectedValue(cboZone)!;
+            var zoneName = (cboZone.SelectedItem as ComboItem)?.Text ?? "KhuVuc";
+            var fromDate = dtFrom.Value.Date;
+            var toDate = dtTo.Value.Date;
+
+            SetBusy(true, $"Đang tạo file Excel thống kê cho khu vực {zoneName}...", Color.DarkOrange);
+            try
+            {
+                var excelData = await AttemptReportService.ExportZoneStatSheetAsync(
+                    zoneId,
+                    examSetId: null,
+                    questionBankId: null,
+                    fromDate: fromDate,
+                    toDate: toDate);
+                SaveExcelFile(excelData, $"zone-{zoneName}");
+            }
+            catch (Exception ex)
+            {
+                SetStatus(BuildErrorMessage(ex, "Không thể xuất báo cáo theo khu vực."), Color.Firebrick);
+            }
+            finally { SetBusy(false); }
+        }
+
         private void BindZonesFromDetail(ZoneDetailPayload payload)
         {
             suppressEvents = true;
@@ -674,7 +733,17 @@ namespace kido_teacher_app.Forms.Main.Page
         private bool HasSelectedStudent() => !string.IsNullOrWhiteSpace(GetSelectedValue(cboStudent));
         private bool HasSelectedSchool() => !string.IsNullOrWhiteSpace(GetSelectedValue(cboSchool));
         private bool HasSelectedZone() => !string.IsNullOrWhiteSpace(GetSelectedValue(cboZone));
+        private bool HasSelectedReportScope() => HasSelectedZone() || HasSelectedSchool() || HasSelectedGroup();
+        private bool HasActiveReportScope() => !string.IsNullOrWhiteSpace(activeZoneId) || !string.IsNullOrWhiteSpace(activeSchoolId) || !string.IsNullOrWhiteSpace(activeGroupId);
         private static string? GetSelectedValue(ComboBox combo) => (combo.SelectedItem as ComboItem)?.Value;
+        private static string DisplayOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value;
+        private static string ClassName(AttemptHistoryDto x)
+        {
+            if (!string.IsNullOrWhiteSpace(x.className)) return x.className;
+            if (!string.IsNullOrWhiteSpace(x.studentGroupName)) return x.studentGroupName;
+            return x.groupName;
+        }
+        private static string StudentName(AttemptHistoryDto x) => !string.IsNullOrWhiteSpace(x.studentFullName) ? x.studentFullName : x.studentName;
         private static string AttemptTitle(AttemptHistoryDto x) => !string.IsNullOrWhiteSpace(x.questionBankName) && !string.IsNullOrWhiteSpace(x.examSetName) ? $"{x.questionBankName} / {x.examSetName}" : (!string.IsNullOrWhiteSpace(x.questionBankName) ? x.questionBankName : (!string.IsNullOrWhiteSpace(x.examSetName) ? x.examSetName : "-"));
         private static string AttemptStatus(string? status) => status?.ToUpperInvariant() switch { "SUBMITTED" => "Đã nộp", "IN_PROGRESS" => "Đang làm", "EXPIRED" => "Hết hạn", _ => string.IsNullOrWhiteSpace(status) ? "-" : status };
         private static string FormatScore(double? score) => score.HasValue ? score.Value.ToString("0.0", CultureInfo.InvariantCulture) : "-";

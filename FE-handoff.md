@@ -1,205 +1,101 @@
-# FE Handoff: Báo cáo làm bài học sinh
+# FE Handoff: Cap nhat response report attempt
 
 Base path: `/report/attempt`
 
-Xác thực:
-- `Authorization: Bearer <teacher_token>`
+Cac API duoc bo sung field ten, lop, truong:
 
-Vai trò:
-- `TEACHER`
+- `GET /report/attempt/groups`
+- `GET /report/attempt/groups/:groupId/students`
+- `GET /report/attempt/student`
 
-## 1. Tổng quan API
+## 1. `GET /report/attempt/groups`
 
-| API | Method | Mục đích | Đầu vào | Đầu ra chính |
-| --- | --- | --- | --- | --- |
-| `/report/attempt/groups` | `GET` | Lấy danh sách nhóm mà giáo viên đang là trưởng nhóm | Không có | Danh sách nhóm: `id`, `name`, `type` |
-| `/report/attempt/groups/:groupId/students` | `GET` | Lấy danh sách học sinh theo nhóm đã chọn | Path param `groupId` | Danh sách học sinh: `id`, `fullName`, `userName`, `code`, `studentGroupId`, `studentGroupName` |
-| `/report/attempt/student` | `GET` | Lấy dữ liệu báo cáo của 1 học sinh | Query: `groupId`, `studentId`, `fromDate?`, `toDate?`, `page?`, `limit?` | `student`, `summary`, `trend`, `attempts`, `page`, `limit`, `total` |
-
-## 2. Chi tiết API
-
-### 2.1 Lấy danh sách nhóm
-
-Endpoint:
-
-```http
-GET /report/attempt/groups
-Authorization: Bearer <token>
-```
-
-Ví dụ response:
-
-```json
-[
-  {
-    "id": "5233abe3-1961-4af5-a482-542f1227d844",
-    "name": "Khoi 5A",
-    "type": "PERSONAL"
-  },
-  {
-    "id": "6233abe3-1961-4af5-a482-542f1227d845",
-    "name": "Khoi 5B",
-    "type": "PERSONAL"
-  }
-]
-```
-
-Frontend sử dụng:
-- Đổ dữ liệu cho combobox `Nhóm`
-
-### 2.2 Lấy danh sách học sinh theo nhóm
-
-Endpoint:
-
-```http
-GET /report/attempt/groups/5233abe3-1961-4af5-a482-542f1227d844/students
-Authorization: Bearer <token>
-```
-
-Ví dụ response:
-
-```json
-[
-  {
-    "id": "7233abe3-1961-4af5-a482-542f1227d844",
-    "fullName": "Nguyen Van B",
-    "userName": "student_b",
-    "code": "HS001",
-    "studentGroupId": "8233abe3-1961-4af5-a482-542f1227d844",
-    "studentGroupName": "Lop 5A"
-  },
-  {
-    "id": "7233abe3-1961-4af5-a482-542f1227d845",
-    "fullName": "Tran Thi C",
-    "userName": "student_c",
-    "code": "HS002",
-    "studentGroupId": "8233abe3-1961-4af5-a482-542f1227d844",
-    "studentGroupName": "Lop 5A"
-  }
-]
-```
-
-Frontend sử dụng:
-- Đổ dữ liệu cho combobox `Học sinh` sau khi người dùng chọn nhóm
-
-### 2.3 Lấy báo cáo học sinh
-
-Endpoint:
-
-```http
-GET /report/attempt/student?groupId=5233abe3-1961-4af5-a482-542f1227d844&studentId=7233abe3-1961-4af5-a482-542f1227d844&fromDate=2026-03-07&toDate=2026-04-06&page=1&limit=10
-Authorization: Bearer <token>
-```
-
-Danh sách query param:
-
-| Trường | Bắt buộc | Kiểu | Ghi chú |
-| --- | --- | --- | --- |
-| `groupId` | Có | `string` | UUID |
-| `studentId` | Có | `string` | UUID |
-| `fromDate` | Không | `string` | Định dạng `YYYY-MM-DD` |
-| `toDate` | Không | `string` | Định dạng `YYYY-MM-DD` |
-| `page` | Không | `number` | Mặc định `1` |
-| `limit` | Không | `number` | Mặc định `10` |
-
-Ví dụ response:
+Moi item tra them:
 
 ```json
 {
-  "groupId": "5233abe3-1961-4af5-a482-542f1227d844",
-  "student": {
-    "id": "7233abe3-1961-4af5-a482-542f1227d844",
-    "fullName": "Nguyen Van B",
-    "userName": "student_b",
-    "code": "HS001",
-    "studentGroupId": "8233abe3-1961-4af5-a482-542f1227d844",
-    "studentGroupName": "Lop 5A"
-  },
-  "fromDate": "2026-03-07",
-  "toDate": "2026-04-06",
-  "summary": {
-    "totalAttempts": 12,
-    "averageScore": 7.8,
-    "highestScore": 9.5,
-    "latestAttemptAt": "2026-04-05T09:30:00.000Z"
-  },
-  "trend": [
-    {
-      "date": "2026-03-20",
-      "attemptCount": 2,
-      "averageScore": 7.5,
-      "highestScore": 8.0
-    },
-    {
-      "date": "2026-03-28",
-      "attemptCount": 1,
-      "averageScore": 9.5,
-      "highestScore": 9.5
-    }
-  ],
-  "attempts": [
-    {
-      "attemptId": "9233abe3-1961-4af5-a482-542f1227d844",
-      "questionBankId": "a233abe3-1961-4af5-a482-542f1227d844",
-      "questionBankName": "De thi hoc ky 1",
-      "examSetId": "b233abe3-1961-4af5-a482-542f1227d844",
-      "examSetName": "Bo de tuan 1",
-      "status": "SUBMITTED",
-      "startedAt": "2026-04-05T09:00:00.000Z",
-      "submittedAt": "2026-04-05T09:30:00.000Z",
-      "score": 8.5
-    },
-    {
-      "attemptId": "9233abe3-1961-4af5-a482-542f1227d845",
-      "questionBankId": "a233abe3-1961-4af5-a482-542f1227d845",
-      "questionBankName": "De kiem tra chuong 3",
-      "examSetId": "b233abe3-1961-4af5-a482-542f1227d845",
-      "examSetName": "Bo de A",
-      "status": "SUBMITTED",
-      "startedAt": "2026-04-01T08:00:00.000Z",
-      "submittedAt": "2026-04-01T08:25:00.000Z",
-      "score": 7.0
-    }
-  ],
-  "page": 1,
-  "limit": 10,
-  "total": 12
+  "id": "5233abe3-1961-4af5-a482-542f1227d844",
+  "name": "THNVB - Lop 5A",
+  "className": "Lop 5A",
+  "schoolId": "a233abe3-1961-4af5-a482-542f1227d844",
+  "schoolName": "TH Nguyen Van Bua",
+  "shoolName": "TH Nguyen Van Bua",
+  "schoolCode": "THNVB",
+  "type": "CLASS"
 }
 ```
 
-## 3. Mapping dữ liệu ra UI
+Luu y:
 
-| Thành phần UI | Nguồn dữ liệu |
-| --- | --- |
-| Combobox `Nhóm` | `GET /report/attempt/groups` |
-| Combobox `Học sinh` | `GET /report/attempt/groups/:groupId/students` |
-| `Tổng lần làm` | `summary.totalAttempts` |
-| `Điểm trung bình` | `summary.averageScore` |
-| `Điểm cao nhất` | `summary.highestScore` |
-| `Lần gần nhất` | `summary.latestAttemptAt` |
-| Tab `Xu hướng điểm` | `trend[]` |
-| Tab `Lịch sử làm bài` | `attempts[]` |
-| Phân trang lịch sử | `page`, `limit`, `total` |
+- `name` van giu format cu de khong gay vo FE hien tai.
+- FE co the dung truc tiep `className`, `shoolName`, `schoolName`, `schoolCode` neu can hien thi rieng lop/truong.
+- `shoolName` la alias cua `schoolName` theo contract FE hien tai.
 
-## 4. Luồng gọi API đề xuất cho frontend
+## 2. `GET /report/attempt/groups/:groupId/students`
 
-1. Khi vào màn hình, gọi `GET /report/attempt/groups`
-2. Khi người dùng chọn nhóm, gọi `GET /report/attempt/groups/:groupId/students`
-3. Khi người dùng chọn học sinh và khoảng ngày, gọi `GET /report/attempt/student`
-4. Khi người dùng đổi trang ở tab lịch sử, gọi lại `GET /report/attempt/student` với `page` và `limit` mới
+Moi item hoc sinh tra them:
 
-## 5. Lỗi thường gặp
+```json
+{
+  "id": "6233abe3-1961-4af5-a482-542f1227d844",
+  "fullName": "Nguyen Van B",
+  "studentName": "Nguyen Van B",
+  "userName": "student_b",
+  "code": "HS001",
+  "studentGroupId": "7233abe3-1961-4af5-a482-542f1227d844",
+  "studentGroupName": "Lop 5A",
+  "classId": "7233abe3-1961-4af5-a482-542f1227d844",
+  "className": "Lop 5A",
+  "schoolId": "a233abe3-1961-4af5-a482-542f1227d844",
+  "schoolName": "TH Nguyen Van Bua",
+  "shoolName": "TH Nguyen Van Bua",
+  "schoolCode": "THNVB"
+}
+```
 
-| Mã HTTP | Trường hợp |
-| --- | --- |
-| `400` | UUID không hợp lệ, ngày sai định dạng, `fromDate > toDate`, `page < 1`, `limit < 1` |
-| `403` | Giáo viên không phải trưởng nhóm của nhóm đã chọn, hoặc token không hợp lệ |
-| `404` | Không tìm thấy nhóm, không tìm thấy học sinh, hoặc học sinh không thuộc nhóm đã chọn |
+Luu y:
 
-## 6. Lưu ý cho frontend
+- `classId` la alias cua `studentGroupId`.
+- `className` la alias cua `studentGroupName`.
+- `studentName` uu tien `fullName`, neu khong co thi dung `userName`.
+- `shoolName` la alias cua `schoolName`.
 
-- `averageScore`, `highestScore`, `latestAttemptAt`, `submittedAt`, `score` có thể là `null`
-- `trend` có thể là mảng rỗng
-- `attempts` có thể là mảng rỗng
-- Backend yêu cầu định dạng ngày là `YYYY-MM-DD`
-- Chức năng xuất Excel hiện chưa được implement ở backend
+## 3. `GET /report/attempt/student`
+
+Response top-level tra them thong tin lop/truong dang loc:
+
+```json
+{
+  "groupId": "7233abe3-1961-4af5-a482-542f1227d844",
+  "groupName": "Lop 5A",
+  "className": "Lop 5A",
+  "schoolId": "a233abe3-1961-4af5-a482-542f1227d844",
+  "schoolName": "TH Nguyen Van Bua",
+  "shoolName": "TH Nguyen Van Bua",
+  "schoolCode": "THNVB"
+}
+```
+
+Field `student` tra cung format voi API danh sach hoc sinh o muc 2.
+
+Moi item trong `attempts[]` tra them:
+
+```json
+{
+  "studentId": "6233abe3-1961-4af5-a482-542f1227d844",
+  "studentName": "Nguyen Van B",
+  "studentCode": "HS001",
+  "classId": "7233abe3-1961-4af5-a482-542f1227d844",
+  "className": "Lop 5A",
+  "schoolId": "a233abe3-1961-4af5-a482-542f1227d844",
+  "schoolName": "TH Nguyen Van Bua",
+  "shoolName": "TH Nguyen Van Bua",
+  "schoolCode": "THNVB"
+}
+```
+
+Luu y:
+
+- Cac field lop/truong co the la `null` neu hoc sinh chua duoc gan lop/truong.
+- Khi FE goi `studentId=all`, nen lay ten hoc sinh/lop/truong tu tung item trong `attempts[]`.
+- FE can 3 field chinh thi doc `className`, `shoolName`, `studentName`.

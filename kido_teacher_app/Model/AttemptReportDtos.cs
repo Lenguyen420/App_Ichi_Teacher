@@ -57,6 +57,18 @@ namespace kido_teacher_app.Model
     public class AttemptHistoryDto
     {
         public string attemptId { get; set; } = string.Empty;
+        public string zoneId { get; set; } = string.Empty;
+        public string zoneName { get; set; } = string.Empty;
+        public string schoolId { get; set; } = string.Empty;
+        public string schoolName { get; set; } = string.Empty;
+        public string groupId { get; set; } = string.Empty;
+        public string groupName { get; set; } = string.Empty;
+        public string className { get; set; } = string.Empty;
+        public string studentGroupName { get; set; } = string.Empty;
+        public string studentId { get; set; } = string.Empty;
+        public string studentName { get; set; } = string.Empty;
+        public string studentFullName { get; set; } = string.Empty;
+        public string studentCode { get; set; } = string.Empty;
         public string questionBankId { get; set; } = string.Empty;
         public string questionBankName { get; set; } = string.Empty;
         public string examSetId { get; set; } = string.Empty;

@@ -391,5 +391,61 @@ namespace kido_teacher_app.Services
                 throw;
             }
         }
+
+        /// <summary>
+        /// Xuat file Excel thong ke diem theo khu vuc.
+        /// Endpoint: GET /report/attempt/zones/{zoneId}/export-zone-stat-sheet
+        /// </summary>
+        public static async Task<byte[]> ExportZoneStatSheetAsync(
+            string zoneId,
+            string? examSetId = null,
+            string? questionBankId = null,
+            DateTime? fromDate = null,
+            DateTime? toDate = null)
+        {
+            if (string.IsNullOrWhiteSpace(zoneId))
+                throw new ArgumentException("zoneId is required.", nameof(zoneId));
+
+            EnsureAuthorized();
+
+            try
+            {
+                var query = new List<string>();
+                if (!string.IsNullOrWhiteSpace(examSetId))
+                    query.Add($"examSetId={Uri.EscapeDataString(examSetId)}");
+                if (!string.IsNullOrWhiteSpace(questionBankId))
+                    query.Add($"questionBankId={Uri.EscapeDataString(questionBankId)}");
+                if (fromDate.HasValue)
+                    query.Add($"fromDate={fromDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+                if (toDate.HasValue)
+                    query.Add($"toDate={toDate.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+
+                var url = ApiRoutes.ReportAttemptZoneStatSheet(Uri.EscapeDataString(zoneId));
+                if (query.Count > 0)
+                    url += $"?{string.Join("&", query)}";
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+
+                using var response = await client.SendAsync(request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    throw new AttemptReportApiException(
+                        response.StatusCode,
+                        ExtractErrorMessage(responseBody),
+                        responseBody);
+                }
+
+                OfflineState.SetOffline(false);
+                return await response.Content.ReadAsByteArrayAsync();
+            }
+            catch (Exception ex) when (IsNetworkException(ex))
+            {
+                OfflineState.SetOffline(true);
+                throw;
+            }
+        }
     }
 }
