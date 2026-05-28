@@ -52,7 +52,7 @@
             companyLabel.Location = new Point(0, 350);
             companyLabel.Size = new Size(450, 150);
             companyLabel.TextAlign = ContentAlignment.MiddleCenter;
-            companyLabel.Text = "CÔNG TY CỔ PHẦN GIÁO DỤC\r\nKHOA HỌC CÔNG NGHỆ\r\nICHI SKILL";
+            companyLabel.Text = "CÔNG TY TNHH KIDO EDU";
 
             // Copy right
             copyRightLabel.Font = new Font("Arial", 10F, FontStyle.Italic);
@@ -147,7 +147,7 @@
             infoLabel.Location = new Point(150, 460);
             infoLabel.AutoSize = true;
             infoLabel.Text =
-                "- Sản phẩm cung cấp bởi: ICHI SKILL\n" +
+                "- Sản phẩm cung cấp bởi: KIDO EDU\n" +
                 "- Hỗ trợ: Ultra Viewer\n" +
                 "- Điện thoại: 0707 868 600 - 0789 636 979\n" +
                 "- Email: hcns@IchiSkillManager.edu.vn\n" +
