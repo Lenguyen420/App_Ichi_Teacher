@@ -118,47 +118,17 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="classdefault" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\classdefault.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="coursedefault" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\coursedefault.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="coursedefault1" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\coursedefault1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="delete" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\delete.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="file" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\file.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="hopdong" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\hopdong.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_add" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_add.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="icon_address" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_address.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="icon_back" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_back.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="icon_back1" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_back1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_book" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_book.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_delete" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_delete.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_edit" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_edit.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_elearning" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_elearning.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="icon_eye" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>icon_eye.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -166,14 +136,8 @@
   <data name="icon_facebook" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_facebook.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="icon_gioi_thieu" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon\icon_gioi_thieu.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="icon_info" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_info.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_list" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_list.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="icon_lock" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>icon_lock.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -181,35 +145,11 @@
   <data name="icon_mail" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_mail.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="icon_pdf" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_pdf.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="icon_phone" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_phone.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="icon_refresh" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_refresh.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_settings" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_settings.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_tai_khoan" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon\icon_tai_khoan.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_Them1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_Them1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_thongbao" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_thongbao.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_thongbao2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_thongbao2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="icon_user" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_user.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_video" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_video.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="Icon_www" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Icon_www.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -217,79 +157,25 @@
   <data name="lessondefault" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\lessondefault.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="logo_ichi" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\image\logo_ichi.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="logo_kido" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\image\logo_kido.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="slide8" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>C:\Users\lethi\OneDrive\Desktop\icon\Ảnh_Slide\slide12.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Resources\slide12.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="slide9" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>C:\Users\lethi\OneDrive\Desktop\icon\Ảnh_Slide\slide13.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Resources\slide13.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="slide10" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>C:\Users\lethi\OneDrive\Desktop\icon\Ảnh_Slide\slide15.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Resources\slide15.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="slide11" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>C:\Users\lethi\OneDrive\Desktop\icon\Ảnh_Slide\slide16.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>Thang1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>Thang2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang3" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>Thang3.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang4" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Thang4.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang5" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Thang5.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang6" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Thang6.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang7" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Thang7.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang8" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Thang8.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang9" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Thang9.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang10" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Thang10.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang11" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Thang11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Thang12" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Thang12.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Resources\slide16.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="logo4" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\logo4.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="icon_baithi" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_baithi.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="icon_baithi1" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\icon_baithi1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="icon_LichSuBaiThi" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_LichSuBaiThi.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_phai" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_phai.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="icon_trai" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\icon_trai.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="slide1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>C:\Users\lethi\OneDrive\Desktop\icon\Ảnh_Slide\slide14.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Resources\slide14.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>
