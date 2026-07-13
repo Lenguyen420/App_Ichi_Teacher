@@ -30,7 +30,7 @@
             // ================================
             // HEADER XÁM
             // ================================
-            this.lblHeader.Text = "Chào Mừng Bạn Đến Với KIDO";
+            this.lblHeader.Text = "Chào Mừng Bạn Đến Với Ichi Skill";
             this.lblHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblHeader.Height = 50;
             this.lblHeader.BackColor = System.Drawing.Color.FromArgb(220, 220, 220);

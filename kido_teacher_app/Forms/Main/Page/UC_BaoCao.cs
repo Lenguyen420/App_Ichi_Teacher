@@ -75,7 +75,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
             root.Controls.Add(new Label
             {
-                Text = "Chào Mừng Bạn Đến Với KIDO",
+                Text = "Chào Mừng Bạn Đến Với Ichi Skill",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 BackColor = Color.FromArgb(230, 230, 230),

@@ -56,7 +56,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
             lblTitle = new Label
             {
-                Text = "Chào Mừng Bạn Đến Với KIDO",
+                Text = "Chào Mừng Bạn Đến Với Ichi Skill",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 20, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter
@@ -87,7 +87,7 @@ namespace kido_teacher_app.Forms.Main.Page
 
             lblCompany = new Label
             {
-                Text = "CÔNG TY TNHH KIDO EDU",
+                Text = "CÔNG TY CỔ PHẦN GIÁO DỤC KHOA HỌC VÀ CÔNG NGHỆ ICHI SKILL",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 ForeColor = Color.White,

@@ -42,7 +42,7 @@ namespace kido_teacher_app.Forms.Main.Page
             contentPanel.BackColor = Color.White;
 
             lblWelcome = new Label();
-            lblWelcome.Text = "Chào Mừng Bạn Đến Với KIDO";
+            lblWelcome.Text = "Chào Mừng Bạn Đến Với Ichi Skill";
             lblWelcome.Dock = DockStyle.Top;
             lblWelcome.Height = 45;
             lblWelcome.Font = new Font("Segoe UI", 14, FontStyle.Bold);

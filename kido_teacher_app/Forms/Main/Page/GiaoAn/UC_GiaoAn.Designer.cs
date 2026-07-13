@@ -40,7 +40,7 @@ namespace kido_teacher_app.Forms.Main.Page
             this.SuspendLayout();
 
             // ================= HEADER XÁM =================
-            this.lblWelcome.Text = "Chào Mừng Bạn Đến Với KIDO";
+            this.lblWelcome.Text = "Chào Mừng Bạn Đến Với Ichi Skill";
             this.lblWelcome.Dock = DockStyle.Top;
             this.lblWelcome.Height = 55;
             this.lblWelcome.Font = new Font("Segoe UI", 20, FontStyle.Bold);
