@@ -5,7 +5,7 @@
         private System.ComponentModel.IContainer components = null;
 
         private Panel leftPanel, rightPanel;
-        private RoundPictureBox logoIchi;
+        private PictureBox logoIchi;
         private PictureBox iconUser, iconPass, iconEye, iconFB, iconWWW;
         private Label companyLabel, copyRightLabel, titleLabel, statusLabel, infoLabel;
         private TextBox usernameBox, passwordBox;
@@ -29,7 +29,7 @@
             // LEFT PANEL
             
             leftPanel = new Panel();
-            logoIchi = new RoundPictureBox();
+            logoIchi = new PictureBox();
             companyLabel = new Label();
             copyRightLabel = new Label();
 
@@ -37,14 +37,12 @@
             leftPanel.Dock = DockStyle.Left;
             leftPanel.Size = new Size(450, 750);
 
-            // Logo hình tròn nền trắng
+            // Logo vuông, hiển thị đầy đủ và không cắt bo tròn
             logoIchi.Location = new Point(75, 30);
             logoIchi.Size = new Size(300, 300);
             logoIchi.SizeMode = PictureBoxSizeMode.Zoom;
-            logoIchi.CircleBackColor = Color.White;
-            // logoIchi.InnerText = "KIDO";
-            //logoIchi.TextColor = Color.Blue;
-            logoIchi.Image = Properties.Resources.logo4;
+            logoIchi.BackColor = Color.White;
+            logoIchi.Image = Properties.Resources.logo_ichi;
 
             // Công ty
             companyLabel.Font = new Font("Arial", 16F, FontStyle.Bold);
@@ -52,7 +50,7 @@
             companyLabel.Location = new Point(0, 350);
             companyLabel.Size = new Size(450, 150);
             companyLabel.TextAlign = ContentAlignment.MiddleCenter;
-            companyLabel.Text = "CÔNG TY CỔ PHẦN GIÁO DỤC KHOA HỌC VÀ CÔNG NGHỆ ICHI SKILL";
+            companyLabel.Text = "CÔNG TY CỔ PHẦN GIÁO DỤC\nKHOA HỌC VÀ CÔNG NGHỆ ICHI SKILL";
 
             // Copy right
             copyRightLabel.Font = new Font("Arial", 10F, FontStyle.Italic);
@@ -139,7 +137,8 @@
             statusLabel.Font = new Font("Arial", 14F, FontStyle.Bold);
             statusLabel.Location = new Point(260, 410);
             statusLabel.AutoSize = true;
-            statusLabel.Text = "Kết Nối Máy Chủ Sẵn Sàng";
+            statusLabel.Text = string.Empty;
+            statusLabel.Visible = false;
 
             // Info
             infoLabel = new Label();
@@ -189,53 +188,6 @@
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.Text = "Đăng Nhập Hệ Thống";
-        }
-
-     
-        // ROUND PICTURE BOX CLASS
-       
-        public class RoundPictureBox : PictureBox
-        {
-            public string InnerText { get; set; } = "";
-            public Color TextColor { get; set; } = Color.Black;
-            public Color CircleBackColor { get; set; } = Color.White;
-
-            protected override void OnResize(EventArgs e)
-            {
-                base.OnResize(e);
-                var gp = new System.Drawing.Drawing2D.GraphicsPath();
-                gp.AddEllipse(0, 0, Width - 1, Height - 1);
-                this.Region = new Region(gp);
-            }
-
-            protected override void OnPaint(PaintEventArgs e)
-            {
-                e.Graphics.SmoothingMode =
-                    System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-
-                // Nền tròn trắng
-                using (SolidBrush bg = new SolidBrush(CircleBackColor))
-                    e.Graphics.FillEllipse(bg, 0, 0, Width - 1, Height - 1);
-
-                // BÓNG ĐỔ
-                using (SolidBrush shadow = new SolidBrush(Color.FromArgb(60, 0, 0, 0)))
-                    e.Graphics.FillEllipse(shadow, 8, 8, Width - 16, Height - 16);
-
-                // Vẽ text
-                if (!string.IsNullOrEmpty(InnerText))
-                {
-                    using (Font f = new Font("Arial", 48F, FontStyle.Bold))
-                    using (SolidBrush b = new SolidBrush(TextColor))
-                    {
-                        SizeF textSize = e.Graphics.MeasureString(InnerText, f);
-                        float x = (Width - textSize.Width) / 2;
-                        float y = (Height - textSize.Height) / 2;
-                        e.Graphics.DrawString(InnerText, f, b, x, y);
-                    }
-                }
-
-                base.OnPaint(e);
-            }
         }
     }
 }

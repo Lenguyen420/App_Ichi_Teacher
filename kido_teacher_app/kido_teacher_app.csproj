@@ -10,7 +10,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <AssemblyName>Ichi Teacher</AssemblyName>
     <UseAppHost>true</UseAppHost>
-    <ApplicationIcon>Resources\logo4.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\logo_ichi.ico</ApplicationIcon>
 
   </PropertyGroup>
 
@@ -48,6 +48,12 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3650.58" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.32" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Visual.C++.14.0.x64">
+      <Install>true</Install>
+      <ProductName>Microsoft Visual C++ Redistributable (x64)</ProductName>
+    </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\version.json">

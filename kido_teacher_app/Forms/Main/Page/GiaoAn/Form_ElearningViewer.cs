@@ -13,10 +13,12 @@ namespace kido_teacher_app.Forms.GiaoAn
 {
     public class Form_ElearningViewer : Form
     {
-        private WebView2 webView;
+        private WebView2 webView = null!;
         private readonly string _urlOrPath;
         private readonly string _title;
         private const string LocalElearningHost = "kido-elearning.local";
+        private const int SideBySideConfigurationError = unchecked((int)0x800736B1);
+        private bool _initializationStarted;
 
         public Form_ElearningViewer(string urlOrPath, string title)
         {
@@ -24,7 +26,7 @@ namespace kido_teacher_app.Forms.GiaoAn
             _title = title;
 
             InitUI();
-            _ = InitWebViewAsync();
+            Shown += Form_ElearningViewer_Shown;
         }
 
         // ================= UI =================
@@ -44,6 +46,15 @@ namespace kido_teacher_app.Forms.GiaoAn
         }
 
         // ================= WEBVIEW INIT =================
+        private async void Form_ElearningViewer_Shown(object? sender, EventArgs e)
+        {
+            if (_initializationStarted)
+                return;
+
+            _initializationStarted = true;
+            await InitWebViewAsync();
+        }
+
         private async System.Threading.Tasks.Task InitWebViewAsync()
         {
             try
@@ -62,8 +73,20 @@ namespace kido_teacher_app.Forms.GiaoAn
                     return;
                 }
 
+                if (ex.HResult == SideBySideConfigurationError)
+                {
+                    WebViewLog.Error($"E-LEARNING native runtime side-by-side failure input='{_urlOrPath}' hresult='0x{ex.HResult:X8}'");
+                    OpenWithDefaultBrowser(
+                        "WebView2 hoặc Microsoft Visual C++ Runtime trên máy đang bị thiếu/hỏng. "
+                        + "Hãy Repair hoặc cài lại Microsoft Edge WebView2 Runtime và Microsoft Visual C++ Redistributable (x64).",
+                        "WebView2 bị lỗi");
+                    return;
+                }
+
                 WebViewLog.Error($"E-LEARNING init failed input='{_urlOrPath}' error='{ex}'");
-                ShowError("Không khởi tạo được WebView2", ex.Message);
+                OpenWithDefaultBrowser(
+                    $"Không khởi tạo được WebView2: {ex.Message}",
+                    "Không khởi tạo được WebView2");
             }
         }
 
@@ -145,41 +168,59 @@ namespace kido_teacher_app.Forms.GiaoAn
             ShowError("WebView2 không tải được bài học", $"{e.WebErrorStatus} ({e.HttpStatusCode})");
         }
 
-        private void OpenWithDefaultBrowser(string reason)
+        private void OpenWithDefaultBrowser(string reason, string heading = "Thiếu WebView2 Runtime")
         {
             try
             {
-                var fullPath = _urlOrPath;
-                if (!Path.IsPathRooted(fullPath))
-                    fullPath = Path.Combine(Application.StartupPath, fullPath);
+                var isWebUrl = Uri.TryCreate(_urlOrPath, UriKind.Absolute, out var uri)
+                    && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+                var target = _urlOrPath;
+                if (!isWebUrl && !Path.IsPathRooted(target))
+                    target = Path.Combine(Application.StartupPath, target);
 
-                WebViewLog.Info($"E-LEARNING fallback external reason='{reason}' fullPath='{fullPath}' exists='{File.Exists(fullPath)}'");
+                var targetExists = isWebUrl || File.Exists(target);
+                WebViewLog.Info($"E-LEARNING fallback external reason='{reason}' target='{target}' exists='{targetExists}'");
 
-                if (File.Exists(fullPath))
+                if (targetExists)
                 {
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = fullPath,
+                        FileName = target,
                         UseShellExecute = true
                     });
 
                     ShowError(
-                        "Thiếu WebView2 Runtime",
-                        $"{reason} Bài học đã được mở bằng trình duyệt mặc định. Cài Microsoft Edge WebView2 Runtime để mở trực tiếp trong app.");
+                        heading,
+                        $"{reason} Bài học đã được mở bằng trình duyệt mặc định.");
                     return;
                 }
 
-                ShowError("Thiếu WebView2 Runtime và không tìm thấy bài học", fullPath);
+                ShowError($"{heading} và không tìm thấy bài học", target);
             }
             catch (Exception fallbackEx)
             {
                 WebViewLog.Error($"E-LEARNING fallback external failed input='{_urlOrPath}' error='{fallbackEx}'");
-                ShowError("Thiếu WebView2 Runtime", $"{reason} Không mở được bằng trình duyệt mặc định: {fallbackEx.Message}");
+                ShowError(heading, $"{reason} Không mở được bằng trình duyệt mặc định: {fallbackEx.Message}");
             }
         }
 
         private void ShowError(string message, string detail = "")
         {
+            if (webView.CoreWebView2 == null)
+            {
+                webView.Visible = false;
+                Controls.Add(new Label
+                {
+                    Dock = DockStyle.Fill,
+                    BackColor = Color.White,
+                    ForeColor = Color.Red,
+                    Font = new Font("Segoe UI", 12F),
+                    Padding = new Padding(30),
+                    Text = $"{message}{Environment.NewLine}{Environment.NewLine}{detail}"
+                });
+                return;
+            }
+
             webView.NavigateToString($@"
                 <div style='
                     font-family:Segoe UI;

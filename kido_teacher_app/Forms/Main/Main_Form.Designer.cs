@@ -35,7 +35,7 @@
 
             PictureBox logo = new PictureBox()
             {
-                Image = Properties.Resources.logo4,
+                Image = Properties.Resources.logo_ichi,
                 Size = new Size(180, 180),
                 Location = new Point(50, 20),
                 SizeMode = PictureBoxSizeMode.Zoom,
@@ -75,11 +75,8 @@
 
             this.Text = "Giáo viên";
             
-            // Set application icon from logo4
-            using (var bmp = new Bitmap(Properties.Resources.logo4))
-            {
-                this.Icon = Icon.FromHandle(bmp.GetHicon());
-            }
+            // Use the Ichi icon embedded in the application executable.
+            this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
             this.ResumeLayout(false);
         }

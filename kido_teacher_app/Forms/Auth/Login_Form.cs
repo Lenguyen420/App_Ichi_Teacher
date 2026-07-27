@@ -16,6 +16,8 @@ namespace kido_teacher_app
         {
             InitializeComponent();
 
+            Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+
             this.AcceptButton = loginButton;
 
             loginButton.Click += loginButton_Click;

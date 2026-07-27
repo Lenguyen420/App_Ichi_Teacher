@@ -213,9 +213,9 @@ namespace kido_teacher_app.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap logo4 {
+        internal static System.Drawing.Bitmap logo_ichi {
             get {
-                object obj = ResourceManager.GetObject("logo4", resourceCulture);
+                object obj = ResourceManager.GetObject("logo_ichi", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -223,9 +223,19 @@ namespace kido_teacher_app.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap slide14 {
+        internal static System.Drawing.Bitmap slide1 {
             get {
-                object obj = ResourceManager.GetObject("slide14", resourceCulture);
+                object obj = ResourceManager.GetObject("slide1", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap slide2 {
+            get {
+                object obj = ResourceManager.GetObject("slide2", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

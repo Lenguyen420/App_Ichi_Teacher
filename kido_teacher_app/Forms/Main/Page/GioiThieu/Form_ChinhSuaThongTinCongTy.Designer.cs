@@ -73,7 +73,7 @@ namespace kido_teacher_app.Forms.Main.Page.GioiThieu
 
             picLogo = new PictureBox
             {
-                Image = Properties.Resources.logo4,
+                Image = Properties.Resources.logo_ichi,
                 Size = new Size(28, 28),
                 Location = new Point(10, 8),
                 SizeMode = PictureBoxSizeMode.StretchImage
