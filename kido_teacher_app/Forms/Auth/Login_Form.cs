@@ -106,8 +106,9 @@ namespace kido_teacher_app
                     rememberCheck.Bottom + Clamp(ClientSize.Height / 28, 22, 34)
                 );
 
+                statusLabel.Size = new Size(rightPanel.ClientSize.Width, 32);
                 statusLabel.Location = new Point(
-                    Math.Max(20, (rightPanel.ClientSize.Width - statusLabel.Width) / 2),
+                    0,
                     loginButton.Bottom + Clamp(ClientSize.Height / 36, 18, 28)
                 );
 

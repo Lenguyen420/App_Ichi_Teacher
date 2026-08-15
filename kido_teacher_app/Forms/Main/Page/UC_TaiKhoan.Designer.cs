@@ -14,8 +14,6 @@ namespace kido_teacher_app.Forms.Main.Page
 
         private GroupBox gbAccount;
 
-        private LinkLabel llChangePw;
-
         private TextBox txtMaTK;
         private TextBox txtTaiKhoan;
         private TextBox txtTen;
@@ -114,9 +112,6 @@ namespace kido_teacher_app.Forms.Main.Page
             // Row 4
             tblAcc.Controls.Add(new Label { Text = "Email:", Anchor = AnchorStyles.Left, AutoSize = true }, 0, 3);
             txtEmail = MakeBox(); tblAcc.Controls.Add(txtEmail, 1, 3);
-
-            llChangePw = new LinkLabel { Text = "Đổi Mật Khẩu", AutoSize = true, Anchor = AnchorStyles.Left };
-            tblAcc.Controls.Add(llChangePw, 3, 3);
 
             gbAccount.Controls.Add(tblAcc);
 

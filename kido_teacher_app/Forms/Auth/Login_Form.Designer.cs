@@ -135,8 +135,9 @@
             // Status Label
             statusLabel = new Label();
             statusLabel.Font = new Font("Arial", 14F, FontStyle.Bold);
-            statusLabel.Location = new Point(260, 410);
-            statusLabel.AutoSize = true;
+            statusLabel.Location = new Point(0, 410);
+            statusLabel.Size = new Size(950, 32);
+            statusLabel.TextAlign = ContentAlignment.MiddleCenter;
             statusLabel.Text = string.Empty;
             statusLabel.Visible = false;
 

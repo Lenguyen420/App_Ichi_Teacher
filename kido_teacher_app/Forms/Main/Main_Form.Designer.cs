@@ -31,7 +31,7 @@
             this.panelLeft.Width = 300;
             this.panelLeft.Name = "panelLeft";
 
-            //// ---- LOGO TRÒN ----
+            //// ---- LOGO ----
 
             PictureBox logo = new PictureBox()
             {
@@ -39,17 +39,7 @@
                 Size = new Size(180, 180),
                 Location = new Point(50, 20),
                 SizeMode = PictureBoxSizeMode.Zoom,
-                //BackColor = Color.Transparent
-            };
-
-            logo.Paint += (s, e) =>
-            {
-                e.Graphics.SmoothingMode =
-                    System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-
-                var gp = new System.Drawing.Drawing2D.GraphicsPath();
-                gp.AddEllipse(0, 0, logo.Width - 1, logo.Height - 1);
-                logo.Region = new Region(gp);
+                BackColor = Color.White
             };
 
             panelLeft.Controls.Add(logo);

@@ -136,12 +136,18 @@ if (-not (Test-Path $publishDir)) {
     New-Item -ItemType Directory -Path $publishDir | Out-Null
 }
 
+$publishDirForMsBuild = [System.IO.Path]::GetFullPath($publishDir)
+if (-not $publishDirForMsBuild.EndsWith([string][System.IO.Path]::DirectorySeparatorChar)) {
+    $publishDirForMsBuild += [System.IO.Path]::DirectorySeparatorChar
+}
+
 Write-Host "Publishing version $newVersionDisplay ..."
 if ($publishProfile) {
     $msbuild = Find-MSBuild
     & $msbuild $projectPath /t:Restore,Publish `
         /p:Configuration=$configuration `
         /p:PublishProfile=$publishProfile `
+        /p:PublishDir=$publishDirForMsBuild `
         /p:ApplicationVersion=$assemblyVersion `
         /p:PublishVersion=$publishVersion `
         /p:Version=$assemblyVersion `
@@ -168,7 +174,7 @@ Copy-Item -Path $versionFile -Destination $publishVersionPath -Force
 $versionTxtPath = Join-Path $publishDir "version.txt"
 Set-Content -Path $versionTxtPath -Value $newVersionDisplay -Encoding UTF8
 
-if ($config.UseUpdateVersionApi) {
+if ($config.UseUpdateVersionApi -and -not $SkipUpload) {
     $apiBase = (Get-ConfigValue $config "ApiBaseUrl")
     if ($apiBase) { $apiBase = $apiBase.TrimEnd("/") }
     $endpoint = (Get-ConfigValue $config "UpdateVersionEndpoint")
