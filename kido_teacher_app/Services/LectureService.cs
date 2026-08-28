@@ -346,6 +346,7 @@ namespace kido_teacher_app.Services
                     int total = zip.Entries.Count;
                     int current = 0;
                     var commonRoot = GetSharedRootFolder(zip.Entries);
+                    var wrapperFolders = GetWrapperFoldersToStrip(zip.Entries, commonRoot);
 
                     foreach (var entry in zip.Entries)
                     {
@@ -360,7 +361,7 @@ namespace kido_teacher_app.Services
                             relativePath = relativePath.Substring(commonRoot.Length);
                         }
 
-                        relativePath = NormalizeExtractRelativePath(relativePath);
+                        relativePath = NormalizeExtractRelativePath(relativePath, wrapperFolders);
 
                         // Bỏ qua nếu path rỗng sau khi remove root
                         if (string.IsNullOrWhiteSpace(relativePath))
@@ -483,17 +484,39 @@ namespace kido_teacher_app.Services
             return string.IsNullOrWhiteSpace(rootFolder) ? null : rootFolder + "/";
         }
 
-        private static string NormalizeExtractRelativePath(string relativePath)
+        private static HashSet<string> GetWrapperFoldersToStrip(
+            IEnumerable<ZipArchiveEntry> entries,
+            string? commonRoot)
+        {
+            var wrapperFolders = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (var entry in entries.Where(e => !string.IsNullOrEmpty(e.Name)))
+            {
+                var relativePath = entry.FullName.Replace('\\', '/');
+                if (!string.IsNullOrEmpty(commonRoot) && relativePath.StartsWith(commonRoot, StringComparison.Ordinal))
+                    relativePath = relativePath.Substring(commonRoot.Length);
+
+                var parts = relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length != 2 || IsReservedElearningFolder(parts[0]))
+                    continue;
+
+                if (IsLectureEntryPoint(parts[1]))
+                    wrapperFolders.Add(parts[0]);
+            }
+
+            return wrapperFolders;
+        }
+
+        private static string NormalizeExtractRelativePath(
+            string relativePath,
+            IReadOnlySet<string> wrapperFolders)
         {
             var parts = relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
             if (parts.Length < 2)
                 return relativePath;
 
-            if (IsReservedElearningFolder(parts[0]))
-                return relativePath;
-
-            if (!ShouldStripWrapperFolder(parts[1]))
+            if (!wrapperFolders.Contains(parts[0]))
                 return relativePath;
 
             return string.Join("/", parts.Skip(1));
@@ -507,21 +530,12 @@ namespace kido_teacher_app.Services
                 || string.Equals(folderName, "story_content", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool ShouldStripWrapperFolder(string childName)
-        {
-            return
-                IsReservedElearningFolder(childName)
-                || IsStandaloneLectureDocument(childName)
-                || IsStorylineRootAsset(childName);
-        }
-
-        private static bool IsStorylineRootAsset(string fileName)
+        private static bool IsLectureEntryPoint(string fileName)
         {
             return
                 string.Equals(fileName, "story.html", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(fileName, "analytics-frame.html", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(fileName, "html5.dbs", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(fileName, "meta.xml", StringComparison.OrdinalIgnoreCase);
+                || string.Equals(Path.GetExtension(fileName), ".mp4", StringComparison.OrdinalIgnoreCase)
+                || IsStandaloneLectureDocument(fileName);
         }
 
         private static bool IsStandaloneLectureDocument(string filePath)
