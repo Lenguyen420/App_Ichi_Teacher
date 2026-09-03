@@ -10,6 +10,9 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <AssemblyName>Ichi Teacher</AssemblyName>
     <UseAppHost>true</UseAppHost>
+    <PlatformTarget>x86</PlatformTarget>
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
     <ApplicationIcon>Resources\logo_ichi.ico</ApplicationIcon>
 
   </PropertyGroup>
@@ -50,9 +53,17 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
   <ItemGroup>
-    <BootstrapperPackage Include="Microsoft.Visual.C++.14.0.x64">
+    <BootstrapperPackage Include="Microsoft.EdgeRuntime">
       <Install>true</Install>
-      <ProductName>Microsoft Visual C++ Redistributable (x64)</ProductName>
+      <ProductName>Microsoft Edge WebView2 Runtime</ProductName>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.NetCore.DesktopRuntime.6.0.x86">
+      <Install>true</Install>
+      <ProductName>.NET Desktop Runtime 6.0.36 (x86)</ProductName>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Visual.C++.14.0.x86">
+      <Install>true</Install>
+      <ProductName>Microsoft Visual C++ Redistributable (x86)</ProductName>
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>

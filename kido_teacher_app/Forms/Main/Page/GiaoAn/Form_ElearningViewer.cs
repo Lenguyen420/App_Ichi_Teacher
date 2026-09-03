@@ -78,7 +78,7 @@ namespace kido_teacher_app.Forms.GiaoAn
                     WebViewLog.Error($"E-LEARNING native runtime side-by-side failure input='{_urlOrPath}' hresult='0x{ex.HResult:X8}'");
                     OpenWithDefaultBrowser(
                         "WebView2 hoặc Microsoft Visual C++ Runtime trên máy đang bị thiếu/hỏng. "
-                        + "Hãy Repair hoặc cài lại Microsoft Edge WebView2 Runtime và Microsoft Visual C++ Redistributable (x64).",
+                        + "Hãy Repair hoặc cài lại Microsoft Edge WebView2 Runtime và Microsoft Visual C++ Redistributable (x86).",
                         "WebView2 bị lỗi");
                     return;
                 }
