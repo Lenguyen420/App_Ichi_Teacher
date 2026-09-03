@@ -598,13 +598,15 @@ namespace kido_teacher_app.Forms.Main.Page
             for (var i = 0; i < trendPoints.Count; i++)
             {
                 var xRatio = trendPoints.Count == 1 ? 0.5f : (float)i / (trendPoints.Count - 1);
-                var yRatio = 1f - Math.Clamp(trendPoints[i].Score, 0f, 10f) / 10f;
+                var yRatio = 1f - Math.Max(0f, Math.Min(10f, trendPoints[i].Score)) / 10f;
                 points[i] = new PointF(plot.Left + plot.Width * xRatio, plot.Top + plot.Height * yRatio);
             }
             if (points.Length > 1) g.DrawLines(linePen, points);
             foreach (var p in points) g.FillEllipse(pointBrush, p.X - 3.5f, p.Y - 3.5f, 7, 7);
             g.DrawString(trendPoints[0].Label, font, labelBrush, points[0].X - 12, plot.Bottom + 6);
-            if (trendPoints.Count > 1) g.DrawString(trendPoints[^1].Label, font, labelBrush, points[^1].X - 12, plot.Bottom + 6);
+            if (trendPoints.Count > 1)
+                g.DrawString(trendPoints[trendPoints.Count - 1].Label, font, labelBrush,
+                    points[points.Length - 1].X - 12, plot.Bottom + 6);
         }
 
         /// <summary>
@@ -754,7 +756,28 @@ namespace kido_teacher_app.Forms.Main.Page
         private static string BuildErrorMessage(Exception ex, string fallback) => ex is UnauthorizedAccessException ? "Bạn chưa đăng nhập hoặc token không hợp lệ." : ex is AttemptReportApiException api ? api.StatusCode switch { HttpStatusCode.BadRequest => string.IsNullOrWhiteSpace(api.Message) ? "Bộ lọc báo cáo không hợp lệ." : api.Message, HttpStatusCode.Forbidden => "Bạn không có quyền xem báo cáo cho nhóm này.", HttpStatusCode.NotFound => "Không tìm thấy nhóm, học sinh hoặc dữ liệu báo cáo.", _ => string.IsNullOrWhiteSpace(api.Message) ? fallback : api.Message } : IsNetworkException(ex) ? "Không thể kết nối đến máy chủ báo cáo." : fallback;
         private static bool IsNetworkException(Exception ex) => ex is System.Net.Http.HttpRequestException || ex is TaskCanceledException || ex is System.Net.Sockets.SocketException || (ex.InnerException != null && IsNetworkException(ex.InnerException));
 
-        private sealed record ComboItem(string? Value, string Text);
-        private sealed record TrendPoint(string Label, float Score);
+        private sealed class ComboItem
+        {
+            public ComboItem(string? value, string text)
+            {
+                Value = value;
+                Text = text;
+            }
+
+            public string? Value { get; }
+            public string Text { get; }
+        }
+
+        private sealed class TrendPoint
+        {
+            public TrendPoint(string label, float score)
+            {
+                Label = label;
+                Score = score;
+            }
+
+            public string Label { get; }
+            public float Score { get; }
+        }
     }
 }

@@ -66,6 +66,7 @@ using kido_teacher_app.Services;
 using kido_teacher_app.Shared.Logging;
 using System;
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -76,6 +77,8 @@ namespace kido_teacher_app
         [STAThread]
         static void Main()
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
             // ===== GLOBAL EXCEPTION =====
             Application.ThreadException += (s, e) =>
             {
@@ -90,7 +93,8 @@ namespace kido_teacher_app
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
 
             //  CHỈ GỌI 1 LẦN – TRƯỚC MỌI FORM
-            ApplicationConfiguration.Initialize();
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
 
             // ===== INIT DATA FOLDER =====
             string basePath = Path.Combine(
@@ -176,7 +180,7 @@ namespace kido_teacher_app
 
             foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
             {
-                var relative = Path.GetRelativePath(sourceDir, file);
+                var relative = GetRelativePath(sourceDir, file);
                 var dest = Path.Combine(destDir, relative);
                 var destParent = Path.GetDirectoryName(dest);
                 if (!Directory.Exists(destParent))
@@ -187,6 +191,21 @@ namespace kido_teacher_app
                     File.Copy(file, dest, false);
                 }
             }
+        }
+
+        private static string GetRelativePath(string basePath, string path)
+        {
+            var baseUri = new Uri(AppendDirectorySeparator(basePath));
+            var pathUri = new Uri(path);
+            return Uri.UnescapeDataString(baseUri.MakeRelativeUri(pathUri).ToString())
+                .Replace('/', Path.DirectorySeparatorChar);
+        }
+
+        private static string AppendDirectorySeparator(string path)
+        {
+            return path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+                ? path
+                : path + Path.DirectorySeparatorChar;
         }
 
         private static void DeleteFolderSafe(string sourceDir)

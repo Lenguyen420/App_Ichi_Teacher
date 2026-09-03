@@ -42,10 +42,10 @@ namespace kido_teacher_app.Services
         {
             EnsureInitialized();
 
-            await using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
+            using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
             await conn.OpenAsync();
 
-            await using var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText =
                 @"INSERT INTO api_cache (cache_key, json, updated_at)
                   VALUES (@k, @j, @t)
@@ -64,10 +64,10 @@ namespace kido_teacher_app.Services
         {
             EnsureInitialized();
 
-            await using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
+            using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
             await conn.OpenAsync();
 
-            await using var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = @"SELECT json FROM api_cache WHERE cache_key = @k LIMIT 1;";
             cmd.Parameters.AddWithValue("@k", key);
 
@@ -88,14 +88,14 @@ namespace kido_teacher_app.Services
 
             var keys = new List<string>();
 
-            await using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
+            using var conn = new SqliteConnection($"Data Source={AppConfig.DbPath}");
             await conn.OpenAsync();
 
-            await using var cmd = conn.CreateCommand();
+            using var cmd = conn.CreateCommand();
             cmd.CommandText = @"SELECT cache_key FROM api_cache WHERE cache_key LIKE @p;";
             cmd.Parameters.AddWithValue("@p", prefix + "%");
 
-            await using var reader = await cmd.ExecuteReaderAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
                 if (!reader.IsDBNull(0))

@@ -4,17 +4,25 @@ using kido_teacher_app.Services;
 using kido_teacher_app.Shared.Logging;
 using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace kido_teacher_app
 {
     public partial class Form_Login : Form
     {
+        private const int EmSetCueBanner = 0x1501;
         private bool _applyingResponsiveLayout;
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, string lParam);
 
         public Form_Login()
         {
             InitializeComponent();
+
+            SetCueBanner(usernameBox, "Tên đăng nhập");
+            SetCueBanner(passwordBox, "Mật khẩu");
 
             Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
@@ -25,6 +33,11 @@ namespace kido_teacher_app
             Shown += (_, _) => ApplyResponsiveLayout(fitToWorkingArea: true);
             Resize += (_, _) => ApplyResponsiveLayout();
             DpiChanged += (_, _) => BeginInvoke(new Action(() => ApplyResponsiveLayout(fitToWorkingArea: true)));
+        }
+
+        private static void SetCueBanner(TextBox textBox, string text)
+        {
+            SendMessage(textBox.Handle, EmSetCueBanner, (IntPtr)1, text);
         }
 
         private void ApplyResponsiveLayout(bool fitToWorkingArea = false)

@@ -4,7 +4,7 @@ using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace kido_teacher_app.Shared.Caching
 {
@@ -12,11 +12,6 @@ namespace kido_teacher_app.Shared.Caching
     {
         private static readonly string ResourceMapPath =
             Path.Combine(AppConfig.CacheFolder, "resource-map.json");
-        private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true
-        };
         private static readonly object InitLock = new object();
         private static bool _initialized;
         private static bool _migrated;
@@ -71,7 +66,7 @@ namespace kido_teacher_app.Shared.Caching
             try
             {
                 var json = File.ReadAllText(ResourceMapPath);
-                var map = JsonSerializer.Deserialize<Dictionary<string, LectureOfflineCache>>(json)
+                var map = JsonConvert.DeserializeObject<Dictionary<string, LectureOfflineCache>>(json)
                     ?? new Dictionary<string, LectureOfflineCache>();
 
                 if (map.Count == 0)
@@ -570,7 +565,7 @@ namespace kido_teacher_app.Shared.Caching
                     return new Dictionary<string, LectureOfflineCache>();
 
                 var json = File.ReadAllText(AppConfig.OfflineLecturePathJson);
-                return JsonSerializer.Deserialize<Dictionary<string, LectureOfflineCache>>(json)
+                return JsonConvert.DeserializeObject<Dictionary<string, LectureOfflineCache>>(json)
                     ?? new Dictionary<string, LectureOfflineCache>();
             }
             catch (Exception ex)
@@ -585,7 +580,7 @@ namespace kido_teacher_app.Shared.Caching
             try
             {
                 Directory.CreateDirectory(AppConfig.DbFolder);
-                var json = JsonSerializer.Serialize(map, JsonOptions);
+                var json = JsonConvert.SerializeObject(map, Formatting.Indented);
                 File.WriteAllText(AppConfig.OfflineLecturePathJson, json);
             }
             catch (Exception ex)

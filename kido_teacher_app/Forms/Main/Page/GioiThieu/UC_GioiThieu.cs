@@ -100,7 +100,7 @@ namespace kido_teacher_app.Forms.Main.Page
         private Size GetSlideTargetSize()
         {
             var screenWidth = Screen.PrimaryScreen?.WorkingArea.Width ?? 1920;
-            var width = Math.Clamp(screenWidth, 1280, 1920);
+            var width = Math.Max(1280, Math.Min(1920, screenWidth));
             var height = (int)(width * 9.0 / 16.0);
             return new Size(width, height);
         }

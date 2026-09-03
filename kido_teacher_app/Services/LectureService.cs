@@ -283,8 +283,8 @@ namespace kido_teacher_app.Services
                     const int downloadBufferSize = 1024 * 1024; // 1 MB buffer to improve throughput
                     var buffer = new byte[downloadBufferSize];
                     long read = 0;
-                    await using var input = await res.Content.ReadAsStreamAsync();
-                    await using var output = new FileStream(
+                    using var input = await res.Content.ReadAsStreamAsync();
+                    using var output = new FileStream(
                         tempZip,
                         FileMode.Create,
                         FileAccess.Write,
@@ -463,7 +463,7 @@ namespace kido_teacher_app.Services
             foreach (var entry in entries.Where(e => !string.IsNullOrEmpty(e.Name)))
             {
                 var normalized = entry.FullName.Replace('\\', '/');
-                var parts = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                var parts = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
                 if (parts.Length < 2)
                     return null;
@@ -496,7 +496,7 @@ namespace kido_teacher_app.Services
                 if (!string.IsNullOrEmpty(commonRoot) && relativePath.StartsWith(commonRoot, StringComparison.Ordinal))
                     relativePath = relativePath.Substring(commonRoot.Length);
 
-                var parts = relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                var parts = relativePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length != 2 || IsReservedElearningFolder(parts[0]))
                     continue;
 
@@ -509,9 +509,9 @@ namespace kido_teacher_app.Services
 
         private static string NormalizeExtractRelativePath(
             string relativePath,
-            IReadOnlySet<string> wrapperFolders)
+            ISet<string> wrapperFolders)
         {
-            var parts = relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var parts = relativePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
             if (parts.Length < 2)
                 return relativePath;

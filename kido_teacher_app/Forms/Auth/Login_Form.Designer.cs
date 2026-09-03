@@ -90,7 +90,6 @@
             usernameBox.Font = new Font("Arial", 16F);
             usernameBox.Location = new Point(220, 150);
             usernameBox.Width = 350;
-            usernameBox.PlaceholderText = "Tên đăng nhập";
 
             // Icon pass
             iconPass = new PictureBox();
@@ -105,7 +104,6 @@
             passwordBox.Location = new Point(220, 220);
             passwordBox.Width = 350;
             passwordBox.UseSystemPasswordChar = true;
-            passwordBox.PlaceholderText = "Mật khẩu";
 
             // Icon Eye
             iconEye = new PictureBox();
