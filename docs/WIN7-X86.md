@@ -1,5 +1,27 @@
 # Ichi Teacher: kiểm thử Windows 7 SP1 32-bit
 
+## Publish trong Visual Studio
+
+Project đã chuyển sang định dạng C# .NET Framework truyền thống, target v4.8/x86.
+Sau khi cập nhật source, đóng rồi mở lại solution `kido_teacher.slnx` để Visual Studio
+nạp lại đúng project system. Nếu Visual Studio hỏi reload project, chọn Reload.
+
+1. Chuột phải project `kido_teacher_app` → **Properties** → **Publish**.
+2. Chọn **Prerequisites…** và kiểm tra **Microsoft .NET Framework 4.8**.
+3. Kiểm tra **Publishing Folder Location**, **Installation Folder URL**, version và **Updates…**.
+4. Chọn **Publish Now** hoặc **Publish Wizard…**. Không dùng wizard Azure/Folder của profile SDK cũ.
+
+Cấu hình mặc định giữ URL cài đặt x86 từ profile cũ:
+`https://be.ichiteacher.ichiskill.com/uploads/ichiteacher/x86/` và xuất vào `bin/Publish/x86/`.
+Các thiết lập giao diện nằm trực tiếp trong `.csproj`; những `.pubxml` cũ chỉ được import
+khi truyền `PublishProfile` rõ ràng qua MSBuild. Không cần chọn `FolderProfile1`.
+Publish mặc định tạo bộ cài với cập nhật qua URL trên; việc upload vẫn là bước riêng.
+WebView2 Runtime 109 vẫn cài bằng script prerequisite trong bộ ZIP, chưa tự cài qua ClickOnce.
+
+Dùng Visual Studio MSBuild để build/publish project truyền thống. `GlobalUsings.cs` giữ
+các namespace trước đây do SDK sinh tự động. Assembly version vẫn nhận các tham số
+`AssemblyVersion`, `FileVersion` và `Version` từ script publish.
+
 ## Tạo bộ cài thử
 
 Chạy trên máy build có Visual Studio MSBuild và .NET Framework 4.8 targeting pack:

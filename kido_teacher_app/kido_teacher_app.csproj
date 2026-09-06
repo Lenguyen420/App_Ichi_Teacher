@@ -1,51 +1,327 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <ProjectGuid>{D480E19D-C994-431A-BCB6-A53633FCD718}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net48</TargetFramework>
-    <Nullable>enable</Nullable>
-    <LangVersion>10.0</LangVersion>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>True</UseWPF>
-    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
-    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <RootNamespace>kido_teacher_app</RootNamespace>
     <AssemblyName>Ichi Teacher</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
     <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>true</Prefer32Bit>
     <ApplicationIcon>Resources\logo_ichi.ico</ApplicationIcon>
-
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
+    <OutputPath>bin\$(Platform)\$(Configuration)\net48\</OutputPath>
+    <WarningLevel>4</WarningLevel>
+    <ErrorReport>prompt</ErrorReport>
+    <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">1.0.0.0</AssemblyVersion>
+    <FileVersion Condition="'$(FileVersion)' == ''">$(AssemblyVersion)</FileVersion>
+    <Version Condition="'$(Version)' == ''">1.0.0</Version>
+    <!-- Classic Visual Studio Properties > Publish settings. -->
+    <GenerateManifests>true</GenerateManifests>
+    <SignManifests>false</SignManifests>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <BootstrapperComponentsLocation>HomeSite</BootstrapperComponentsLocation>
+    <PublishUrl>bin\Publish\x86\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Web</InstallFrom>
+    <InstallUrl>https://be.ichiteacher.ichiskill.com/uploads/ichiteacher/x86/</InstallUrl>
+    <IsWebBootstrapper>true</IsWebBootstrapper>
+    <UpdateEnabled>true</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationVersion>1.0.0.*</ApplicationVersion>
+    <ApplicationRevision>3</ApplicationRevision>
+    <ProductName>Ichi Teacher</ProductName>
+    <PublisherName>Ichi Teacher</PublisherName>
+    <UseApplicationTrust>false</UseApplicationTrust>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <IsPublishable>True</IsPublishable>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <IsPublishable>True</IsPublishable>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
   </PropertyGroup>
-
   <ItemGroup>
-    <Compile Update="Properties\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System.Xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Config\ApiRoutes.cs">
     </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    <Compile Include="Config\AppConfig.cs">
+    </Compile>
+    <Compile Include="Config\AuthSession.cs">
+    </Compile>
+    <Compile Include="Forms\Auth\Login_Form.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Auth\Login_Form.Designer.cs">
+      <DependentUpon>Login_Form.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Main\Main_Form.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Main\Main_Form.Designer.cs">
+      <DependentUpon>Main_Form.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GiaoAn\Form_ElearningViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GiaoAn\Form_PdfViewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GiaoAn\UC_GiaoAn.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GiaoAn\UC_GiaoAn.Designer.cs">
+      <DependentUpon>UC_GiaoAn.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GiaoAn\UC_GiaoAn_TheoThangChiTiet.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GiaoAn\UC_GiaoAn_TheoThangChiTiet.Designer.cs">
+      <DependentUpon>UC_GiaoAn_TheoThangChiTiet.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GiaoAn\UC_GiaoAnTheoThang.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GiaoAn\UC_GiaoAnTheoThang.Designer.cs">
+      <DependentUpon>UC_GiaoAnTheoThang.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GioiThieu\Form_ChinhSuaThongTinCongTy.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GioiThieu\Form_ChinhSuaThongTinCongTy.Designer.cs">
+      <DependentUpon>Form_ChinhSuaThongTinCongTy.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GioiThieu\UC_GioiThieu.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\Main\Page\GioiThieu\UC_GioiThieu.Designer.cs">
+      <DependentUpon>UC_GioiThieu.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\Main\Page\UC_BaoCao.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\Main\Page\UC_TaiKhoan.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\Main\Page\UC_TaiKhoan.Designer.cs">
+      <DependentUpon>UC_TaiKhoan.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Helpers\LocalGiaoAnHelper.cs">
+    </Compile>
+    <Compile Include="Helpers\ZipHelper.cs">
+    </Compile>
+    <Compile Include="Model\AddUsersToGroupRequest.cs">
+    </Compile>
+    <Compile Include="Model\AddUsersToGroupResponse.cs">
+    </Compile>
+    <Compile Include="Model\ApiData.cs">
+    </Compile>
+    <Compile Include="Model\ApiResponse.cs">
+    </Compile>
+    <Compile Include="Model\AppSession.cs">
+    </Compile>
+    <Compile Include="Model\AttemptReportDtos.cs">
+    </Compile>
+    <Compile Include="Model\AuthSession.cs">
+    </Compile>
+    <Compile Include="Model\ChunkedUploadDtos.cs">
+    </Compile>
+    <Compile Include="Model\ClassCreateDto.cs">
+    </Compile>
+    <Compile Include="Model\ClassDto.cs">
+    </Compile>
+    <Compile Include="Model\CourseDto.cs">
+    </Compile>
+    <Compile Include="Model\CoursePagedResult.cs">
+    </Compile>
+    <Compile Include="Model\CreateUserRequest.cs">
+    </Compile>
+    <Compile Include="Model\GroupDto.cs">
+    </Compile>
+    <Compile Include="Model\GroupMemberModel.cs">
+    </Compile>
+    <Compile Include="Model\GroupUserItem.cs">
+    </Compile>
+    <Compile Include="Model\LectureCreateDto.cs">
+    </Compile>
+    <Compile Include="Model\LectureDownloadLogDto.cs">
+    </Compile>
+    <Compile Include="Model\LectureDto.cs">
+    </Compile>
+    <Compile Include="Model\LectureFiles.cs">
+    </Compile>
+    <Compile Include="Model\LectureOfflineCache.cs">
+    </Compile>
+    <Compile Include="Model\LecturePagedResult.cs">
+    </Compile>
+    <Compile Include="Model\LectureUpdateDto.cs">
+    </Compile>
+    <Compile Include="Model\LessonDto.cs">
+    </Compile>
+    <Compile Include="Model\LoginResponseDto.cs">
+    </Compile>
+    <Compile Include="Model\PagedResult.cs">
+    </Compile>
+    <Compile Include="Model\SafeBooleanJsonConverter.cs">
+    </Compile>
+    <Compile Include="Model\UpdateGroupRequest.cs">
+    </Compile>
+    <Compile Include="Model\UpdateUserRequest.cs">
+    </Compile>
+    <Compile Include="Model\UploadData.cs">
+    </Compile>
+    <Compile Include="Model\UploadRoot.cs">
+    </Compile>
+    <Compile Include="Model\UserBasicModel.cs">
+    </Compile>
+    <Compile Include="Model\UserDto.cs">
+    </Compile>
+    <Compile Include="Model\UserGroupModel.cs">
+    </Compile>
+    <Compile Include="Model\Wrapper.cs">
+    </Compile>
+    <Compile Include="Model\ZoneDetailDtos.cs">
+    </Compile>
+    <Compile Include="Program.cs">
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>true</AutoGen><DesignTime>true</DesignTime><DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Services\ApiDownloadService.cs">
+    </Compile>
+    <Compile Include="Services\AttemptReportService.cs">
+    </Compile>
+    <Compile Include="Services\AuthService.cs">
+    </Compile>
+    <Compile Include="Services\ClassService.cs">
+    </Compile>
+    <Compile Include="Services\CourseService.cs">
+    </Compile>
+    <Compile Include="Services\DbCacheService.cs">
+    </Compile>
+    <Compile Include="Services\LectureDownloadService.cs">
+    </Compile>
+    <Compile Include="Services\LectureResourceService.cs">
+    </Compile>
+    <Compile Include="Services\LectureService.cs">
+    </Compile>
+    <Compile Include="Services\OfflinePrefetchService.cs">
+    </Compile>
+    <Compile Include="Services\OfflineResourceService.cs">
+    </Compile>
+    <Compile Include="Services\ResourceHelper.cs">
+    </Compile>
+    <Compile Include="Services\UserService.cs">
+    </Compile>
+    <Compile Include="Shared\Caching\CacheImagePathNormalizer.cs">
+    </Compile>
+    <Compile Include="Shared\Caching\ClassImageCacheService.cs">
+    </Compile>
+    <Compile Include="Shared\Caching\CourseImageCacheService.cs">
+    </Compile>
+    <Compile Include="Shared\Caching\ImageCacheService.cs">
+    </Compile>
+    <Compile Include="Shared\Caching\LectureImageCacheService.cs">
+    </Compile>
+    <Compile Include="Shared\Caching\LectureOfflineCacheService.cs">
+    </Compile>
+    <Compile Include="Shared\Common\GetMaxCodeService.cs">
+    </Compile>
+    <Compile Include="Shared\Logging\FileLog.cs">
+    </Compile>
+    <Compile Include="Shared\Logging\WebViewLog.cs">
+    </Compile>
+    <Compile Include="Shared\Network\OfflineState.cs">
+    </Compile>
+    <Compile Include="GlobalUsings.cs" />
+    <EmbeddedResource Include="Forms\Auth\Login_Form.resx">
+      <DependentUpon>Login_Form.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Main\Main_Form.resx">
+      <DependentUpon>Main_Form.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Main\Page\GiaoAn\Form_ElearningViewer.resx">
+      <DependentUpon>Form_ElearningViewer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Main\Page\GiaoAn\UC_GiaoAn.resx">
+      <DependentUpon>UC_GiaoAn.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Main\Page\GiaoAn\UC_GiaoAn_TheoThangChiTiet.resx">
+      <DependentUpon>UC_GiaoAn_TheoThangChiTiet.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Main\Page\GiaoAn\UC_GiaoAnTheoThang.resx">
+      <DependentUpon>UC_GiaoAnTheoThang.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Main\Page\GioiThieu\Form_ChinhSuaThongTinCongTy.resx">
+      <DependentUpon>Form_ChinhSuaThongTinCongTy.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Main\Page\GioiThieu\UC_GioiThieu.resx">
+      <DependentUpon>UC_GioiThieu.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\Main\Page\UC_TaiKhoan.resx">
+      <DependentUpon>UC_TaiKhoan.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator><LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <None Include="App.config" />
+    <None Include="Resources\classdefault.png" />
+    <None Include="Resources\coursedefault.png" />
+    <None Include="Resources\coursedefault1.png" />
+    <None Include="Resources\delete.png" />
+    <None Include="Resources\file.png" />
+    <None Include="Resources\giaoan.jpg" />
+    <None Include="Resources\giaoan2.jpg" />
+    <None Include="Resources\hopdong.jpg" />
+    <None Include="Resources\icon\icon_gioi_thieu.jpg" />
+    <None Include="Resources\icon_add.png" />
+    <None Include="Resources\icon_address.png" />
+    <None Include="Resources\icon_back.png" />
+    <None Include="Resources\icon_back1.png" />
+    <None Include="Resources\icon_book.png" />
+    <None Include="Resources\icon_delete.png" />
+    <None Include="Resources\icon_edit.png" />
+    <None Include="Resources\icon_elearning.png" />
+    <None Include="Resources\icon_facebook.png" />
+    <None Include="Resources\icon_info.png" />
+    <None Include="Resources\icon_mail.png" />
+    <None Include="Resources\icon_phone.png" />
+    <None Include="Resources\icon_user.png" />
+    <None Include="Resources\Icon_www.png" />
+    <None Include="Resources\logo_app_kidoteacher.jpg" />
+    <None Include="Resources\logo_ichi.ico" />
+    <None Include="Resources\logo_ichi.jpg" />
+    <None Include="Resources\slide1.png" />
+    <None Include="Resources\slide2.jpg" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Properties\Image\Class\" />
-    <Folder Include="Properties\Image\Course\" />
-    <Folder Include="Properties\Image\Lesson\" />
-    <Folder Include="Resources\GiaoAn\" />
-  </ItemGroup>
-
   <ItemGroup>
     <!-- Last stable SDK supporting Windows 7 SP1; pair with WebView2 Runtime 109. -->
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.1518.46" />
@@ -82,4 +358,26 @@
     </Content>
   </ItemGroup>
 
+
+  <!-- Command-line profiles remain available; the Visual Studio Publish page uses properties above. -->
+  <PropertyGroup>
+    <PublishProfileFullPath Condition="'$(PublishProfileFullPath)' == '' and '$(PublishProfile)' != ''">$(MSBuildProjectDirectory)\Properties\PublishProfiles\$(PublishProfile).pubxml</PublishProfileFullPath>
+  </PropertyGroup>
+  <Import Project="$(PublishProfileFullPath)" Condition="'$(PublishProfileFullPath)' != '' and Exists('$(PublishProfileFullPath)')" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="GenerateProjectAssemblyInfo" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyTitleAttribute"><_Parameter1>$(AssemblyName)</_Parameter1></AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyProductAttribute"><_Parameter1>$(AssemblyName)</_Parameter1></AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyCompanyAttribute"><_Parameter1>Ichi Teacher</_Parameter1></AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyConfigurationAttribute"><_Parameter1>$(Configuration)</_Parameter1></AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyVersionAttribute"><_Parameter1>$(AssemblyVersion)</_Parameter1></AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyFileVersionAttribute"><_Parameter1>$(FileVersion)</_Parameter1></AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyInformationalVersionAttribute"><_Parameter1>$(Version)</_Parameter1></AssemblyAttribute>
+    </ItemGroup>
+    <WriteCodeFragment AssemblyAttributes="@(AssemblyAttribute)" Language="C#" OutputFile="$(IntermediateOutputPath)Project.AssemblyInfo.cs">
+      <Output TaskParameter="OutputFile" ItemName="Compile" />
+      <Output TaskParameter="OutputFile" ItemName="FileWrites" />
+    </WriteCodeFragment>
+  </Target>
 </Project>
