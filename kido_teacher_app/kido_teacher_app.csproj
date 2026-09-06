@@ -47,8 +47,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3650.58" />
+    <!-- Last stable SDK supporting Windows 7 SP1; pair with WebView2 Runtime 109. -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.1518.46" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.32" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.2" GeneratePathProperty="true" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="System.Resources.Extensions" Version="6.0.0" />
   </ItemGroup>
@@ -70,6 +72,13 @@
       <Link>version.json</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
+    <!-- Native runtime assets copied by NuGet are not automatically in the net48 ClickOnce manifest. -->
+    <Content Include="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\win-x86\native\e_sqlite3.dll" Condition="'$(PlatformTarget)' == 'x86'">
+      <Link>e_sqlite3.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Visible>false</Visible>
     </Content>
   </ItemGroup>
 

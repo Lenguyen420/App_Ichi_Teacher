@@ -1,6 +1,7 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using kido_teacher_app.Shared.Logging;
+using kido_teacher_app.Config;
 using System;
 using System.Diagnostics;
 using System.Drawing;
@@ -60,7 +61,12 @@ namespace kido_teacher_app.Forms.GiaoAn
             try
             {
                 WebViewLog.Info($"E-LEARNING init input='{_urlOrPath}' title='{_title}'");
-                await webView.EnsureCoreWebView2Async();
+                // Keep the browser profile writable and stable across ClickOnce updates.
+                var userDataFolder = Path.Combine(AppConfig.AppDataRoot, "WebView2");
+                var environment = await CoreWebView2Environment.CreateAsync(
+                    userDataFolder: userDataFolder);
+                WebViewLog.Info($"E-LEARNING runtime='{environment.BrowserVersionString}' processBits='{IntPtr.Size * 8}' userDataFolder='{userDataFolder}'");
+                await webView.EnsureCoreWebView2Async(environment);
                 webView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
                 LoadStory();
             }
@@ -69,7 +75,8 @@ namespace kido_teacher_app.Forms.GiaoAn
                 if (ex is WebView2RuntimeNotFoundException)
                 {
                     WebViewLog.Error($"E-LEARNING WebView2 runtime missing input='{_urlOrPath}'");
-                    OpenWithDefaultBrowser("Máy chưa cài WebView2 Runtime nên app không thể mở e-learning bên trong ứng dụng.");
+                    OpenWithDefaultBrowser("Máy chưa cài WebView2 Runtime nên app không thể mở e-learning bên trong ứng dụng. "
+                        + "Với Windows 7 SP1, hãy cài WebView2 Runtime 109 từ bộ cài dành cho Win7.");
                     return;
                 }
 
