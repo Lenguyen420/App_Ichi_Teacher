@@ -167,7 +167,8 @@ namespace kido_teacher_app.Services
                 return false;
             }
 
-            var nowUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var nowUnix = (long)(DateTimeOffset.UtcNow -
+                new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero)).TotalSeconds;
             if (saved.exp.HasValue && saved.exp.Value <= nowUnix)
             {
                 ClearRememberToken();

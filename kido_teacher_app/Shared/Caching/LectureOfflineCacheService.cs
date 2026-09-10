@@ -1,6 +1,6 @@
 ﻿using kido_teacher_app.Config;
 using kido_teacher_app.Models;
-using Microsoft.Data.Sqlite;
+using SqliteConnection = System.Data.SQLite.SQLiteConnection;
 using System;
 using System.Collections.Generic;
 using System.IO;

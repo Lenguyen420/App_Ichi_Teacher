@@ -53,8 +53,8 @@ namespace kido_teacher_app.Forms.Main.Page
         public UC_BaoCao()
         {
             BuildUi();
-            BindGroups(Array.Empty<StudentGroupNode>());
-            BindStudents(Array.Empty<AttemptReportStudentDto>());
+            BindGroups(new StudentGroupNode[0]);
+            BindStudents(new AttemptReportStudentDto[0]);
             ResetReport("Chọn nhóm để xem báo cáo.");
             dtTo.Value = DateTime.Today;
             dtFrom.Value = DateTime.Today.AddDays(-30);
@@ -286,10 +286,10 @@ namespace kido_teacher_app.Forms.Main.Page
             }
             catch (Exception ex)
             {
-                BindZones(Array.Empty<ZoneDetailItem>());
-                BindSchools(Array.Empty<SchoolNode>());
-                BindGroups(Array.Empty<StudentGroupNode>());
-                BindStudents(Array.Empty<AttemptReportStudentDto>());
+                BindZones(new ZoneDetailItem[0]);
+                BindSchools(new SchoolNode[0]);
+                BindGroups(new StudentGroupNode[0]);
+                BindStudents(new AttemptReportStudentDto[0]);
                 SetStatus(BuildErrorMessage(ex, "Không tải được danh sách khu vực, trường và nhóm."), Color.Firebrick);
             }
             finally { SetBusy(false); }
@@ -305,9 +305,9 @@ namespace kido_teacher_app.Forms.Main.Page
             
             if (!HasSelectedZone())
             {
-                BindSchools(Array.Empty<SchoolNode>());
-                BindGroups(Array.Empty<StudentGroupNode>());
-                BindStudents(Array.Empty<AttemptReportStudentDto>());
+                BindSchools(new SchoolNode[0]);
+                BindGroups(new StudentGroupNode[0]);
+                BindStudents(new AttemptReportStudentDto[0]);
                 ResetReport("Chọn khu vực, trường và nhóm để xem báo cáo.");
                 UpdateActions();
                 return;
@@ -318,8 +318,8 @@ namespace kido_teacher_app.Forms.Main.Page
             var selectedZone = zonePayload.data.FirstOrDefault(z => z.zone.id == activeZoneId);
             var schools = selectedZone?.schools ?? new List<SchoolNode>();
             BindSchools(schools);
-            BindGroups(Array.Empty<StudentGroupNode>());
-            BindStudents(Array.Empty<AttemptReportStudentDto>());
+            BindGroups(new StudentGroupNode[0]);
+            BindStudents(new AttemptReportStudentDto[0]);
             ResetReport("Chọn trường và nhóm để xem báo cáo.");
             UpdateActions();
         }
@@ -333,8 +333,8 @@ namespace kido_teacher_app.Forms.Main.Page
             
             if (!HasSelectedSchool())
             {
-                BindGroups(Array.Empty<StudentGroupNode>());
-                BindStudents(Array.Empty<AttemptReportStudentDto>());
+                BindGroups(new StudentGroupNode[0]);
+                BindStudents(new AttemptReportStudentDto[0]);
                 ResetReport("Chọn trường và nhóm để xem báo cáo.");
                 UpdateActions();
                 return;
@@ -347,7 +347,7 @@ namespace kido_teacher_app.Forms.Main.Page
                 .FirstOrDefault(s => s.id == activeSchoolId);
             var studentGroups = selectedSchool?.studentGroups ?? new List<StudentGroupNode>();
             BindGroups(studentGroups);
-            BindStudents(Array.Empty<AttemptReportStudentDto>());
+            BindStudents(new AttemptReportStudentDto[0]);
             ResetReport("Chọn nhóm để xem báo cáo hoặc học sinh để xem báo cáo cá nhân.");
             UpdateActions();
         }
@@ -359,7 +359,7 @@ namespace kido_teacher_app.Forms.Main.Page
             activeSchoolId = GetSelectedValue(cboSchool);
             activeGroupId = GetSelectedValue(cboGroup);
             activeStudentId = null;
-            BindStudents(Array.Empty<AttemptReportStudentDto>());
+            BindStudents(new AttemptReportStudentDto[0]);
             ResetReport("Nhấn 'Xem báo cáo' để xem báo cáo nhóm hoặc chọn học sinh để xem báo cáo cá nhân.");
             if (!HasSelectedGroup()) { UpdateActions(); return; }
             SetBusy(true, "Đang tải danh sách học sinh...", Color.DarkOrange);
@@ -370,7 +370,7 @@ namespace kido_teacher_app.Forms.Main.Page
             }
             catch (Exception ex)
             {
-                BindStudents(Array.Empty<AttemptReportStudentDto>());
+                BindStudents(new AttemptReportStudentDto[0]);
                 SetStatus(BuildErrorMessage(ex, "Không tải được danh sách học sinh."), Color.Firebrick);
             }
             finally { SetBusy(false); }

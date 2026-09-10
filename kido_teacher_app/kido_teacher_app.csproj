@@ -8,7 +8,7 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>kido_teacher_app</RootNamespace>
     <AssemblyName>Ichi Teacher</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile />
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -19,8 +19,8 @@
     <PlatformTarget>x86</PlatformTarget>
     <Prefer32Bit>true</Prefer32Bit>
     <ApplicationIcon>Resources\logo_ichi.ico</ApplicationIcon>
-    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
-    <OutputPath>bin\$(Platform)\$(Configuration)\net48\</OutputPath>
+    <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
+    <OutputPath>bin\$(Platform)\$(Configuration)\net45\</OutputPath>
     <WarningLevel>4</WarningLevel>
     <ErrorReport>prompt</ErrorReport>
     <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">1.0.0.0</AssemblyVersion>
@@ -323,12 +323,12 @@
     <None Include="Resources\slide2.jpg" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Last stable SDK supporting Windows 7 SP1; pair with WebView2 Runtime 109. -->
+    <!-- Last stable WebView2 SDK supporting Windows 7 SP1. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net45" Version="1.0.3" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.1518.46" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.32" />
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.2" GeneratePathProperty="true" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="System.Resources.Extensions" Version="6.0.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Net.Http" />
@@ -338,9 +338,9 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.8">
+    <BootstrapperPackage Include=".NETFramework,Version=v4.5">
       <Install>true</Install>
-      <ProductName>Microsoft .NET Framework 4.8</ProductName>
+      <ProductName>Microsoft .NET Framework 4.5</ProductName>
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
@@ -348,13 +348,6 @@
       <Link>version.json</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <CopyToPublishDirectory>Always</CopyToPublishDirectory>
-    </Content>
-    <!-- Native runtime assets copied by NuGet are not automatically in the net48 ClickOnce manifest. -->
-    <Content Include="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\win-x86\native\e_sqlite3.dll" Condition="'$(PlatformTarget)' == 'x86'">
-      <Link>e_sqlite3.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <Visible>false</Visible>
     </Content>
   </ItemGroup>
 

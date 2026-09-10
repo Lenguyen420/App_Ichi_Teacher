@@ -1,5 +1,5 @@
 using kido_teacher_app.Config;
-using Microsoft.Data.Sqlite;
+using SqliteConnection = System.Data.SQLite.SQLiteConnection;
 using Newtonsoft.Json;
 using System;
 using System.IO;

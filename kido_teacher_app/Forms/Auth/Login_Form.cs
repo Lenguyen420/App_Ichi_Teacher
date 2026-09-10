@@ -1,10 +1,13 @@
 ﻿//using kido_teacher_app.Config;
+using AppConfig = kido_teacher_app.Config.AppConfig;
 using kido_teacher_app.Model;
 using kido_teacher_app.Services;
 using kido_teacher_app.Shared.Logging;
 using System;
 using System.Drawing;
+using System.Net;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
 
 namespace kido_teacher_app
@@ -32,7 +35,6 @@ namespace kido_teacher_app
             iconEye.Click += iconEye_Click;
             Shown += (_, _) => ApplyResponsiveLayout(fitToWorkingArea: true);
             Resize += (_, _) => ApplyResponsiveLayout();
-            DpiChanged += (_, _) => BeginInvoke(new Action(() => ApplyResponsiveLayout(fitToWorkingArea: true)));
         }
 
         private static void SetCueBanner(TextBox textBox, string text)
@@ -244,8 +246,15 @@ namespace kido_teacher_app
             }
             catch (Exception ex)
             {
+                var exceptionDetails = FormatExceptionChain(ex);
+                FileLog.Error(
+                    $"[LoginTeacher] POST {AppConfig.ApiBaseUrl}/auth/login/teacher failed. " +
+                    $"SecurityProtocol={ServicePointManager.SecurityProtocol}.{Environment.NewLine}{ex}"
+                );
+
                 MessageBox.Show(
-                    ex.Message,
+                    exceptionDetails + Environment.NewLine + Environment.NewLine +
+                    "Chi tiết đã được ghi vào Cache\\app.log.",
                     "Đăng nhập thất bại",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
@@ -256,6 +265,26 @@ namespace kido_teacher_app
                 loginButton.Text = oldText;
                 loginButton.Enabled = true;
             }
+        }
+
+        private static string FormatExceptionChain(Exception exception)
+        {
+            var details = new StringBuilder();
+            var current = exception;
+            var level = 0;
+
+            while (current != null && level < 10)
+            {
+                if (level == 0)
+                    details.AppendLine($"{current.GetType().Name}: {current.Message}");
+                else
+                    details.AppendLine($"InnerException {level} ({current.GetType().Name}): {current.Message}");
+
+                current = current.InnerException;
+                level++;
+            }
+
+            return details.ToString().TrimEnd();
         }
 
 

@@ -94,7 +94,7 @@ namespace kido_teacher_app.Forms.Main.Page
             if (banner != null)
                 banner.Image = null;
 
-            slideImages = Array.Empty<Image>();
+            slideImages = new Image[0];
         }
 
         private Size GetSlideTargetSize()
