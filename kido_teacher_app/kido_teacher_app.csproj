@@ -16,8 +16,8 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
-    <PlatformTarget>x86</PlatformTarget>
-    <Prefer32Bit>true</Prefer32Bit>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
     <ApplicationIcon>Resources\logo_ichi.ico</ApplicationIcon>
     <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
     <OutputPath>bin\$(Platform)\$(Configuration)\net45\</OutputPath>
