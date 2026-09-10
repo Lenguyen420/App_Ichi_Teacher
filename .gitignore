@@ -364,3 +364,7 @@ MigrationBackup/
 FodyWeavers.xsd
 
 kidoedu.sln
+
+# Local documentation and packaging scripts
+docs/
+scripts/
