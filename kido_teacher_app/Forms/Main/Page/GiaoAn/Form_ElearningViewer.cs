@@ -20,6 +20,8 @@ namespace kido_teacher_app.Forms.GiaoAn
         private const string LocalElearningHost = "kido-elearning.local";
         private const int SideBySideConfigurationError = unchecked((int)0x800736B1);
         private bool _initializationStarted;
+        private bool _fallbackStarted;
+        private Label? _statusLabel;
 
         public Form_ElearningViewer(string urlOrPath, string title)
         {
@@ -65,9 +67,12 @@ namespace kido_teacher_app.Forms.GiaoAn
                 var userDataFolder = Path.Combine(AppConfig.AppDataRoot, "WebView2");
                 var environment = await CoreWebView2Environment.CreateAsync(
                     userDataFolder: userDataFolder);
+                if (IsDisposed || Disposing) return;
                 WebViewLog.Info($"E-LEARNING runtime='{environment.BrowserVersionString}' processBits='{IntPtr.Size * 8}' userDataFolder='{userDataFolder}'");
                 await webView.EnsureCoreWebView2Async(environment);
+                if (IsDisposed || Disposing) return;
                 webView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
+                webView.CoreWebView2.ProcessFailed += CoreWebView2_ProcessFailed;
                 LoadStory();
             }
             catch (Exception ex)
@@ -152,7 +157,7 @@ namespace kido_teacher_app.Forms.GiaoAn
             catch (Exception ex)
             {
                 WebViewLog.Error($"E-LEARNING open failed fullPath='{fullPath}' error='{ex}'");
-                ShowError("Không mở được bài học", ex.Message);
+                OpenWithDefaultBrowser(ex.Message, "Không mở được bài học bằng WebView2");
             }
         }
 
@@ -165,6 +170,8 @@ namespace kido_teacher_app.Forms.GiaoAn
 
         private void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
         {
+            if (_fallbackStarted || IsDisposed || Disposing) return;
+
             if (e.IsSuccess)
             {
                 WebViewLog.Info($"E-LEARNING navigation success source='{webView.Source}'");
@@ -172,16 +179,38 @@ namespace kido_teacher_app.Forms.GiaoAn
             }
 
             WebViewLog.Error($"E-LEARNING navigation failed source='{webView.Source}' status='{e.WebErrorStatus}' http='{e.HttpStatusCode}'");
-            ShowError("WebView2 không tải được bài học", $"{e.WebErrorStatus} ({e.HttpStatusCode})");
+            // A replaced/cancelled navigation is not a failure to open the lesson.
+            if (e.WebErrorStatus == CoreWebView2WebErrorStatus.OperationCanceled) return;
+            OpenWithDefaultBrowser($"{e.WebErrorStatus} ({e.HttpStatusCode})", "WebView2 không tải được bài học");
         }
 
-        private void OpenWithDefaultBrowser(string reason, string heading = "Thiếu WebView2 Runtime")
+        private void CoreWebView2_ProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
         {
+            if (e.ProcessFailedKind != CoreWebView2ProcessFailedKind.BrowserProcessExited
+                && e.ProcessFailedKind != CoreWebView2ProcessFailedKind.RenderProcessExited
+                && e.ProcessFailedKind != CoreWebView2ProcessFailedKind.RenderProcessUnresponsive)
+                return;
+
+            OpenWithDefaultBrowser(e.ProcessFailedKind.ToString(), "WebView2 đã ngừng hoạt động");
+        }
+
+        private void OpenWithDefaultBrowser(string reason, string heading = "Không mở được WebView2")
+        {
+            if (_fallbackStarted || IsDisposed || Disposing) return;
+            _fallbackStarted = true;
+
             try
             {
                 var isWebUrl = Uri.TryCreate(_urlOrPath, UriKind.Absolute, out var uri)
                     && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
                 var target = _urlOrPath;
+                if (string.IsNullOrWhiteSpace(target))
+                {
+                    ShowError("Không có đường dẫn bài giảng");
+                    return;
+                }
+                if (!isWebUrl && uri != null && uri.IsFile)
+                    target = uri.LocalPath;
                 if (!isWebUrl && !Path.IsPathRooted(target))
                     target = Path.Combine(Application.StartupPath, target);
 
@@ -198,7 +227,7 @@ namespace kido_teacher_app.Forms.GiaoAn
 
                     ShowError(
                         heading,
-                        $"{reason} Bài học đã được mở bằng trình duyệt mặc định.");
+                        "Đã gửi yêu cầu mở bài học bằng trình duyệt mặc định. Bạn có thể đóng cửa sổ này.");
                     return;
                 }
 
@@ -213,30 +242,24 @@ namespace kido_teacher_app.Forms.GiaoAn
 
         private void ShowError(string message, string detail = "")
         {
-            if (webView.CoreWebView2 == null)
+            if (IsDisposed || Disposing) return;
+
+            // Render status with WinForms even when the WebView process has failed.
+            webView.Visible = false;
+            if (_statusLabel == null)
             {
-                webView.Visible = false;
-                Controls.Add(new Label
+                _statusLabel = new Label
                 {
                     Dock = DockStyle.Fill,
                     BackColor = Color.White,
                     ForeColor = Color.Red,
                     Font = new Font("Segoe UI", 12F),
                     Padding = new Padding(30),
-                    Text = $"{message}{Environment.NewLine}{Environment.NewLine}{detail}"
-                });
-                return;
+                };
+                Controls.Add(_statusLabel);
             }
-
-            webView.NavigateToString($@"
-                <div style='
-                    font-family:Segoe UI;
-                    color:red;
-                    font-size:18px;
-                    padding:30px'>
-                    <b>{WebUtility.HtmlEncode(message)}</b><br/>
-                    <small>{WebUtility.HtmlEncode(detail)}</small>
-                </div>");
+            _statusLabel.Text = $"{message}{Environment.NewLine}{Environment.NewLine}{detail}";
+            _statusLabel.BringToFront();
         }
     }
 }
