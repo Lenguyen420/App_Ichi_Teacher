@@ -83,10 +83,6 @@ namespace kido_teacher_app.Forms.Main.Page
             this.itemTemplate.MouseLeave += Item_MouseLeave;
             this.itemTemplate.Click += Item_Click;
 
-            this.picItem.MouseEnter += Item_MouseEnter;
-            this.picItem.MouseLeave += Item_MouseLeave;
-            this.picItem.Click += Item_Click;
-
             // ================= IMAGE =================
             this.picItem.Image = Properties.Resources.coursedefault1;
             this.picItem.SizeMode = PictureBoxSizeMode.StretchImage;

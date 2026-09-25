@@ -1,6 +1,7 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using kido_teacher_app.Shared.Logging;
+using kido_teacher_app.Shared.WebView2;
 using kido_teacher_app.Config;
 using System;
 using System.Diagnostics;
@@ -19,11 +20,43 @@ namespace kido_teacher_app.Forms.GiaoAn
         private readonly string _title;
         private const string LocalElearningHost = "kido-elearning.local";
         private const int SideBySideConfigurationError = unchecked((int)0x800736B1);
+        private static Form_ElearningViewer? _activeViewer;
         private bool _initializationStarted;
         private bool _fallbackStarted;
         private Label? _statusLabel;
+        private CheckBox _alwaysUseBrowserCheckBox = null!;
+        private readonly Stopwatch _openStopwatch = Stopwatch.StartNew();
 
-        public Form_ElearningViewer(string urlOrPath, string title)
+        public static void ShowLesson(string urlOrPath, string title)
+        {
+            if (_activeViewer != null && !_activeViewer.IsDisposed)
+            {
+                if (string.Equals(_activeViewer._urlOrPath, urlOrPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (_activeViewer.WindowState == FormWindowState.Minimized)
+                        _activeViewer.WindowState = FormWindowState.Maximized;
+
+                    _activeViewer.Show();
+                    _activeViewer.BringToFront();
+                    _activeViewer.Activate();
+                    WebViewLog.Info($"E-LEARNING duplicate open prevented input='{urlOrPath}'");
+                    return;
+                }
+
+                _activeViewer.Close();
+            }
+
+            var viewer = new Form_ElearningViewer(urlOrPath, title);
+            _activeViewer = viewer;
+            viewer.FormClosed += (sender, args) =>
+            {
+                if (ReferenceEquals(_activeViewer, viewer))
+                    _activeViewer = null;
+            };
+            viewer.Show();
+        }
+
+        private Form_ElearningViewer(string urlOrPath, string title)
         {
             _urlOrPath = urlOrPath;
             _title = title;
@@ -42,10 +75,63 @@ namespace kido_teacher_app.Forms.GiaoAn
             webView = new WebView2
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.White
+                BackColor = Color.White,
+                Visible = false
             };
 
-            this.Controls.Add(webView);
+            _statusLabel = new Label
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                ForeColor = Color.DimGray,
+                Font = new Font("Segoe UI", 12F),
+                Padding = new Padding(30),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Text = "Đang khởi tạo trình xem và tải bài giảng..."
+            };
+
+            var contentPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            contentPanel.Controls.Add(webView);
+            contentPanel.Controls.Add(_statusLabel);
+
+            var openInBrowserButton = new Button
+            {
+                AutoSize = true,
+                Text = "Mở bằng trình duyệt",
+                Margin = new Padding(8, 5, 8, 5)
+            };
+            openInBrowserButton.Click += (sender, args) => OpenWithDefaultBrowser(
+                "Người dùng chọn mở bằng trình duyệt mặc định.",
+                "Đang mở bằng trình duyệt mặc định",
+                false);
+
+            _alwaysUseBrowserCheckBox = new CheckBox
+            {
+                AutoSize = true,
+                Text = "Luôn mở e-learning bằng trình duyệt",
+                Checked = ElearningPreferences.AlwaysOpenInDefaultBrowser,
+                Margin = new Padding(8, 9, 8, 5)
+            };
+            _alwaysUseBrowserCheckBox.CheckedChanged += (sender, args) =>
+            {
+                ElearningPreferences.AlwaysOpenInDefaultBrowser = _alwaysUseBrowserCheckBox.Checked;
+                WebViewLog.Info($"E-LEARNING external browser preference='{_alwaysUseBrowserCheckBox.Checked}'");
+            };
+
+            var toolbar = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                WrapContents = false,
+                BackColor = Color.WhiteSmoke,
+                Padding = new Padding(8, 4, 8, 4)
+            };
+            toolbar.Controls.Add(openInBrowserButton);
+            toolbar.Controls.Add(_alwaysUseBrowserCheckBox);
+
+            Controls.Add(contentPanel);
+            Controls.Add(toolbar);
+            toolbar.BringToFront();
         }
 
         // ================= WEBVIEW INIT =================
@@ -55,6 +141,16 @@ namespace kido_teacher_app.Forms.GiaoAn
                 return;
 
             _initializationStarted = true;
+
+            if (ElearningPreferences.AlwaysOpenInDefaultBrowser)
+            {
+                OpenWithDefaultBrowser(
+                    "Tùy chọn luôn mở bằng trình duyệt đang được bật.",
+                    "Đã mở bài học bằng trình duyệt mặc định",
+                    false);
+                return;
+            }
+
             await InitWebViewAsync();
         }
 
@@ -63,14 +159,16 @@ namespace kido_teacher_app.Forms.GiaoAn
             try
             {
                 WebViewLog.Info($"E-LEARNING init input='{_urlOrPath}' title='{_title}'");
-                // Keep the browser profile writable and stable across ClickOnce updates.
+                var environmentTimer = Stopwatch.StartNew();
                 var userDataFolder = Path.Combine(AppConfig.AppDataRoot, "WebView2");
-                var environment = await CoreWebView2Environment.CreateAsync(
-                    userDataFolder: userDataFolder);
+                var environment = await SharedWebView2Environment.GetAsync();
                 if (IsDisposed || Disposing) return;
-                WebViewLog.Info($"E-LEARNING runtime='{environment.BrowserVersionString}' processBits='{IntPtr.Size * 8}' userDataFolder='{userDataFolder}'");
+                WebViewLog.Info($"E-LEARNING environment ready elapsedMs='{environmentTimer.ElapsedMilliseconds}' runtime='{environment.BrowserVersionString}' processBits='{IntPtr.Size * 8}' userDataFolder='{userDataFolder}'");
+
+                var controllerTimer = Stopwatch.StartNew();
                 await webView.EnsureCoreWebView2Async(environment);
                 if (IsDisposed || Disposing) return;
+                WebViewLog.Info($"E-LEARNING controller ready elapsedMs='{controllerTimer.ElapsedMilliseconds}' totalMs='{_openStopwatch.ElapsedMilliseconds}'");
                 webView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
                 webView.CoreWebView2.ProcessFailed += CoreWebView2_ProcessFailed;
                 LoadStory();
@@ -174,7 +272,11 @@ namespace kido_teacher_app.Forms.GiaoAn
 
             if (e.IsSuccess)
             {
-                WebViewLog.Info($"E-LEARNING navigation success source='{webView.Source}'");
+                WebViewLog.Info($"E-LEARNING navigation success elapsedMs='{_openStopwatch.ElapsedMilliseconds}' source='{webView.Source}'");
+                webView.Visible = true;
+                webView.BringToFront();
+                if (_statusLabel != null)
+                    _statusLabel.Visible = false;
                 return;
             }
 
@@ -186,6 +288,7 @@ namespace kido_teacher_app.Forms.GiaoAn
 
         private void CoreWebView2_ProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
         {
+            WebViewLog.Error($"E-LEARNING process failed kind='{e.ProcessFailedKind}' elapsedMs='{_openStopwatch.ElapsedMilliseconds}' source='{webView.Source}'");
             if (e.ProcessFailedKind != CoreWebView2ProcessFailedKind.BrowserProcessExited
                 && e.ProcessFailedKind != CoreWebView2ProcessFailedKind.RenderProcessExited
                 && e.ProcessFailedKind != CoreWebView2ProcessFailedKind.RenderProcessUnresponsive)
@@ -194,7 +297,10 @@ namespace kido_teacher_app.Forms.GiaoAn
             OpenWithDefaultBrowser(e.ProcessFailedKind.ToString(), "WebView2 đã ngừng hoạt động");
         }
 
-        private void OpenWithDefaultBrowser(string reason, string heading = "Không mở được WebView2")
+        private void OpenWithDefaultBrowser(
+            string reason,
+            string heading = "Không mở được WebView2",
+            bool isError = true)
         {
             if (_fallbackStarted || IsDisposed || Disposing) return;
             _fallbackStarted = true;
@@ -225,9 +331,10 @@ namespace kido_teacher_app.Forms.GiaoAn
                         UseShellExecute = true
                     });
 
-                    ShowError(
+                    ShowStatus(
                         heading,
-                        "Đã gửi yêu cầu mở bài học bằng trình duyệt mặc định. Bạn có thể đóng cửa sổ này.");
+                        "Đã gửi yêu cầu mở bài học bằng trình duyệt mặc định. Bỏ chọn tùy chọn phía trên nếu lần sau muốn mở trong ứng dụng.",
+                        isError ? Color.Red : Color.DarkGreen);
                     return;
                 }
 
@@ -242,6 +349,11 @@ namespace kido_teacher_app.Forms.GiaoAn
 
         private void ShowError(string message, string detail = "")
         {
+            ShowStatus(message, detail, Color.Red);
+        }
+
+        private void ShowStatus(string message, string detail, Color color)
+        {
             if (IsDisposed || Disposing) return;
 
             // Render status with WinForms even when the WebView process has failed.
@@ -252,12 +364,14 @@ namespace kido_teacher_app.Forms.GiaoAn
                 {
                     Dock = DockStyle.Fill,
                     BackColor = Color.White,
-                    ForeColor = Color.Red,
+                    ForeColor = color,
                     Font = new Font("Segoe UI", 12F),
                     Padding = new Padding(30),
                 };
                 Controls.Add(_statusLabel);
             }
+            _statusLabel.ForeColor = color;
+            _statusLabel.Visible = true;
             _statusLabel.Text = $"{message}{Environment.NewLine}{Environment.NewLine}{detail}";
             _statusLabel.BringToFront();
         }

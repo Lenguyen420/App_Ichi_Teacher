@@ -82,11 +82,13 @@ namespace kido_teacher_app
             // ===== GLOBAL EXCEPTION =====
             Application.ThreadException += (s, e) =>
             {
+                FileLog.Error($"UI Exception: {e.Exception}");
                 MessageBox.Show(e.Exception.ToString(), "UI Exception");
             };
 
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
+                FileLog.Error($"Fatal Exception (terminating={e.IsTerminating}): {e.ExceptionObject}");
                 MessageBox.Show(e.ExceptionObject?.ToString(), "Fatal Exception");
             };
 

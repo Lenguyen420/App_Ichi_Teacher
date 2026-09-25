@@ -61,6 +61,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             lblInfo.Text = $"Giáo Án / {className} / {courseName}";
             this.Load += UC_GiaoAn_TheoThangChiTiet_Load;
             this.flowList.SizeChanged += (s, e) => UpdateCardWidths();
+            this.Disposed += (s, e) => ClearOfflineButtonHandlers();
         }
 
         private void UC_GiaoAn_TheoThangChiTiet_Load(object? sender, EventArgs e)
@@ -145,6 +146,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
 
             _lastRenderedLectureSignature = BuildLectureSignature(lectures);
             flowList.SuspendLayout();
+            ClearOfflineButtonHandlers();
             flowList.Controls.Clear();
 
             foreach (var lec in lectures)
@@ -343,7 +345,7 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 {
                     try
                     {
-                        new Form_ElearningViewer(filePath, title).Show();
+                        Form_ElearningViewer.ShowLesson(filePath, title);
                         return true;
                     }
                     catch (Exception exElearn)
@@ -676,36 +678,24 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // PDF
             if (!string.IsNullOrEmpty(pdfOffline) && File.Exists(pdfOffline))
             {
-                btnPdfOff.Enabled = true;
-                btnPdfOff.ForeColor = Color.Blue;
-                btnPdfOff.FlatAppearance.BorderColor = Color.Blue;
-                btnPdfOff.Click += (s, e) => OpenLocal(pdfOffline, title);
+                EnableOfflineButton(btnPdfOff, () => OpenLocal(pdfOffline, title));
             }
 
             // VIDEO
             if (!string.IsNullOrEmpty(videoOffline) && File.Exists(videoOffline))
             {
-                btnVideoOff.Enabled = true;
-                btnVideoOff.ForeColor = Color.Blue;
-                btnVideoOff.FlatAppearance.BorderColor = Color.Blue;
-                btnVideoOff.Click += (s, e) => OpenLocal(videoOffline, title);
+                EnableOfflineButton(btnVideoOff, () => OpenLocal(videoOffline, title));
             }
 
             // LESSON
             if (!string.IsNullOrEmpty(lessonOffline) && File.Exists(lessonOffline))
             {
-                btnLessonOff.Enabled = true;
-                btnLessonOff.ForeColor = Color.Blue;
-                btnLessonOff.FlatAppearance.BorderColor = Color.Blue;
-                btnLessonOff.Click += (s, e) => OpenLocal(lessonOffline, title);
+                EnableOfflineButton(btnLessonOff, () => OpenLocal(lessonOffline, title));
             }
 
             if (!string.IsNullOrEmpty(powerPointOffline) && File.Exists(powerPointOffline))
             {
-                btnPowerPointOff.Enabled = true;
-                btnPowerPointOff.ForeColor = Color.Blue;
-                btnPowerPointOff.FlatAppearance.BorderColor = Color.Blue;
-                btnPowerPointOff.Click += (s, e) => OpenLocal(powerPointOffline, title);
+                EnableOfflineButton(btnPowerPointOff, () => OpenLocal(powerPointOffline, title));
             }
 
             btnDelete.Tag = new object[]
@@ -943,21 +933,6 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
             // =========================
             // 8️⃣ ENABLE OFFLINE BUTTON
             // =========================
-            void EnableOfflineButton(Button btn, Action clickAction)
-            {
-                btn.Enabled = true;
-                btn.ForeColor = Color.Blue;
-                btn.FlatAppearance.BorderColor = Color.Blue;
-                btn.FlatAppearance.BorderSize = 1;
-
-                if (_offlineButtonHandlers.TryGetValue(btn, out var existingHandler))
-                    btn.Click -= existingHandler;
-
-                EventHandler handler = (s, e) => clickAction();
-                _offlineButtonHandlers[btn] = handler;
-                btn.Click += handler;
-            }
-
             // PDF OFFLINE
             if (!string.IsNullOrEmpty(validPdfPath))
             {
@@ -1012,6 +987,32 @@ namespace kido_teacher_app.Forms.Main.Page.GiaoAn
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", ScaleFont(9), FontStyle.Regular)
             };
+        }
+
+        private void EnableOfflineButton(Button btn, Action clickAction)
+        {
+            btn.Enabled = true;
+            btn.ForeColor = Color.Blue;
+            btn.FlatAppearance.BorderColor = Color.Blue;
+            btn.FlatAppearance.BorderSize = 1;
+
+            if (_offlineButtonHandlers.TryGetValue(btn, out var existingHandler))
+                btn.Click -= existingHandler;
+
+            EventHandler handler = (s, e) => clickAction();
+            _offlineButtonHandlers[btn] = handler;
+            btn.Click += handler;
+        }
+
+        private void ClearOfflineButtonHandlers()
+        {
+            foreach (var entry in _offlineButtonHandlers)
+            {
+                if (!entry.Key.IsDisposed)
+                    entry.Key.Click -= entry.Value;
+            }
+
+            _offlineButtonHandlers.Clear();
         }
 
         private Button CreateSimpleGrayButton(string text)

@@ -75,6 +75,8 @@
     </Compile>
     <Compile Include="Config\AppConfig.cs">
     </Compile>
+    <Compile Include="Config\ElearningPreferences.cs">
+    </Compile>
     <Compile Include="Config\AuthSession.cs">
     </Compile>
     <Compile Include="Forms\Auth\Login_Form.cs">
@@ -260,6 +262,8 @@
     <Compile Include="Shared\Logging\WebViewLog.cs">
     </Compile>
     <Compile Include="Shared\Network\OfflineState.cs">
+    </Compile>
+    <Compile Include="Shared\WebView2\SharedWebView2Environment.cs">
     </Compile>
     <Compile Include="GlobalUsings.cs" />
     <EmbeddedResource Include="Forms\Auth\Login_Form.resx">
