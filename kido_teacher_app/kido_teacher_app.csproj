@@ -263,6 +263,8 @@
     </Compile>
     <Compile Include="Shared\Network\OfflineState.cs">
     </Compile>
+    <Compile Include="Shared\Web\LocalElearningHttpServer.cs">
+    </Compile>
     <Compile Include="Shared\WebView2\SharedWebView2Environment.cs">
     </Compile>
     <Compile Include="GlobalUsings.cs" />

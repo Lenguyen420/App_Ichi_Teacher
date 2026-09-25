@@ -1,83 +1,117 @@
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using kido_teacher_app.Shared.Logging;
+using kido_teacher_app.Shared.Web;
 using kido_teacher_app.Shared.WebView2;
 using kido_teacher_app.Config;
 using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Net;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace kido_teacher_app.Forms.GiaoAn
 {
     public class Form_ElearningViewer : Form
     {
-        private WebView2 webView = null!;
-        private readonly string _urlOrPath;
-        private readonly string _title;
-        private const string LocalElearningHost = "kido-elearning.local";
+        private WebView2? webView;
+        private string _urlOrPath = string.Empty;
+        private string _title = string.Empty;
         private const int SideBySideConfigurationError = unchecked((int)0x800736B1);
+        private const int WebViewInitializationTimeoutMilliseconds = 12000;
         private static Form_ElearningViewer? _activeViewer;
-        private bool _initializationStarted;
         private bool _fallbackStarted;
+        private bool _controllerFailed;
+        private bool _allowClose;
+        private int _lessonVersion;
+        private Task<bool>? _initializationTask;
+        private string _initializationFailureReason = string.Empty;
         private Label? _statusLabel;
+        private Panel _contentPanel = null!;
         private CheckBox _alwaysUseBrowserCheckBox = null!;
         private readonly Stopwatch _openStopwatch = Stopwatch.StartNew();
 
-        public static void ShowLesson(string urlOrPath, string title)
+        public static void WarmUp()
         {
-            if (_activeViewer != null && !_activeViewer.IsDisposed)
-            {
-                if (string.Equals(_activeViewer._urlOrPath, urlOrPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (_activeViewer.WindowState == FormWindowState.Minimized)
-                        _activeViewer.WindowState = FormWindowState.Maximized;
+            if (WindowsVersionHelper.IsWindows7 || ElearningPreferences.AlwaysOpenInDefaultBrowser)
+                return;
 
-                    _activeViewer.Show();
-                    _activeViewer.BringToFront();
-                    _activeViewer.Activate();
-                    WebViewLog.Info($"E-LEARNING duplicate open prevented input='{urlOrPath}'");
-                    return;
-                }
-
-                _activeViewer.Close();
-            }
-
-            var viewer = new Form_ElearningViewer(urlOrPath, title);
-            _activeViewer = viewer;
-            viewer.FormClosed += (sender, args) =>
-            {
-                if (ReferenceEquals(_activeViewer, viewer))
-                    _activeViewer = null;
-            };
-            viewer.Show();
+            var viewer = GetOrCreateViewer();
+            viewer.CreateControl();
+            viewer.webView?.CreateControl();
+            viewer.StartWarmUp();
         }
 
-        private Form_ElearningViewer(string urlOrPath, string title)
+        public static void ShowLesson(string urlOrPath, string title)
         {
-            _urlOrPath = urlOrPath;
-            _title = title;
+            var viewer = GetOrCreateViewer();
+            if (viewer.Visible
+                && string.Equals(viewer._urlOrPath, urlOrPath, StringComparison.OrdinalIgnoreCase))
+            {
+                if (viewer.WindowState == FormWindowState.Minimized)
+                    viewer.WindowState = FormWindowState.Maximized;
 
+                viewer.BringToFront();
+                viewer.Activate();
+                WebViewLog.Info($"E-LEARNING duplicate open prevented input='{urlOrPath}'");
+                return;
+            }
+
+            viewer.Show();
+            viewer.BringToFront();
+            viewer.Activate();
+            viewer.OpenLesson(urlOrPath, title);
+        }
+
+        public static void Shutdown()
+        {
+            var viewer = _activeViewer;
+            _activeViewer = null;
+            if (viewer == null || viewer.IsDisposed)
+                return;
+
+            viewer._allowClose = true;
+            viewer.Close();
+            viewer.Dispose();
+        }
+
+        private static Form_ElearningViewer GetOrCreateViewer()
+        {
+            if (_activeViewer == null || _activeViewer.IsDisposed)
+                _activeViewer = new Form_ElearningViewer();
+
+            return _activeViewer;
+        }
+
+        private Form_ElearningViewer()
+        {
             InitUI();
-            Shown += Form_ElearningViewer_Shown;
+            FormClosing += Form_ElearningViewer_FormClosing;
         }
 
         // ================= UI =================
         private void InitUI()
         {
             this.Text = $"E-Learning - {_title}";
-            this.WindowState = FormWindowState.Maximized;
             this.BackColor = Color.White;
 
-            webView = new WebView2
+            if (WindowsVersionHelper.IsWindows7)
             {
-                Dock = DockStyle.Fill,
-                BackColor = Color.White,
-                Visible = false
-            };
+                WindowState = FormWindowState.Normal;
+                StartPosition = FormStartPosition.CenterScreen;
+                Size = new Size(680, 260);
+            }
+            else
+            {
+                WindowState = FormWindowState.Maximized;
+                webView = new WebView2
+                {
+                    Dock = DockStyle.Fill,
+                    BackColor = Color.White,
+                    Visible = false
+                };
+            }
 
             _statusLabel = new Label
             {
@@ -90,9 +124,10 @@ namespace kido_teacher_app.Forms.GiaoAn
                 Text = "Đang khởi tạo trình xem và tải bài giảng..."
             };
 
-            var contentPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
-            contentPanel.Controls.Add(webView);
-            contentPanel.Controls.Add(_statusLabel);
+            _contentPanel = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            if (webView != null)
+                _contentPanel.Controls.Add(webView);
+            _contentPanel.Controls.Add(_statusLabel);
 
             var openInBrowserButton = new Button
             {
@@ -108,8 +143,11 @@ namespace kido_teacher_app.Forms.GiaoAn
             _alwaysUseBrowserCheckBox = new CheckBox
             {
                 AutoSize = true,
-                Text = "Luôn mở e-learning bằng trình duyệt",
-                Checked = ElearningPreferences.AlwaysOpenInDefaultBrowser,
+                Text = WindowsVersionHelper.IsWindows7
+                    ? "Windows 7 luôn mở e-learning bằng trình duyệt"
+                    : "Luôn mở e-learning bằng trình duyệt",
+                Checked = WindowsVersionHelper.IsWindows7 || ElearningPreferences.AlwaysOpenInDefaultBrowser,
+                Enabled = !WindowsVersionHelper.IsWindows7,
                 Margin = new Padding(8, 9, 8, 5)
             };
             _alwaysUseBrowserCheckBox.CheckedChanged += (sender, args) =>
@@ -129,18 +167,37 @@ namespace kido_teacher_app.Forms.GiaoAn
             toolbar.Controls.Add(openInBrowserButton);
             toolbar.Controls.Add(_alwaysUseBrowserCheckBox);
 
-            Controls.Add(contentPanel);
+            Controls.Add(_contentPanel);
             Controls.Add(toolbar);
             toolbar.BringToFront();
         }
 
         // ================= WEBVIEW INIT =================
-        private async void Form_ElearningViewer_Shown(object? sender, EventArgs e)
+        private async void StartWarmUp()
         {
-            if (_initializationStarted)
-                return;
+            var ready = await EnsureWebViewReadyAsync();
+            WebViewLog.Info($"E-LEARNING warmup completed ready='{ready}'");
+        }
 
-            _initializationStarted = true;
+        private async void OpenLesson(string urlOrPath, string title)
+        {
+            _lessonVersion++;
+            var lessonVersion = _lessonVersion;
+            _urlOrPath = urlOrPath;
+            _title = title;
+            _fallbackStarted = false;
+            _openStopwatch.Restart();
+            Text = $"E-Learning - {_title}";
+            ShowStatus("Đang mở bài giảng...", _title, Color.DimGray);
+
+            if (WindowsVersionHelper.IsWindows7)
+            {
+                OpenWithDefaultBrowser(
+                    "Windows 7 sử dụng trình duyệt mặc định thay cho WebView2.",
+                    "Đã mở bài học bằng trình duyệt mặc định",
+                    false);
+                return;
+            }
 
             if (ElearningPreferences.AlwaysOpenInDefaultBrowser)
             {
@@ -151,58 +208,139 @@ namespace kido_teacher_app.Forms.GiaoAn
                 return;
             }
 
-            await InitWebViewAsync();
+            if (_controllerFailed)
+                RecreateWebViewControl();
+
+            var initializationTask = EnsureWebViewReadyAsync();
+            var completedTask = await Task.WhenAny(
+                initializationTask,
+                Task.Delay(WebViewInitializationTimeoutMilliseconds));
+
+            if (lessonVersion != _lessonVersion || IsDisposed || Disposing)
+                return;
+
+            if (completedTask != initializationTask)
+            {
+                WebViewLog.Error($"E-LEARNING initialization timeout elapsedMs='{_openStopwatch.ElapsedMilliseconds}' input='{_urlOrPath}'");
+                OpenWithDefaultBrowser(
+                    "WebView2 khởi tạo quá 12 giây.",
+                    "Trình xem trong ứng dụng phản hồi chậm",
+                    false);
+                return;
+            }
+
+            if (!await initializationTask)
+            {
+                OpenWithDefaultBrowser(
+                    string.IsNullOrWhiteSpace(_initializationFailureReason)
+                        ? "Không khởi tạo được WebView2."
+                        : _initializationFailureReason,
+                    "Không khởi tạo được WebView2");
+                return;
+            }
+
+            if (lessonVersion == _lessonVersion && !_fallbackStarted)
+                LoadStory();
         }
 
-        private async System.Threading.Tasks.Task InitWebViewAsync()
+        private Task<bool> EnsureWebViewReadyAsync()
         {
+            if (_initializationTask == null)
+                _initializationTask = InitWebViewAsync();
+
+            return _initializationTask;
+        }
+
+        private async Task<bool> InitWebViewAsync()
+        {
+            _initializationFailureReason = string.Empty;
+
             try
             {
+                if (webView == null)
+                {
+                    _initializationFailureReason = "WebView2 không được khởi tạo trên hệ điều hành này.";
+                    return false;
+                }
+
                 WebViewLog.Info($"E-LEARNING init input='{_urlOrPath}' title='{_title}'");
                 var environmentTimer = Stopwatch.StartNew();
                 var userDataFolder = Path.Combine(AppConfig.AppDataRoot, "WebView2");
                 var environment = await SharedWebView2Environment.GetAsync();
-                if (IsDisposed || Disposing) return;
+                if (IsDisposed || Disposing) return false;
                 WebViewLog.Info($"E-LEARNING environment ready elapsedMs='{environmentTimer.ElapsedMilliseconds}' runtime='{environment.BrowserVersionString}' processBits='{IntPtr.Size * 8}' userDataFolder='{userDataFolder}'");
 
                 var controllerTimer = Stopwatch.StartNew();
                 await webView.EnsureCoreWebView2Async(environment);
-                if (IsDisposed || Disposing) return;
+                if (IsDisposed || Disposing) return false;
                 WebViewLog.Info($"E-LEARNING controller ready elapsedMs='{controllerTimer.ElapsedMilliseconds}' totalMs='{_openStopwatch.ElapsedMilliseconds}'");
                 webView.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
                 webView.CoreWebView2.ProcessFailed += CoreWebView2_ProcessFailed;
-                LoadStory();
+                _controllerFailed = false;
+                return true;
             }
             catch (Exception ex)
             {
                 if (ex is WebView2RuntimeNotFoundException)
                 {
                     WebViewLog.Error($"E-LEARNING WebView2 runtime missing input='{_urlOrPath}'");
-                    OpenWithDefaultBrowser("Máy chưa cài WebView2 Runtime nên app không thể mở e-learning bên trong ứng dụng. "
-                        + "Với Windows 7 SP1, hãy cài WebView2 Runtime 109 từ bộ cài dành cho Win7.");
-                    return;
+                    _initializationFailureReason = "Máy chưa cài WebView2 Runtime nên app không thể mở e-learning bên trong ứng dụng. "
+                        + "Với Windows 7 SP1, hãy cài WebView2 Runtime 109 từ bộ cài dành cho Win7.";
+                    return false;
                 }
 
                 if (ex.HResult == SideBySideConfigurationError)
                 {
                     WebViewLog.Error($"E-LEARNING native runtime side-by-side failure input='{_urlOrPath}' hresult='0x{ex.HResult:X8}'");
-                    OpenWithDefaultBrowser(
-                        "WebView2 hoặc Microsoft Visual C++ Runtime trên máy đang bị thiếu/hỏng. "
-                        + "Hãy Repair hoặc cài lại Microsoft Edge WebView2 Runtime và Microsoft Visual C++ Redistributable (x86).",
-                        "WebView2 bị lỗi");
-                    return;
+                    _initializationFailureReason = "WebView2 hoặc Microsoft Visual C++ Runtime trên máy đang bị thiếu/hỏng. "
+                        + "Hãy Repair hoặc cài lại Microsoft Edge WebView2 Runtime và Microsoft Visual C++ Redistributable (x86).";
+                    return false;
                 }
 
                 WebViewLog.Error($"E-LEARNING init failed input='{_urlOrPath}' error='{ex}'");
-                OpenWithDefaultBrowser(
-                    $"Không khởi tạo được WebView2: {ex.Message}",
-                    "Không khởi tạo được WebView2");
+                _initializationFailureReason = $"Không khởi tạo được WebView2: {ex.Message}";
+                return false;
             }
+        }
+
+        private void RecreateWebViewControl()
+        {
+            if (webView != null)
+            {
+                if (webView.CoreWebView2 != null)
+                {
+                    webView.CoreWebView2.NavigationCompleted -= CoreWebView2_NavigationCompleted;
+                    webView.CoreWebView2.ProcessFailed -= CoreWebView2_ProcessFailed;
+                }
+                _contentPanel.Controls.Remove(webView);
+                webView.Dispose();
+            }
+
+            webView = new WebView2
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                Visible = false
+            };
+            _contentPanel.Controls.Add(webView);
+            webView.SendToBack();
+            _initializationTask = null;
+            _controllerFailed = false;
+            WebViewLog.Info("E-LEARNING controller recreated after process failure");
         }
 
         // ================= LOAD STORY =================
         private void LoadStory()
         {
+            if (_fallbackStarted)
+                return;
+
+            if (webView?.CoreWebView2 == null)
+            {
+                ShowError("Trình xem WebView2 chưa sẵn sàng");
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(_urlOrPath))
             {
                 ShowError("Không có đường dẫn bài giảng");
@@ -234,22 +372,17 @@ namespace kido_teacher_app.Forms.GiaoAn
 
             try
             {
-                var storyFile = new FileInfo(fullPath);
-                var storyFolder = storyFile.DirectoryName;
-                if (string.IsNullOrWhiteSpace(storyFolder))
+                if (!LocalElearningHttpServer.TryCreateLessonUrl(
+                    fullPath,
+                    out var localUrl,
+                    out var serverError))
                 {
-                    WebViewLog.Error($"E-LEARNING invalid story folder fullPath='{fullPath}'");
-                    ShowError("Đường dẫn bài học không hợp lệ", fullPath);
+                    WebViewLog.Error($"E-LEARNING local server unavailable fullPath='{fullPath}' error='{serverError}'");
+                    ShowError("Không khởi động được máy chủ bài giảng nội bộ", serverError);
                     return;
                 }
 
-                webView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                    LocalElearningHost,
-                    storyFolder,
-                    CoreWebView2HostResourceAccessKind.Allow);
-
-                var localUrl = $"https://{LocalElearningHost}/{EncodePathSegment(storyFile.Name)}";
-                WebViewLog.Info($"E-LEARNING navigate localUrl='{localUrl}' folder='{storyFolder}' file='{storyFile.Name}'");
+                WebViewLog.Info($"E-LEARNING navigate local server url='{localUrl}' fullPath='{fullPath}'");
                 webView.CoreWebView2.Navigate(localUrl);
             }
             catch (Exception ex)
@@ -259,28 +392,24 @@ namespace kido_teacher_app.Forms.GiaoAn
             }
         }
 
-        private static string EncodePathSegment(string value)
-        {
-            return string.Join("/", value.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                .Where(part => !string.IsNullOrEmpty(part))
-                .Select(WebUtility.UrlEncode));
-        }
-
         private void CoreWebView2_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
         {
             if (_fallbackStarted || IsDisposed || Disposing) return;
 
             if (e.IsSuccess)
             {
-                WebViewLog.Info($"E-LEARNING navigation success elapsedMs='{_openStopwatch.ElapsedMilliseconds}' source='{webView.Source}'");
-                webView.Visible = true;
-                webView.BringToFront();
+                WebViewLog.Info($"E-LEARNING navigation success elapsedMs='{_openStopwatch.ElapsedMilliseconds}' source='{webView?.Source}'");
+                if (webView != null)
+                {
+                    webView.Visible = true;
+                    webView.BringToFront();
+                }
                 if (_statusLabel != null)
                     _statusLabel.Visible = false;
                 return;
             }
 
-            WebViewLog.Error($"E-LEARNING navigation failed source='{webView.Source}' status='{e.WebErrorStatus}' http='{e.HttpStatusCode}'");
+            WebViewLog.Error($"E-LEARNING navigation failed source='{webView?.Source}' status='{e.WebErrorStatus}' http='{e.HttpStatusCode}'");
             // A replaced/cancelled navigation is not a failure to open the lesson.
             if (e.WebErrorStatus == CoreWebView2WebErrorStatus.OperationCanceled) return;
             OpenWithDefaultBrowser($"{e.WebErrorStatus} ({e.HttpStatusCode})", "WebView2 không tải được bài học");
@@ -288,13 +417,34 @@ namespace kido_teacher_app.Forms.GiaoAn
 
         private void CoreWebView2_ProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
         {
-            WebViewLog.Error($"E-LEARNING process failed kind='{e.ProcessFailedKind}' elapsedMs='{_openStopwatch.ElapsedMilliseconds}' source='{webView.Source}'");
+            WebViewLog.Error($"E-LEARNING process failed kind='{e.ProcessFailedKind}' elapsedMs='{_openStopwatch.ElapsedMilliseconds}' source='{webView?.Source}'");
             if (e.ProcessFailedKind != CoreWebView2ProcessFailedKind.BrowserProcessExited
                 && e.ProcessFailedKind != CoreWebView2ProcessFailedKind.RenderProcessExited
                 && e.ProcessFailedKind != CoreWebView2ProcessFailedKind.RenderProcessUnresponsive)
                 return;
 
+            _controllerFailed = true;
             OpenWithDefaultBrowser(e.ProcessFailedKind.ToString(), "WebView2 đã ngừng hoạt động");
+        }
+
+        private void Form_ElearningViewer_FormClosing(object? sender, FormClosingEventArgs e)
+        {
+            if (_allowClose || e.CloseReason != CloseReason.UserClosing)
+                return;
+
+            e.Cancel = true;
+            _lessonVersion++;
+            _fallbackStarted = true;
+            try
+            {
+                webView?.CoreWebView2?.Navigate("about:blank");
+            }
+            catch (Exception ex)
+            {
+                WebViewLog.Error($"E-LEARNING stop lesson before hide failed error='{ex}'");
+            }
+            Hide();
+            WebViewLog.Info("E-LEARNING viewer hidden; controller retained for reuse");
         }
 
         private void OpenWithDefaultBrowser(
@@ -325,15 +475,39 @@ namespace kido_teacher_app.Forms.GiaoAn
 
                 if (targetExists)
                 {
+                    var browserTarget = target;
+                    if (!isWebUrl
+                        && (string.Equals(Path.GetExtension(target), ".html", StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(Path.GetExtension(target), ".htm", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        if (!LocalElearningHttpServer.TryCreateLessonUrl(target, out browserTarget, out var serverError))
+                        {
+                            ShowError(
+                                "Không khởi động được máy chủ bài giảng nội bộ",
+                                serverError);
+                            return;
+                        }
+                    }
+
+                    ShowStatus(
+                        heading,
+                        WindowsVersionHelper.IsWindows7
+                            ? "Đang khởi động trình duyệt để mở bài qua địa chỉ nội bộ 127.0.0.1..."
+                            : "Đang khởi động trình duyệt mặc định...",
+                        isError ? Color.Red : Color.DarkGreen);
+                    Update();
+
                     Process.Start(new ProcessStartInfo
                     {
-                        FileName = target,
+                        FileName = browserTarget,
                         UseShellExecute = true
                     });
 
                     ShowStatus(
                         heading,
-                        "Đã gửi yêu cầu mở bài học bằng trình duyệt mặc định. Bỏ chọn tùy chọn phía trên nếu lần sau muốn mở trong ứng dụng.",
+                        WindowsVersionHelper.IsWindows7
+                            ? "Bài học đang được phục vụ qua địa chỉ nội bộ 127.0.0.1 để không hiển thị đường dẫn file trên máy."
+                            : "Đã gửi yêu cầu mở bài học bằng trình duyệt mặc định. Bỏ chọn tùy chọn phía trên nếu lần sau muốn mở trong ứng dụng.",
                         isError ? Color.Red : Color.DarkGreen);
                     return;
                 }
@@ -357,7 +531,8 @@ namespace kido_teacher_app.Forms.GiaoAn
             if (IsDisposed || Disposing) return;
 
             // Render status with WinForms even when the WebView process has failed.
-            webView.Visible = false;
+            if (webView != null)
+                webView.Visible = false;
             if (_statusLabel == null)
             {
                 _statusLabel = new Label

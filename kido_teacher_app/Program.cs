@@ -62,8 +62,10 @@
 //    }
 //}
 using kido_teacher_app.Config;
+using kido_teacher_app.Forms.GiaoAn;
 using kido_teacher_app.Services;
 using kido_teacher_app.Shared.Logging;
+using kido_teacher_app.Shared.Web;
 using System;
 using System.IO;
 using System.Net;
@@ -93,6 +95,12 @@ namespace kido_teacher_app
             };
 
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.ApplicationExit += (s, e) =>
+            {
+                Form_ElearningViewer.Shutdown();
+                LocalElearningHttpServer.Stop();
+            };
+            AppDomain.CurrentDomain.ProcessExit += (s, e) => LocalElearningHttpServer.Stop();
 
             //  CHỈ GỌI 1 LẦN – TRƯỚC MỌI FORM
             Application.EnableVisualStyles();
@@ -119,6 +127,7 @@ namespace kido_teacher_app
             CleanZeroByteFiles(AppConfig.ClassImageCacheFolder);
             CleanZeroByteFiles(AppConfig.CourseImageCacheFolder);
             CleanZeroByteFiles(AppConfig.LectureImageCacheFolder);
+            Form_ElearningViewer.WarmUp();
             // ===========================
 
             var autoLoggedIn = AuthService.TryLoginWithSavedTokenAsync().GetAwaiter().GetResult();
